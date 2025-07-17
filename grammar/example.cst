@@ -24,7 +24,7 @@ fn fragment_main() -> { color: vec4 } {
 // output automatically passed to next stage
 @vertex
 fn vertex_main() -> { vPos: vec3, uvs: vec2 } {
-  return { position, uvs }
+  return { position, uv }
 }
 
 @fragment
