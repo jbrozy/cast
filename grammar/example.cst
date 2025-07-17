@@ -13,3 +13,21 @@ fn vertex_main() -> { vPos: vec3, uvs: vec2 } {
 fn fragment_main() -> { color: vec4 } {
   return { vec4(1.0f) }
 }
+
+-----------------------------------------------
+
+@input(vertex) {
+  @loc(0) position : vec3,
+  @loc(1) uv : vec2
+}
+
+// output automatically passed to next stage
+@vertex
+fn vertex_main() -> { vPos: vec3, uvs: vec2 } {
+  return { position, uvs }
+}
+
+@fragment
+fn fragment_main() -> { color: vec4 } {
+  return { vec4(1.0f) }
+}
