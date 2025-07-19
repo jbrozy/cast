@@ -31,3 +31,31 @@ fn vertex_main() -> { vPos: vec3, uvs: vec2 } {
 fn fragment_main() -> { color: vec4 } {
   return { vec4(1.0f) }
 }
+
+------------------------------------------------
+// without output initializer list
+
+@input(vertex) {
+  @loc(0) position : vec3,
+  @loc(1) uv : vec2
+}
+
+@output(vertex) {
+  vPos : vec3,
+  uvs : vec2
+}
+
+// output automatically passed to next stage
+@vertex
+fn vertex_main() {
+  return { position, uv }
+}
+
+@output(fragment) {
+  color : vec4
+}
+
+@fragment
+fn fragment_main() {
+  return { vec4(1.0f) }
+}
