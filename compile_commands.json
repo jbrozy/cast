@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/jo/Public/Projects/cast/build",
+  "command": "clang++  -I/opt/homebrew/opt/antlr4-cpp-runtime/include/antlr4-runtime -I/Users/jo/Public/Projects/cast/generated -std=c++17 -arch arm64 -Wall -o CMakeFiles/cast.dir/src/main.cpp.o -c /Users/jo/Public/Projects/cast/src/main.cpp",
+  "file": "/Users/jo/Public/Projects/cast/src/main.cpp",
+  "output": "CMakeFiles/cast.dir/src/main.cpp.o"
+}
+]

@@ -1,0 +1,5 @@
+fn length(float x, float y) -> float {
+    return sqrt(x * x + y * y)
+}
+
+float l = length(1.0, 2.0)

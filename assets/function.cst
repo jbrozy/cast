@@ -1,0 +1,10 @@
+fn a(int b) {
+    int a = 5
+}
+
+fn b() -> float {
+    float b = 10.0 / 2
+    a()
+    int a = 12
+    return b
+}

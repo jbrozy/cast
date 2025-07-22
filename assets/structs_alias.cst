@@ -1,0 +1,4 @@
+@internal struct Vec2 {
+    float   x -> [u, v]
+    float   y -> [s, t]
+}

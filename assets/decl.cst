@@ -1,0 +1,8 @@
+@input(fragment) {
+    int a
+    float b
+}
+
+@output(fragment) {
+    int c
+}
