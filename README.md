@@ -24,11 +24,6 @@ fn (Light) calculateRadiance(dist: float) : vec3 {
     return self.color * self.intensity * attenuation;
 }
 
-// 3. Constructor definition
-fn (Light) () : Light {
-    return Light(vec3(1.0), vec3(1.0), 1.0);
-}
-
 fn main() {
     let myLight = Light(vec3(1.0), vec3(1.0), 1.0);
     
@@ -49,11 +44,6 @@ struct Light {
 vec3 calculateRadiance(Light self, float dist) {
     float attenuation = 1.0 / dist * dist;
     return self.color * self.intensity * attenuation;
-}
-
-// 3. Constructor Definition
-Light light(Light self) {
-    return Light(vec3(1.0), vec3(1.0), 1.0);
 }
 
 void main() {
