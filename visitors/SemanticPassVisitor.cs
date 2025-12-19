@@ -1,0 +1,527 @@
+﻿using Antlr4.Runtime.Tree;
+
+namespace Cast.Visitors;
+
+public class SemanticPassVisitor : ICastVisitor<CastSymbol>
+{
+    public Dictionary<IParseTree, CastSymbol> Nodes { get; } = new();
+    private Scope<CastSymbol> _scope = new();
+    public Scope<CastSymbol> Scope => _scope;
+
+    public SemanticPassVisitor(SymbolPassVisitor visitor)
+    {
+        _scope = visitor.Scope;
+        Nodes = visitor.Nodes;
+    }
+
+    public CastSymbol Visit(IParseTree tree)
+    {
+        return tree.Accept(this);
+    }
+
+    public CastSymbol VisitChildren(IRuleNode node)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitTerminal(ITerminalNode node)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitErrorNode(IErrorNode node)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitUniformBlockDecl(CastParser.UniformBlockDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitUniformVarDecl(CastParser.UniformVarDeclContext context)
+    {
+        var node = Nodes[context];
+        return node;
+    }
+
+    public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
+    {
+        var target = CastSymbol.Void;
+        if (context.typeDecl() != null)
+        {
+            if (context.typeDecl().type == null)
+            {
+                target = Visit(context.value);
+                if (target.ReturnType != null)
+                    target = target.ReturnType;
+
+                if (_scope.Exists(context.typeDecl().variable.Text))
+                    _scope.Assign(context.typeDecl().variable.Text, target);
+                else
+                    _scope.Define(context.typeDecl().variable.Text, target);
+                Nodes[context] = target;
+                return target;
+            }
+
+            var typeName = context.typeDecl().type.Text;
+            target = _scope.Lookup(typeName).Clone();
+            if (target == null) throw new Exception($"Type {typeName} not found");
+
+            if (context.typeDecl().typeSpace() != null)
+            {
+                String name = context.typeDecl().typeSpace().spaceName.Text;
+                target.TypeSpace = _scope.Lookup(name);
+                target.SpaceName = name;
+            }
+        }
+
+        var rhs = Visit(context.value);
+        if (rhs.ReturnType != null) rhs = rhs.ReturnType;
+
+        if (rhs.CastType != target.CastType)
+            throw new Exception($"Unable to assign {rhs.CastType} to variable of type {target.CastType}");
+
+        if (target.CastType == CastType.STRUCT)
+            if (target.StructName != rhs.StructName)
+                throw new Exception($"Unable to assign {rhs.StructName} to variable of type {target.StructName}");
+
+        _scope.Define(context.typeDecl().variable.Text, target);
+        return Nodes[context] = target.Clone();
+    }
+
+    public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
+    {
+        return _scope.Lookup(context.varRef.Text);
+    }
+
+    public CastSymbol VisitAddSub(CastParser.AddSubContext context)
+    {
+        var left = Visit(context.left);
+        var right = Visit(context.right);
+
+        if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
+        {
+            if (left.SpaceName != right.SpaceName)
+                throw new Exception($"Space mismatch: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
+        }
+
+        string opName = context.op.Text == "+" ? "__add__" : "__sub__";
+        var args = new List<CastSymbol> { left, right };
+
+        string targetTypeName = left.IsStruct() 
+            ? left.StructName 
+            : left.CastType.ToString().ToLower();
+
+        CastSymbol typeSymbol = _scope.Lookup(targetTypeName);
+        if (typeSymbol == null)
+        {
+            throw new Exception($"Type definition for '{targetTypeName}' not found.");
+        }
+
+        FunctionKey key = FunctionKey.Of(opName, args);
+        if (!typeSymbol.Functions.TryGetValue(key, out CastSymbol fn))
+        {
+            string leftName = GetReadableName(left);
+            string rightName = GetReadableName(right);
+            throw new Exception($"Operator '{context.op.Text}' ({opName}) not defined for '{leftName}' and '{rightName}'");
+        }
+
+        Nodes[context] = fn.ReturnType;
+        return fn.ReturnType;
+    }
+    
+    private string GetReadableName(CastSymbol sym)
+    {
+        return sym.IsStruct() ? sym.StructName : sym.CastType.ToString().ToLower();
+    }
+    
+    public CastSymbol VisitMemberAccessExpr(CastParser.MemberAccessExprContext context)
+    {
+        var parent = Visit(context.expr);
+        if (parent.CastType != CastType.STRUCT)
+            throw new Exception($"Cannot access Member: '{context.name.Text}' on non-struct type '{parent.CastType}'");
+
+        var memberName = context.name.Text;
+        // if (!parent.Fields.ContainsKey(memberName))
+        //     throw new Exception($"Struct '{parent.StructName}' doesn't contain Field: '{memberName}'");
+
+        CastSymbol structSymbol = _scope.Lookup(parent.StructName);
+        CastSymbol member = structSymbol.Fields[memberName];
+        if (!string.IsNullOrEmpty(parent.SpaceName))
+            if (member.CastType == CastType.STRUCT && string.IsNullOrEmpty(member.SpaceName))
+                member.SpaceName = parent.SpaceName;
+        Nodes[context] = member;
+        return member;
+    }
+
+    public CastSymbol VisitAtomExpr(CastParser.AtomExprContext context)
+    {
+        return Visit(context.atom());
+    }
+    
+
+    public CastSymbol VisitMethodCallExpr(CastParser.MethodCallExprContext context)
+    {
+        var leftExpr = Visit(context.expr);
+        if (leftExpr.CastType == CastType.STRUCT)
+        {
+            var left = _scope.Lookup(leftExpr.StructName);
+            if (left == null) throw new Exception($"No struct with Name {leftExpr.StructName} defined");
+
+            var argList = new List<CastSymbol>();
+            argList.Add(leftExpr);
+            foreach (var arg in context.args.simpleExpression())
+            {
+                var result = Visit(arg);
+                if (result.IsFunction)
+                    argList.Add(result.ReturnType);
+                else
+                    argList.Add(result);
+            }
+
+            var functionKey = FunctionKey.Of(context.name.Text, argList);
+            if (left.Functions.TryGetValue(functionKey, out var fn)) return Nodes[context] = fn.ReturnType;
+            string argTypes = string.Join(", ", argList.Select(a => a.IsStruct() ? a.StructName : a.CastType.ToString()));
+            throw new Exception($"Method '{context.name.Text}' not defined for types: ({argTypes}) on struct '{left.StructName}'");
+        }
+
+        Nodes[context] = leftExpr;
+        return leftExpr;
+    }
+
+    public CastSymbol VisitMultDiv(CastParser.MultDivContext context)
+    {
+        var left = Visit(context.left);
+        var right = Visit(context.right);
+
+        if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
+        {
+            if (left.SpaceName != right.SpaceName)
+                throw new Exception($"Space mismatch: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
+        }
+
+        string opName = context.op.Text == "*" ? "__mul__" : "__div__";
+        var args = new List<CastSymbol> { left, right };
+
+        string targetTypeName = left.IsStruct() 
+            ? left.StructName 
+            : left.CastType.ToString().ToLower();
+
+        CastSymbol typeSymbol = _scope.Lookup(targetTypeName);
+        if (typeSymbol == null)
+        {
+            throw new Exception($"Type definition for '{targetTypeName}' not found.");
+        }
+
+        FunctionKey key = FunctionKey.Of(opName, args);
+        if (!typeSymbol.Functions.TryGetValue(key, out CastSymbol fn))
+        {
+            string leftName = GetReadableName(left);
+            string rightName = GetReadableName(right);
+            throw new Exception($"Operator '{context.op.Text}' ({opName}) not defined for '{leftName}' and '{rightName}'");
+        }
+
+        Nodes[context] = fn.ReturnType;
+        return fn.ReturnType;
+    }
+
+    public CastSymbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
+    {
+        return Visit(context.functionDecl());
+    }
+
+    public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
+    {
+        return Visit(context.simpleExpression());
+    }
+
+    public CastSymbol VisitAssignStmt(CastParser.AssignStmtContext context)
+    {
+        var result = Visit(context.assignment());
+        return Nodes[context] = result;
+    }
+
+    public CastSymbol VisitBlockStmt(CastParser.BlockStmtContext context)
+    {
+        foreach (var statement in context.children) Visit(statement);
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitUniformStmtWrapper(CastParser.UniformStmtWrapperContext context)
+    {
+        return Visit(context.uniformStmt());
+    }
+
+    public CastSymbol VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
+    {
+        return Visit(context.spaceDecl());
+    }
+
+    public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
+    {
+        var rhs = Visit(context.simpleExpression());
+        Nodes[context] = rhs;
+        rhs.IsReturn = true;
+
+        return rhs;
+    }
+
+    public CastSymbol VisitStructDeclStmt(CastParser.StructDeclStmtContext context)
+    {
+        return Visit(context.structDecl());
+    }
+
+    public CastSymbol VisitCallAtom(CastParser.CallAtomContext context)
+    {
+        return Nodes[context] = Visit(context.functionCall());
+    }
+
+    public CastSymbol VisitParenAtom(CastParser.ParenAtomContext context)
+    {
+        return Nodes[context] = Visit(context.simpleExpression());
+    }
+
+    public CastSymbol VisitVarAtom(CastParser.VarAtomContext context)
+    {
+        if (_scope.Lookup(context.varRef.Text) != null)
+        {
+            return Nodes[context] = _scope.Lookup(context.varRef.Text);
+        }
+        throw new Exception($"Compilation  error: {context.varRef.Text} was not found in scope.");
+    }
+
+    public CastSymbol VisitFloatAtom(CastParser.FloatAtomContext context)
+    {
+        if (_scope.Lookup("float") != null)
+        {
+            Nodes[context] = _scope.Lookup("float");
+            return Nodes[context];
+        }
+
+        throw new Exception("Compilation error: float was not found");
+    }
+
+    public CastSymbol VisitIntAtom(CastParser.IntAtomContext context)
+    {
+        if (_scope.Lookup("int") != null)
+        {
+            Nodes[context] = _scope.Lookup("int");
+            return Nodes[context];
+        }
+
+        throw new Exception("Compilation error: int was not found");
+    }
+
+    public CastSymbol VisitProgram(CastParser.ProgramContext context)
+    {
+        foreach (var statementCtx in context.statement()) Visit(statementCtx);
+
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitStatement(CastParser.StatementContext context)
+    {
+        return Visit(context);
+    }
+
+    public CastSymbol VisitPrimitiveDecl(CastParser.PrimitiveDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitInOut(CastParser.InOutContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitImportStmt(CastParser.ImportStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
+    {
+        return Visit(context);
+    }
+
+    public CastSymbol VisitUniformStmt(CastParser.UniformStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitBlock(CastParser.BlockContext context)
+    {
+        foreach (var statementCtx in context.statement()) Visit(statementCtx);
+
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitStructDecl(CastParser.StructDeclContext context)
+    {
+        var result = _scope.Lookup(context.name.Text);
+        Nodes[context] = result;
+        return result;
+    }
+
+    public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
+    {
+        _scope = new Scope<CastSymbol>(_scope);
+        if (context.paramList() != null)
+            if (context.paramList().typeDecl() != null)
+                foreach (var type in context.paramList().typeDecl())
+                {
+                    var result = Visit(type);
+                    _scope.Assign(type.variable.Text, result);
+                }
+
+        String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
+        if (typeFn != null)
+        {
+            _scope.Define("self", _scope.Lookup(typeFn));
+        }
+        
+        Visit(context.block());
+        _scope = _scope.Parent;
+        if (context.functionIdentifier() != null && context.typedFunctionDecl() == null)
+        {
+            Nodes[context] = _scope.Lookup(context.functionIdentifier().functionName.Text);
+        }
+        else
+        {
+            String name = "";
+
+            if (!String.IsNullOrEmpty(context.functionIdentifier()?.functionName?.Text))
+            {
+                name = context.functionIdentifier()?.functionName?.Text;
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                name = typeFn;
+            }
+            
+            var fn = _scope.Lookup(typeFn);
+
+            var paramTypes = new List<CastSymbol>();
+            if (fn.CastType == CastType.STRUCT) paramTypes.Add(fn.Constructor.ReturnType);
+            foreach (var @param in context.paramList().typeDecl())
+            {
+                var typeName = param.type.Text;
+                var t = Types.ResolveType(typeName);
+                paramTypes.Add(t);
+            }
+            
+            var type = string.IsNullOrEmpty(context.returnType?.Text) ? "void" : context.returnType.Text;
+            var returnType = Types.ResolveType(type);
+
+            var key = FunctionKey.Of(name, paramTypes);
+            var function = CastSymbol.Function(typeFn, paramTypes, returnType);
+            function.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+            fn.Functions[key] = function;
+            var c = function.Clone();
+            c.Identifier =  name;
+            Nodes[context] = c;
+            return c;
+        }
+
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitFunctionCall(CastParser.FunctionCallContext context)
+    {
+        var functionName = context.name.Text;
+        var fn = _scope.Lookup(functionName).Clone();
+
+        var args = new List<CastSymbol>();
+        if (fn.CastType == CastType.STRUCT) args.Add(fn);
+
+        if (context.args.simpleExpression() != null)
+            foreach (var arg in context.args.simpleExpression())
+                args.Add(Visit(arg));
+
+        // use typed functions functions
+        if (fn.Functions.Count > 0)
+        {
+            var key = FunctionKey.Of(functionName, args);
+            if (fn.Functions.TryGetValue(key, out var typedFunction))
+            {
+                fn = typedFunction.ReturnType; 
+            }
+            else
+            {
+                throw new Exception($"Function {functionName} does not exist");
+            }
+        }
+
+        if (context.typeSpace() != null)
+        {
+            fn.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text).Clone();
+            fn.SpaceName = context.typeSpace().spaceName.Text;
+        }
+
+        return Nodes[context] = fn;
+    }
+
+    public CastSymbol VisitArgList(CastParser.ArgListContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitParamList(CastParser.ParamListContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitTypeSpace(CastParser.TypeSpaceContext context)
+    {
+        return CastSymbol.Space(context.spaceName.Text);
+    }
+
+    public CastSymbol VisitTypeDecl(CastParser.TypeDeclContext context)
+    {
+        var type = Types.ResolveType(context.type.Text);
+        if (context.typeSpace() != null)
+        {
+            type.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text);
+            type.SpaceName = context.typeSpace().spaceName.Text;
+        }
+        _scope.Define(context.variable.Text, type);
+        Nodes[context] = type;
+        return type;
+    }
+
+    public CastSymbol VisitSpaceDecl(CastParser.SpaceDeclContext context)
+    {
+        return _scope.Lookup(context.spaceName.Text);
+    }
+
+    public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)
+    {
+        var result = Visit(context);
+        Nodes[context] = result;
+        return result;
+    }
+
+    public CastSymbol VisitAtom(CastParser.AtomContext context)
+    {
+        var result = Visit(context);
+        Nodes[context] = result;
+        return result;
+    }
+}

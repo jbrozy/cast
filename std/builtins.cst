@@ -1,0 +1,10 @@
+﻿declare in var vertex_index : int;
+declare in var vertex_index : int;
+
+declare out var clip_position : vec4<Clip>;
+declare out var point_size : float;
+
+declare in var pixel_position : vec4<Screen>;
+declare in var is_front_face : bool;
+
+declare out var pixel_depth : float;

@@ -1,0 +1,15 @@
+﻿declare struct vec2 { x: float, y: float }
+declare struct vec3 { x: float, y: float, z: float }
+declare struct vec4 { x: float, y: float, z: float, w: float }
+
+declare struct ivec2 { x: int, y: int }
+declare struct ivec3 { x: int, y: int, z: int }
+declare struct ivec4 { x: int, y: int, z: int, w: int }
+
+declare struct mat4 { c0: vec4, c1: vec4, c2: vec4, c3: vec4 }
+
+declare struct sampler2D {}
+declare struct sampler3D {}
+declare struct samplerCube {}
+declare struct sampler2DShadow {}
+declare struct sampler2DArray {}

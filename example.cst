@@ -1,0 +1,19 @@
+space Model;
+space World;
+space View;
+space Clip;
+
+uniform {
+    mat4<Model -> World> modelMatrix;
+    mat4<World -> View> viewMatrix;
+    mat4<View -> Clip> projectionMatrix;
+}
+
+in vec3<Model> position;
+in vec3<Model> normal;
+in vec2 uv;
+
+out vec4 fragColor;
+
+fn main() {
+}

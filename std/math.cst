@@ -1,0 +1,73 @@
+﻿declare fn (float) sin() : float;
+declare fn (float) cos() : float;
+declare fn (float) tan() : float;
+
+declare fn (float) asin() : float;
+declare fn (float) acos() : float;
+
+declare fn (float) atan(x: float) : float;
+
+declare fn (float) pow(exponent: float) : float;
+declare fn (float) exp() : float;
+declare fn (float) log() : float;
+declare fn (float) sqrt() : float;
+declare fn (float) inversesqrt() : float;
+
+declare fn (float) abs() : float;
+declare fn (float) sign() : float;
+declare fn (float) floor() : float;
+declare fn (float) ceil() : float;
+declare fn (float) fract() : float;
+
+declare fn (float) mod(divisor: float) : float;
+
+declare fn (float) min(other: float) : float;
+declare fn (float) max(other: float) : float;
+declare fn (float) clamp(min: float, max: float) : float;
+
+declare fn (float) mix(target: float, t: float) : float;
+
+declare fn (float) step(x: float) : float;
+declare fn (float) smoothstep(edge1: float, x: float) : float;
+
+declare fn (vec2) sin() : vec2;
+declare fn (vec2) cos() : vec2;
+declare fn (vec2) tan() : vec2;
+declare fn (vec2) abs() : vec2;
+declare fn (vec2) floor() : vec2;
+declare fn (vec2) ceil() : vec2;
+declare fn (vec2) fract() : vec2;
+declare fn (vec2) sqrt() : vec2;
+declare fn (vec2) inversesqrt() : vec2;
+
+declare fn (vec2) pow(exponent: vec2) : vec2;
+declare fn (vec2) mod(divisor: vec2) : vec2;
+declare fn (vec2) min(other: vec2) : vec2;
+declare fn (vec2) max(other: vec2) : vec2;
+declare fn (vec2) clamp(min: vec2, max: vec2) : vec2;
+declare fn (vec2) mix(target: vec2, t: vec2) : vec2;
+declare fn (vec2) mix(target: vec2, t: float) : vec2;
+
+declare fn (vec3) sin() : vec3;
+declare fn (vec3) cos() : vec3;
+declare fn (vec3) tan() : vec3;
+declare fn (vec3) abs() : vec3;
+declare fn (vec3) floor() : vec3;
+declare fn (vec3) ceil() : vec3;
+declare fn (vec3) fract() : vec3;
+declare fn (vec3) sqrt() : vec3;
+declare fn (vec3) inversesqrt() : vec3;
+
+declare fn (vec3) pow(exponent: vec3) : vec3;
+declare fn (vec3) mod(divisor: vec3) : vec3;
+declare fn (vec3) min(other: vec3) : vec3;
+declare fn (vec3) max(other: vec3) : vec3;
+
+declare fn (vec3) clamp(min: vec3, max: vec3) : vec3;
+declare fn (vec3) clamp(min: float, max: float) : vec3;
+
+declare fn (vec3) mix(target: vec3, t: vec3) : vec3;
+declare fn (vec3) mix(target: vec3, t: float) : vec3;
+
+declare fn (float) __add__(other: float) : float;
+declare fn (float) __sub__(other: float) : float;
