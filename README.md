@@ -46,6 +46,7 @@ Operator Overloading: The language defines core operators (like `+`, `*`) as fun
 📝 Next Steps (Roadmap)
 - [ ] Control Flow: Implement complex logic within the standard library (currently mostly linear return statements).
 - [ ] Array Syntax: Usage of arrays in the standard library (not yet visible in current .cst uploads, but planned in grammar).
+- [ ] Type Swizzling with Annoations `@swizzle`
 
 ## Space Type System
 ```rust
