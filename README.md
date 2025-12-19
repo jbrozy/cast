@@ -9,7 +9,7 @@ Modern Syntax: It utilizes a syntax similar to Rust or TypeScript, using keyword
 
 GLSL Interop: It mirrors standard GLSL functionality, providing built-in support for vector mathematics (dot products, cross products) , texture sampling (texture, textureLod) , and math libraries (sin, pow, mix).
 
-Operator Overloading: The language defines core operators (like +, *) as functions (__add__, __mul__), allowing for explicit definition of vector and scalar interactions.
+Operator Overloading: The language defines core operators (like `+`, `*`) as functions (`__add__`, `__mul__`), allowing for explicit definition of vector and scalar interactions.
 
 ✅ Implemented Features (Current State)
 
