@@ -34,9 +34,26 @@ fn main() {
     // 4. OOP Method Call
     let radiance = myLight.calculateRadiance(dist);
 }
----
+```
 
-## 🏁 Getting Started
+Converting this to GLSL gives:
 
-TBD
+```glsl
+struct Light {
+    vec3 position;
+    vec3 color;
+    float intensity;
+};
+
+vec3 calculateRadiance(Light self, float dist) {
+    float attenuation = 1.0 / dist * dist;
+    return self.color * self.intensity * attenuation;
+}
+
+void main() {
+    Light myLight = Light(vec3(1.0), vec3(1.0), 1.0);
+    float dist = 5.0;
+    vec3 radiance = calculateRadiance(myLight, dist);
+}
+```
 
