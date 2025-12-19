@@ -1,5 +1,40 @@
 # CAST
 
+✅ Implemented Features (Current State)
+🏗 Core Syntax & Structure
+
+- [x] External Declarations: Support for the declare keyword to define external symbols.
+- [x] Struct Definitions: C-style struct definitions (e.g., vec2, mat4, sampler2D).
+- [x] Function Signatures: Typed function declarations using fn (returnType) name(args).
+- [x] Function Implementation: Function bodies with { ... }, return statements, and let assignments.
+- [x] Extension Methods: Method syntax support via self access within functions (e.g., self.x, self.dot(...)).
+
+📐 Type System & Math
+- [x] Primitive Types: Core support for int, float, and bool.
+- [ ] Define Types inside the language itself
+- [x] Vector & Matrix Types: Full support for vec2 through vec4, ivec, and mat4.
+- [x] Constructors: Overloaded constructors (e.g., vec3(vec2, float) or vec3(float, float, float)).
+- [x] Operator Overloading: Mapping standard operators to internal functions (__add__, __mul__, __div__, etc.) .
+- [x] Math Library: Extensive math function support (sin, cos, pow, mix, smoothstep, etc.) for scalars and vectors .
+
+🌌 Coordinate Spaces (Unique Feature)
+
+- [x] Space Declaration: Definition of specific coordinate spaces (Model, World, View, Clip, Screen).
+- [x] Space Typing: Generic-style space syntax for vectors (e.g., vec4<Clip>, vec4<Screen>).
+
+🎨 Graphics & Textures
+
+- [ ] Shader Inputs/Outputs: in and out variable declarations (e.g., vertex_index, pixel_depth).
+- [x] Texture Samplers: Opaque definitions for sampler2D, sampler3D, samplerCube, sampler2DShadow, etc..
+- [x] Texture Lookup: Standard functions for texture sampling (texture, textureLod, fetch, textureProj) .
+
+🧠 Interop & Built-ins
+- [ ] GLSL Mapping: Direct mapping to GLSL built-in variables (e.g., mapping vertex_index to gl_VertexID).
+
+📝 Next Steps (Roadmap)
+- [ ] Control Flow: Implement complex logic within the standard library (currently mostly linear return statements).
+- [ ] Array Syntax: Usage of arrays in the standard library (not yet visible in current .cst uploads, but planned in grammar).
+
 ## Space Type System
 ```rust
 fn main() {
