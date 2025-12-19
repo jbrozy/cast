@@ -4,14 +4,15 @@ program:
 	| importStmt* statement+;
 
 statement
-	: structDecl                    # StructDeclStmt
-    | functionDecl                  # FnDeclStmt
-    | block                         # BlockStmt
-	| uniformStmt                 	# UniformStmtWrapper
-    | assignment ';'                # AssignStmt
-    | spaceDecl ';'                 # SpaceDeclStmt
-    | RETURN simpleExpression ';'   # ReturnStmt    
-    | () simpleExpression ';'       # ExprStmt
+	: IF OPEN_PAR simpleExpression CLOSE_PAR block  # IfStmt
+	| structDecl                    				# StructDeclStmt
+    | functionDecl                  				# FnDeclStmt
+    | block                         				# BlockStmt
+	| uniformStmt                 					# UniformStmtWrapper
+    | assignment ';'                				# AssignStmt
+    | spaceDecl ';'                 				# SpaceDeclStmt
+    | RETURN simpleExpression ';'   				# ReturnStmt    
+    | () simpleExpression ';'     				    # ExprStmt
     ;
 
 primitiveDecl

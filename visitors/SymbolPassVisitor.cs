@@ -176,6 +176,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.functionDecl());
     }
 
+    public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
     {
         return Visit(context.simpleExpression());
@@ -297,9 +302,8 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitStructDecl(CastParser.StructDeclContext context)
     {
         var structName = context.name.Text;
-        if (_scope.Exists(structName))
+        if (_scope.TryGetSymbol(structName, out CastSymbol result))
         {
-            var result = _scope.Lookup(structName);
             Nodes[context] = result;
             return result;
         }
@@ -404,8 +408,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             fn.SpaceName = context.typeSpace()?.spaceName?.Text;
         }
 
-        if (fn.Parameters.Count != context.args.simpleExpression().Length)
-            throw new Exception($"Insufficient amount of Parameters given.");
+        // if (fn.Parameters.Count != context.args.simpleExpression().Length)
+        // {
+        //     Console.WriteLine($"{fn.Parameters.Count}, {context.args.simpleExpression().Length}");
+        //     throw new Exception($"Insufficient amount of Parameters given.");
+        // }
 
         var providedArgs = context.args != null
             ? context.args.simpleExpression()
@@ -445,9 +452,8 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         if (String.IsNullOrEmpty(context.variable?.Text))
             return CastSymbol.Void;
         
-        if (_scope.Exists(context.variable?.Text))
+        if (_scope.TryGetSymbol(context.variable?.Text, out CastSymbol type))
         {
-            var type = _scope.Lookup(context.variable.Text).Clone();
             type.IsUniform = isInUniformBlock;
             return Nodes[context] = type;
         }

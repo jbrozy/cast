@@ -248,6 +248,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.functionDecl());
     }
 
+    public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
     {
         return Visit(context.simpleExpression());

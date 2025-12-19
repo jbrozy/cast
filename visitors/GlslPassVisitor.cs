@@ -105,6 +105,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return Visit(context.functionDecl());
     }
 
+    public string VisitIfStmt(CastParser.IfStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitExprStmt(CastParser.ExprStmtContext context)
     {
         throw new NotImplementedException();

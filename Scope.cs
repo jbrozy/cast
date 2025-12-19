@@ -33,6 +33,18 @@ public class Scope<T>(Scope<T>? parent = null)
         _symbols[symbolName] = value;
     }
 
+    public bool TryGetSymbol(string name, out T? symbol)
+    {
+        if (Exists(name))
+        {
+            symbol = Lookup(name);
+            return true;
+        }
+
+        symbol = null;
+        return false;
+    }
+
     public bool Exists(string symbolName)
     {
         return _symbols.ContainsKey(symbolName);
