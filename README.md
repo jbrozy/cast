@@ -1,126 +1,72 @@
-\# CAST
-
-
-
-!\[Build Status](https://img.shields.io/badge/build-passing-brightgreen) !\[License](https://img.shields.io/badge/license-MIT-blue)
-
-
-
-\*\*Cross-API Shader Transpiler\*\*
-
-
-
-> A high-level DSL for writing shader code that can be emitted as GLSL, HLSL or MSL.
-
-
-
----
-
-
-
-\## 🎓 Bachelor Thesis
-
-
-
-This repository contains the implementation of my Bachelor Thesis in Computer Science at University of Applied Sciences Kiel.  
-
-
-
----
-
-
-
-\## 📋 Table of Contents
-
-
-
-\- \[Disclaimer](#disclaimer)
-
-\- \[Features](#features)
-
-\- \[Methodology](#methodology)
-
-\- \[Getting Started](#getting-started)
-
-&nbsp; - \[Prerequisites](#prerequisites)
-
-&nbsp; - \[Installation](#installation)
-
-&nbsp; - \[Usage](#usage)
-
-\- \[Contributing](#contributing)
-
-\- \[License](#license)
-
-
-
----
-
-
-
-\## ⚠️ Disclaimer
-
-
-
-CAST is an experimental DSL whose goal is to provide a unified, high-level language for shader development.  
-
-\- \*\*Phase 1:\*\* GLSL output
-
-\- \*\*Phase 2:\*\* HLSL output
-
-\- \*\*Phase 3:\*\* MSL output
-
-
-
----
-
-
-
-\## 🚀 Features
-
-
-
-\- Define shaders in a concise, expressive syntax
-
-\- Auto-generate production-ready GLSL (OpenGL/Vulkan)
-
-\- Extendable backends for HLSL (DirectX) and MSL (Metal)
-
-\- Modular architecture for adding new target languages
-
-
-
----
-
-
-
-\## 🛠 Methodology
-
-
-
-1\. \*\*Grammar Definition\*\*
-
-&nbsp;  - All syntax is specified using ANTLR4 grammar files.
-
-2\. \*\*Test-Driven Development\*\*
-
-&nbsp;  - Parser and AST generation are covered by unit tests.
-
-&nbsp;  - Code generation outputs are validated against reference shaders.
-
-3\. \*\*Incremental Backends\*\*
-
-&nbsp;  - Start with GLSL, then add HLSL, and finally MSL.
-
-
-
----
-
-
-
-\## 🏁 Getting Started
-
-
-
-TBD
+# CAST
+
+## Space Type System
+```rust
+fn main() {
+	let a = vec3<Model>(1.0); // Defined in Model-Space
+	let b = vec3<Model>(1.0); // Defined in Model-Space
+	let c = a * b + a; // THIS WORKS
+}
+```
+
+```rust
+fn main() {
+	let a = vec3<Model>(1.0); // Defined in Model-Space
+	let b = vec3<World>(1.0); // Defined in World-Space
+	let c = a * b + a; // THIS DOESN'T WORK
+}
+```
+
+## 🦍 Object-Oriented Design
+
+Cast brings structure to shader programming. You can define custom data types (`structs`), initialize them with **constructors**, and attach behavior using **Go-like receiver syntax**.
+
+### Structs, Constructors & Methods
+
+Instead of loose variables, bundle your data into structs and manipulate them with methods.
+
+```rust
+// 1. Define a Struct
+struct Light { 
+    position: vec3, 
+    color: vec3, 
+    intensity: float 
+}
+
+// 2. Attach a Method (Receiver Syntax)
+// The syntax 'fn (Type)' defines which struct this method belongs to.
+fn (Light) calculateRadiance(dist: float) : vec3 {
+    let attenuation = 1.0 / (dist * dist);
+    // Access struct fields using 'self'
+    return self.color * self.intensity * attenuation;
+}
+
+fn main() {
+    let myLight = Light(vec3(1.0), vec3(1.0), 1.0);
+    
+    let dist = 5.0;
+    let radiance = myLight.calculateRadiance(dist);
+}
+```
+
+Converting this to GLSL gives:
+
+```glsl
+struct Light {
+    vec3 position;
+    vec3 color;
+    float intensity;
+};
+
+vec3 calculateRadiance(Light self, float dist) {
+    float attenuation = 1.0 / dist * dist;
+    return self.color * self.intensity * attenuation;
+}
+
+void main() {
+    Light myLight = Light(vec3(1.0), vec3(1.0), 1.0);
+    float dist = 5.0;
+    vec3 radiance = calculateRadiance(myLight, dist);
+}
+```
 
