@@ -1,6 +1,6 @@
 # CAST
 
-# Space Type System
+## Space Type System
 ```rust
 fn main() {
 	let a = vec3<Model>(1.0); // Defined in Model-Space
