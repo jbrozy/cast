@@ -40,7 +40,9 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         foreach (var uniform in context.uniformTypeDecl())
         {
-            Visit(uniform);
+            CastSymbol uniformTypeSymbol = Visit(uniform);
+            _scope.Define(uniform.name.Text, uniformTypeSymbol);
+            Nodes[uniform] = uniformTypeSymbol;
         }
         return CastSymbol.Void;
     }
@@ -304,7 +306,12 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
         var fields = new Dictionary<string, CastSymbol>();
 
-        foreach (var type in context.typeDecl()) fields.Add(type.variable.Text, Types.ResolveType(type.type.Text));
+        foreach (var type in context.typeDecl())
+        {
+            var t = Types.ResolveType(type.type.Text);
+            Nodes[type] = t;
+            fields.Add(type.variable.Text, t);
+        }
 
         var @struct = CastSymbol.Struct(structName, fields);
         _scope.Define(structName, @struct);
@@ -313,7 +320,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         var members = fields.Values.ToList();
         var ctor = CastSymbol.Function(structName, members, @struct);
         @struct.Constructor = ctor;
+        @struct.ReturnType = @struct;
         @struct.IsDeclaration = context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
+        
+        FunctionKey key = FunctionKey.Of(structName, members);
+        @struct.Functions.Add(key, @struct);
 
         Nodes[context] = @struct;
         return @struct;

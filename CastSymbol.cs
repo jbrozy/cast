@@ -14,11 +14,11 @@ public enum CastType
 
 public class CastSymbol
 {
-    public CastType CastType { get; }
+    public CastType CastType { get; set;  }
     public string StructName { get; set; }
-    public List<CastSymbol> Parameters { get; }
+    public List<CastSymbol> Parameters { get; set; }
     public IDictionary<string, CastSymbol> Fields { get; set; }
-    public IDictionary<FunctionKey, CastSymbol> Functions { get; } = new Dictionary<FunctionKey, CastSymbol>();
+    public IDictionary<FunctionKey, CastSymbol> Functions { get; set;  } = new Dictionary<FunctionKey, CastSymbol>();
     public string ParamName { get; set; }
     public CastSymbol? ReturnType { get; set; }
     public CastSymbol? TypeSpace { get; set; }
@@ -97,9 +97,31 @@ public class CastSymbol
 
         return false;
     }
-
+    
     public CastSymbol Clone()
     {
-        return (CastSymbol)MemberwiseClone();
+        return new CastSymbol(this.CastType)
+        {
+            StructName = this.StructName,
+            SpaceName = this.SpaceName,
+
+            TypeSpace = this.TypeSpace,
+            ReturnType = this.ReturnType,
+            Constructor = this.Constructor,
+
+            Functions = this.Functions,
+            Fields = this.Fields,
+
+            FunctionName = this.FunctionName,
+            Identifier = this.Identifier,
+
+            IsUniform = this.IsUniform,
+            IsReturn = this.IsReturn,
+            IsDeclaration = this.IsDeclaration,
+
+            IsConversionMatrix = this.IsConversionMatrix,
+            ConversionFrom = this.ConversionFrom,
+            ConversionTo = this.ConversionTo
+        };
     }
 }

@@ -31,6 +31,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitUniformBlockDecl(CastParser.UniformBlockDeclContext context)
     {
         StringBuilder uniforms = new StringBuilder();
+        uniforms.Append("\n");
         foreach (var uniform in context.uniformTypeDecl())
         {
             uniforms.Append(Visit(uniform));
@@ -52,7 +53,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         if (node.CastType == CastType.STRUCT) return $"{node.StructName} {name} = {value}";
 
         var type = node.CastType.ToString().ToLower();
-        return $"{type} {name} = {value};";
+        return $"{type} {name} = {value}";
     }
 
     public string VisitVarAssign(CastParser.VarAssignContext context)
@@ -232,7 +233,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         foreach (var typeDeclContext in context.typeDecl())
         {
             builder.Append("    ");
-            builder.Append(Visit(typeDeclContext) + "\n");
+            builder.Append(Visit(typeDeclContext) + ";\n");
         }
 
         builder.Append("};\n");
@@ -260,7 +261,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         }
         foreach (var arg in context.@params.typeDecl()) 
             args.Add($"{arg.type.Text} {arg.variable.Text}");
-        builder.Append($"{type} {functionName}({string.Join(", ", args)})");
+        builder.Append($"{type} {functionName.ToLower()}({string.Join(", ", args)})");
         builder.Append(Visit(context.block()));
         builder.Append("\n");
         return builder.ToString();

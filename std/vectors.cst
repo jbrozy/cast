@@ -17,10 +17,7 @@ declare fn (vec2) distance(other: vec2) : float;
 declare fn (vec2) reflect(normal: vec2) : vec2;
 
 declare fn (vec2) (v: float) : vec2;
-declare fn (vec2) (s: float, t: float) : vec2;
-
 declare fn (vec3) (v: float) : vec3;
-declare fn (vec3) (r: float, g: float, b: float) : vec3;
 declare fn (vec3) (xy: vec2, z: float) : vec3;
 declare fn (vec3) (x: float, yz: vec2) : vec3;
 
@@ -45,3 +42,7 @@ declare fn (vec3) dot(other: vec3) : float;
 declare fn (vec3) cross(other: vec3) : vec3;
 declare fn (vec3) distance(other: vec3) : float;
 declare fn (vec3) reflect(normal: vec3) : vec3;
+
+fn (vec4) toRGB() : vec3 {
+    return vec3(self.x, self.y, self.z);
+}

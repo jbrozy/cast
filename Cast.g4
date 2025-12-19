@@ -111,6 +111,7 @@ RETURN  : 'return';
 LET     : 'let';
 VAR     : 'var';
 FN      : 'fn';
+IF		: 'if';
 
 IN		: 'in';
 OUT		: 'out';

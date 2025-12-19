@@ -52,10 +52,10 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         {
             if (context.typeDecl().type == null)
             {
-                target = Visit(context.value);
+                target = Visit(context.value).Clone();
                 if (target.ReturnType != null)
-                    target = target.ReturnType;
-
+                    target = target.ReturnType.Clone();
+                
                 if (_scope.Exists(context.typeDecl().variable.Text))
                     _scope.Assign(context.typeDecl().variable.Text, target);
                 else
@@ -86,19 +86,21 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             if (target.StructName != rhs.StructName)
                 throw new Exception($"Unable to assign {rhs.StructName} to variable of type {target.StructName}");
 
-        _scope.Define(context.typeDecl().variable.Text, target);
-        return Nodes[context] = target.Clone();
+        var clone = target.Clone();
+        _scope.Assign(context.typeDecl().variable.Text, clone);
+        return Nodes[context] = clone;
     }
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
-        return _scope.Lookup(context.varRef.Text);
+        return _scope.Lookup(context.varRef.Text).Clone();
     }
 
     public CastSymbol VisitAddSub(CastParser.AddSubContext context)
     {
         var left = Visit(context.left);
         var right = Visit(context.right);
+        Console.WriteLine(context.GetText());
 
         if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
         {
@@ -107,7 +109,17 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         }
 
         string opName = context.op.Text == "+" ? "__add__" : "__sub__";
-        var args = new List<CastSymbol> { left, right };
+        var args = new List<CastSymbol> {  };
+        
+        // numeric
+        if (left.IsStruct() && right.IsStruct())
+        {
+            args.AddRange(left, right);
+        }
+        if (!left.IsStruct() && !right.IsStruct())
+        {
+            args.AddRange(right);
+        }
 
         string targetTypeName = left.IsStruct() 
             ? left.StructName 
@@ -143,9 +155,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             throw new Exception($"Cannot access Member: '{context.name.Text}' on non-struct type '{parent.CastType}'");
 
         var memberName = context.name.Text;
-        // if (!parent.Fields.ContainsKey(memberName))
-        //     throw new Exception($"Struct '{parent.StructName}' doesn't contain Field: '{memberName}'");
-
         CastSymbol structSymbol = _scope.Lookup(parent.StructName);
         CastSymbol member = structSymbol.Fields[memberName];
         if (!string.IsNullOrEmpty(parent.SpaceName))
@@ -187,7 +196,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         }
 
         Nodes[context] = leftExpr;
-        return leftExpr;
+        return leftExpr.Clone();
     }
 
     public CastSymbol VisitMultDiv(CastParser.MultDivContext context)
@@ -202,13 +211,21 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         }
 
         string opName = context.op.Text == "*" ? "__mul__" : "__div__";
-        var args = new List<CastSymbol> { left, right };
+        var args = new List<CastSymbol> {};
+        if (left.IsStruct())
+        {
+            args.AddRange( left, right );
+        }
+        else
+        {
+            args.Add( right );
+        }
 
         string targetTypeName = left.IsStruct() 
             ? left.StructName 
             : left.CastType.ToString().ToLower();
 
-        CastSymbol typeSymbol = _scope.Lookup(targetTypeName);
+        CastSymbol typeSymbol = _scope.Lookup(targetTypeName).Clone();
         if (typeSymbol == null)
         {
             throw new Exception($"Type definition for '{targetTypeName}' not found.");
@@ -286,7 +303,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         if (_scope.Lookup(context.varRef.Text) != null)
         {
-            return Nodes[context] = _scope.Lookup(context.varRef.Text);
+            return Nodes[context] = _scope.Lookup(context.varRef.Text).Clone();
         }
         throw new Exception($"Compilation  error: {context.varRef.Text} was not found in scope.");
     }
@@ -295,7 +312,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         if (_scope.Lookup("float") != null)
         {
-            Nodes[context] = _scope.Lookup("float");
+            Nodes[context] = _scope.Lookup("float").Clone();
             return Nodes[context];
         }
 
@@ -306,7 +323,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         if (_scope.Lookup("int") != null)
         {
-            Nodes[context] = _scope.Lookup("int");
+            Nodes[context] = _scope.Lookup("int").Clone();
             return Nodes[context];
         }
 
@@ -322,7 +339,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitStatement(CastParser.StatementContext context)
     {
-        return Visit(context);
+        return Visit(context.GetChild(0));
     }
 
     public CastSymbol VisitPrimitiveDecl(CastParser.PrimitiveDeclContext context)
@@ -342,7 +359,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
     {
-        return Visit(context);
+        return Visit(context.GetChild(0));
     }
 
     public CastSymbol VisitUniformStmt(CastParser.UniformStmtContext context)
@@ -364,7 +381,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitStructDecl(CastParser.StructDeclContext context)
     {
-        var result = _scope.Lookup(context.name.Text);
+        var result = _scope.Lookup(context.name.Text).Clone();
         Nodes[context] = result;
         return result;
     }
@@ -376,14 +393,14 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             if (context.paramList().typeDecl() != null)
                 foreach (var type in context.paramList().typeDecl())
                 {
-                    var result = Visit(type);
+                    var result = Visit(type).Clone();
                     _scope.Assign(type.variable.Text, result);
                 }
 
         String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
         if (typeFn != null)
         {
-            _scope.Define("self", _scope.Lookup(typeFn));
+            _scope.Define("self", _scope.Lookup(typeFn).Clone());
         }
         
         Visit(context.block());
@@ -449,7 +466,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var fn = _scope.Lookup(functionName).Clone();
 
         var args = new List<CastSymbol>();
-        if (fn.CastType == CastType.STRUCT) args.Add(fn);
+        // if (fn.CastType == CastType.STRUCT) args.Add(fn);
 
         if (context.args.simpleExpression() != null)
             foreach (var arg in context.args.simpleExpression())
@@ -475,7 +492,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             fn.SpaceName = context.typeSpace().spaceName.Text;
         }
 
-        return Nodes[context] = fn;
+        return Nodes[context] = fn.Clone();
     }
 
     public CastSymbol VisitArgList(CastParser.ArgListContext context)
@@ -498,7 +515,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var type = Types.ResolveType(context.type.Text);
         if (context.typeSpace() != null)
         {
-            type.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text);
+            type.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text).Clone();
             type.SpaceName = context.typeSpace().spaceName.Text;
         }
         _scope.Define(context.variable.Text, type);
@@ -508,20 +525,20 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitSpaceDecl(CastParser.SpaceDeclContext context)
     {
-        return _scope.Lookup(context.spaceName.Text);
+        return _scope.Lookup(context.spaceName.Text).Clone();
     }
 
     public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)
     {
-        var result = Visit(context);
-        Nodes[context] = result;
-        return result;
+        var result = Visit(context.GetChild(0));
+        Nodes[context] = result.Clone();
+        return Nodes[context];
     }
 
     public CastSymbol VisitAtom(CastParser.AtomContext context)
     {
-        var result = Visit(context);
-        Nodes[context] = result;
-        return result;
+        var result = Visit(context.GetChild(0));
+        Nodes[context] = result.Clone();
+        return Nodes[context];
     }
 }

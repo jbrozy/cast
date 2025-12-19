@@ -1,11 +1,3 @@
-﻿uniform {
-	txt : sampler2D,
-	txt2 : sampler2D,
-	txt1 : sampler2D
-}
-
-fn main() {
-	let a = vec3(1.0);
-	let b = vec2(1.0);
-	let c = a.pow(vec3(1.0));
+﻿fn main() {
+	let c = 1 + 1.0;
 }
