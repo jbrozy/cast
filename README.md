@@ -12,6 +12,7 @@ GLSL Interop: It mirrors standard GLSL functionality, providing built-in support
 Operator Overloading: The language defines core operators (like +, *) as functions (__add__, __mul__), allowing for explicit definition of vector and scalar interactions.
 
 ✅ Implemented Features (Current State)
+
 🏗 Core Syntax & Structure
 
 - [x] External Declarations: Support for the declare keyword to define external symbols.
