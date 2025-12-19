@@ -1,61 +1,39 @@
 # CAST
 
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
+## 🦍 Object-Oriented Design
 
-**Cross-API Shader Transpiler**
+Cast brings structure to shader programming. You can define custom data types (`structs`), initialize them with **constructors**, and attach behavior using **Go-like receiver syntax**.
 
-> A high-level DSL for writing shader code that can be emitted as GLSL, HLSL or MSL.
+### Structs, Constructors & Methods
 
----
+Instead of loose variables, bundle your data into structs and manipulate them with methods.
 
-## 🎓 Bachelor Thesis
+```rust
+// 1. Define a Struct
+struct Light { 
+    position: vec3, 
+    color: vec3, 
+    intensity: float 
+}
 
-This repository contains the implementation of my Bachelor Thesis in Computer Science at University of Applied Sciences Kiel.  
+// 2. Attach a Method (Receiver Syntax)
+// The syntax 'fn (Type)' defines which struct this method belongs to.
+fn (Light) calculateRadiance(dist: float) : vec3 {
+    let attenuation = 1.0 / (dist * dist);
+    // Access struct fields using 'self'
+    return self.color * self.intensity * attenuation;
+}
 
----
-
-## 📋 Table of Contents
-
-- [Disclaimer](#disclaimer)
-- [Features](#features)
-- [Methodology](#methodology)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## ⚠️ Disclaimer
-
-CAST is an experimental DSL whose goal is to provide a unified, high-level language for shader development.  
-- **Phase 1:** GLSL output
-- **Phase 2:** HLSL output
-- **Phase 3:** MSL output
-
----
-
-## 🚀 Features
-
-- Define shaders in a concise, expressive syntax
-- Auto-generate production-ready GLSL (OpenGL/Vulkan)
-- Extendable backends for HLSL (DirectX) and MSL (Metal)
-- Modular architecture for adding new target languages
-
----
-
-## 🛠 Methodology
-
-1. **Grammar Definition**
-   - All syntax is specified using ANTLR4 grammar files.
-2. **Test-Driven Development**
-   - Parser and AST generation are covered by unit tests.
-   - Code generation outputs are validated against reference shaders.
-3. **Incremental Backends**
-   - Start with GLSL, then add HLSL, and finally MSL.
-
+fn main() {
+    // 3. Constructor Usage
+    // Structs are initialized using their name as a constructor
+    let myLight = Light(vec3(1.0), vec3(1.0), 1.0);
+    
+    let dist = 5.0;
+    
+    // 4. OOP Method Call
+    let radiance = myLight.calculateRadiance(dist);
+}
 ---
 
 ## 🏁 Getting Started
