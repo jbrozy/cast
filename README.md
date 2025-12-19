@@ -1,5 +1,16 @@
 # CAST
 
+Cast is a strongly-typed, modular shading language designed as a modern abstraction over GLSL (OpenGL Shading Language). It focuses on type safety and structural clarity for graphics programming.
+
+## Key characteristics include:
+Coordinate Space Safety: Unlike standard GLSL, Cast enforces coordinate systems via the type system. You can define specific spaces (e.g., declare space World;) and tag vectors with them (e.g., vec4<Clip>, vec4<Screen>). This prevents logical errors, such as accidentally mixing World-space and Screen-space coordinates.
+
+Modern Syntax: It utilizes a syntax similar to Rust or TypeScript, using keywords like fn for functions , let for variable binding (implied by the grammar's assignment rules), and struct for data structures.
+
+GLSL Interop: It mirrors standard GLSL functionality, providing built-in support for vector mathematics (dot products, cross products) , texture sampling (texture, textureLod) , and math libraries (sin, pow, mix).
+
+Operator Overloading: The language defines core operators (like +, *) as functions (__add__, __mul__), allowing for explicit definition of vector and scalar interactions.
+
 ✅ Implemented Features (Current State)
 🏗 Core Syntax & Structure
 
