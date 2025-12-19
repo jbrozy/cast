@@ -1,5 +1,22 @@
 # CAST
 
+# Space Type System
+```rust
+fn main() {
+	let a = vec3<Model>(1.0); // Defined in Model-Space
+	let b = vec3<Model>(1.0); // Defined in Model-Space
+	let c = a * b + a; // THIS WORKS
+}
+```
+
+```rust
+fn main() {
+	let a = vec3<Model>(1.0); // Defined in Model-Space
+	let b = vec3<World>(1.0); // Defined in World-Space
+	let c = a * b + a; // THIS DOESN'T WORK
+}
+```
+
 ## 🦍 Object-Oriented Design
 
 Cast brings structure to shader programming. You can define custom data types (`structs`), initialize them with **constructors**, and attach behavior using **Go-like receiver syntax**.
