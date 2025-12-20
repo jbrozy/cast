@@ -100,7 +100,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         var left = Visit(context.left);
         var right = Visit(context.right);
-        Console.WriteLine(context.GetText());
 
         if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
         {
@@ -111,7 +110,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         string opName = context.op.Text == "+" ? "__add__" : "__sub__";
         var args = new List<CastSymbol> {  };
         
-        // numeric
         if (left.IsStruct())
         {
             args.AddRange( left, right );

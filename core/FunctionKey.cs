@@ -32,7 +32,12 @@ public class FunctionKey
         hash.Add(Name);
         if (Types != null)
             foreach (var type in Types)
+            {
                 hash.Add(type.CastType.ToString());
+                // if this is set, I think we have to implement function overrides for vecN<A> * vecN<A> aswell
+                // should we maybe do this? this will require a lot more default implementations...
+                // if(!string.IsNullOrEmpty(type.SpaceName)) hash.Add(type.SpaceName);
+            }
 
         return hash.ToHashCode();
     }

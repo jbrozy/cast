@@ -399,7 +399,12 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitFunctionCall(CastParser.FunctionCallContext context)
     {
         var functionName = context.name.Text;
+        Console.WriteLine(functionName);
         var fn = _scope.Lookup(functionName);
+        if (fn == null)
+        {
+            throw new Exception($"Function {functionName} could not be found");
+        }
         if (fn.CastType == CastType.STRUCT) fn = fn.Constructor;
 
         if (context.typeSpace() != null)

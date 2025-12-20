@@ -40,7 +40,6 @@ class Program
             return;
         }
 
-        Console.WriteLine(file);
         String sourceFileContent = File.ReadAllText(file);
         StringBuilder sourceBuilder = new StringBuilder();
         sourceBuilder.Append(std);
@@ -74,6 +73,7 @@ class Program
         } catch (Exception e)
         {
             Console.WriteLine($"Error: {e.Message}");
+            Console.WriteLine($"Error: {e.StackTrace}");
         }
     }
 }
