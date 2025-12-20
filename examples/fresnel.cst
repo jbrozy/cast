@@ -5,6 +5,7 @@ fn (float) fresnelSchlick(other: vec3) : vec3 {
 }
 
 fn main() {
-	let a : vec3 = vec3(1.0);
-	let b = a.saturate();
+	let a : float = 1.0;
+	let b = vec3(0.67);
+	let b = a.fresnelSchlick(b);
 }
