@@ -48,6 +48,7 @@ Operator Overloading: The language defines core operators (like `+`, `*`) as fun
 - [ ] Array Syntax: Usage of arrays in the standard library (not yet visible in current .cst uploads, but planned in grammar).
 - [ ] Type Swizzling with Annoations `@swizzle`
 - [ ] Remove Backend-Implementation of primitive types (`int`, `float`, etc...) and define them direclty in the language itself.
+- [ ] SPIR-V Target
 
 ## Space Type System
 ```rust
