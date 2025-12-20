@@ -248,6 +248,17 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
     {
+        _scope = new Scope<CastSymbol>(_scope);
+        try
+        {
+            Visit(context.simpleExpression());
+            Visit(context.block());
+        }
+        finally
+        {
+            _scope = _scope.Parent;
+        }
+        
         return CastSymbol.Void;
     }
 
