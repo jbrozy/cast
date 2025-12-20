@@ -112,13 +112,13 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var args = new List<CastSymbol> {  };
         
         // numeric
-        if (left.IsStruct() && right.IsStruct())
+        if (left.IsStruct())
         {
-            args.AddRange(left, right);
+            args.AddRange( left, right );
         }
-        if (!left.IsStruct() && !right.IsStruct())
+        else
         {
-            args.AddRange(right);
+            args.Add( right );
         }
 
         string targetTypeName = left.IsStruct() 
