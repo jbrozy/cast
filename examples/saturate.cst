@@ -1,0 +1,12 @@
+﻿fn (float) saturate() : float {
+    return self.clamp(0.0, 1.0);
+}
+
+fn (vec3) saturate() : vec3 {
+    return vec3(self.x.saturate(), self.y.saturate(), self.z.saturate());
+}
+
+fn main() {
+    let a = vec3(1.0);
+    let b = a.saturate();
+}

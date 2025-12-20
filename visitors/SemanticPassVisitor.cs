@@ -87,7 +87,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
                 throw new Exception($"Unable to assign {rhs.StructName} to variable of type {target.StructName}");
 
         var clone = target.Clone();
-        _scope.Assign(context.typeDecl().variable.Text, clone);
+        _scope.Define(context.typeDecl().variable.Text, clone);
         return Nodes[context] = clone;
     }
 
