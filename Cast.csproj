@@ -14,9 +14,6 @@
         <None Update="Cast.g4">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Update="example.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         <None Remove="Test\**" />
     </ItemGroup>
 
