@@ -1,53 +1,79 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+﻿using System.Reflection;
 using System.Text;
 using Antlr4.Runtime;
 using Cast;
 using Cast.Visitors;
+using Cocona;
 
-void printGlsl(string source)
+class Program
 {
-    var inputStream = new AntlrInputStream(source);
-    var castLexer = new CastLexer(inputStream);
-    var tokenStream = new CommonTokenStream(castLexer);
-    var parser = new CastParser(tokenStream);
+    private static String[] std = new[] { "types", "vectors", "spaces", "math" };
+    static void Main(string[] args)
+    {
+        var builder = CoconaApp.CreateBuilder(args);
+        var app = builder.Build();
 
-    var program = parser.program();
+        app.AddCommand("compile", (string file, string? output) => Compile(file, output));
+        app.Run();
+    }
 
-    var symbolPassVisitor = new SymbolPassVisitor();
-    symbolPassVisitor.Visit(program);
+    static String getStd()
+    {
+        StringBuilder builder = new StringBuilder();
+        foreach (var file in std)
+        {
+            String path = "std/" + file + ".cst";
+            String content = File.ReadAllText(path);
+            builder.Append(content);
+            builder.Append("\n");
+        }
+        builder.Append("\n");
+        return builder.ToString();
+    }
 
-    var semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
-    semanticPassVisitor.Visit(program);
+    static void Compile(String file, String? output)
+    {
+        String std =  getStd();
+        if (!File.Exists(file))
+        {
+            Console.WriteLine($"File {file} not found");
+            return;
+        }
 
-    var glslVisitor = new GlslPassVisitor(semanticPassVisitor);
-    Console.WriteLine(glslVisitor.Visit(program));
+        Console.WriteLine(file);
+        String sourceFileContent = File.ReadAllText(file);
+        StringBuilder sourceBuilder = new StringBuilder();
+        sourceBuilder.Append(std);
+        sourceBuilder.Append(sourceFileContent);
+        
+        String source = sourceBuilder.ToString();
+        AntlrInputStream  inputStream = new AntlrInputStream(source);
+        CastLexer  lexer = new CastLexer(inputStream);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        CastParser  parser = new CastParser(tokens);
+
+        try
+        {
+            CastParser.ProgramContext context = parser.program();
+            SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
+            symbolPassVisitor.Visit(context);
+        
+            SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
+            semanticPassVisitor.Visit(context);
+        
+            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
+            String result = glslPassVisitor.Visit(context);
+
+            String outFileName = file.Replace(".cst", ".glsl");
+            if (output != null)
+            {
+                outFileName = output;
+            }
+        
+            File.WriteAllText(outFileName, result);
+        } catch (Exception e)
+        {
+            Console.WriteLine($"Error: {e.Message}");
+        }
+    }
 }
-
-Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-
-var stdDir = AppDomain.CurrentDomain.BaseDirectory + "std";
-var includeOrder = new[] { "spaces", "types", "vectors", "color", "texture", "math" };
-StringBuilder std = new  StringBuilder();
-foreach (var stdInclude in includeOrder)
-{
-    std.Append("\n");
-    string p = File.ReadAllText(Path.Combine(stdDir, stdInclude + ".cst"));
-    std.Append(p);
-    std.Append("\n");
-    var inputStream = new AntlrInputStream(std.ToString());
-    var castLexer = new CastLexer(inputStream);
-    var tokenStream = new CommonTokenStream(castLexer);
-    var parser = new CastParser(tokenStream);
-
-    var program = parser.program();
-
-    var symbolPassVisitor = new SymbolPassVisitor();
-    symbolPassVisitor.Visit(program);
-
-    var semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
-    semanticPassVisitor.Visit(program);
-}
-
-string combinedSource = std + "\n" + File.ReadAllText("arithmetic.cst");
-printGlsl(combinedSource);

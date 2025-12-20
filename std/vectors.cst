@@ -42,7 +42,3 @@ declare fn (vec3) dot(other: vec3) : float;
 declare fn (vec3) cross(other: vec3) : vec3;
 declare fn (vec3) distance(other: vec3) : float;
 declare fn (vec3) reflect(normal: vec3) : vec3;
-
-fn (vec4) toRGB() : vec3 {
-    return vec3(self.x, self.y, self.z);
-}

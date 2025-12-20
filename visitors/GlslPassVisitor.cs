@@ -173,6 +173,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitProgram(CastParser.ProgramContext context)
     {
         var builder = new StringBuilder();
+        builder.Append($"#version 330\n");
         foreach (var statementContext in context.statement()) builder.Append(Visit(statementContext));
 
         return builder.ToString();

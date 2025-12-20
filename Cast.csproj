@@ -5,7 +5,9 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PublishSingleFile>true</PublishSingleFile>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <AssemblyName>castc</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,47 +30,12 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
+        <PackageReference Include="Cocona" Version="2.2.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Remove="cast\arithmetic.cst" />
-        <Content Update="cast\functions.cst">
+        <Content Include="std\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\builtins.cst" />
-        <Content Include="std\builtins.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\math.cst" />
-        <Content Include="std\math.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\spaces.cst" />
-        <Content Include="std\spaces.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\types.cst" />
-        <Content Include="std\types.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\vectors.cst" />
-        <Content Include="std\vectors.cst">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <Content Update="arithmetic.cst">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <None Remove="arithmetic.cst" />
-        <Content Include="arithmetic.cst">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\primitives.cst" />
-        <Content Include="std\primitives.cst">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </Content>
-        <None Remove="std\texture.cst" />
-        <Content Include="std\texture.cst">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
 
