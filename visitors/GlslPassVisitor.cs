@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Runtime.InteropServices.JavaScript;
+using System.Text;
 using Antlr4.Runtime.Tree;
 
 namespace Cast.Visitors;
@@ -7,6 +8,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 {
     private Scope<CastSymbol> _scope = semanticPassVisitor.Scope;
     private IDictionary<IParseTree, CastSymbol> Nodes = semanticPassVisitor.Nodes;
+    private static int indent = 0;
 
     public string Visit(IParseTree tree)
     {
@@ -107,7 +109,12 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitIfStmt(CastParser.IfStmtContext context)
     {
-        throw new NotImplementedException();
+        StringBuilder ifStmt = new StringBuilder();
+        ifStmt.Append("if (");
+        ifStmt.Append(Visit(context.simpleExpression()));
+        ifStmt.Append(")");
+        ifStmt.Append(Visit(context.block()));
+        return ifStmt.ToString();
     }
 
     public string VisitExprStmt(CastParser.ExprStmtContext context)
@@ -218,13 +225,17 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     {
         var builder = new StringBuilder();
         builder.Append(" {\n");
+
+        indent += 1;
+        String indentLevel = new string('\t', int.Max(0, indent));
         foreach (var statementContext in context.statement())
         {
-            builder.Append("    ");
-            builder.Append(Visit(statementContext) + "\n");
+            builder.Append(indentLevel + Visit(statementContext) + "\n");
         }
 
-        builder.Append("}");
+        indent -= 1;
+        indentLevel = new string('\t', int.Max(0, indent));
+        builder.Append(indentLevel + "}");
         return builder.ToString();
     }
 
@@ -236,13 +247,15 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         builder.Append("\n");
         builder.Append($"struct {context.name.Text}");
         builder.Append(" {\n");
+        indent += 1;
+        String indentLevel = new string('\t', int.Max(0, indent));
         foreach (var typeDeclContext in context.typeDecl())
         {
-            builder.Append("    ");
-            builder.Append(Visit(typeDeclContext) + ";\n");
+            builder.Append(indentLevel + Visit(typeDeclContext) + ";\n");
         }
-
-        builder.Append("};\n");
+        indent -= 1;
+        indentLevel = new string('\t', int.Max(0, indent));
+        builder.Append(indentLevel + "};\n");
         return builder.ToString();
     }
 

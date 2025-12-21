@@ -178,7 +178,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
     {
-        throw new NotImplementedException();
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
