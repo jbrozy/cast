@@ -56,29 +56,35 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return $"uniform {context.uniformTypeDecl().type.Text} {context.uniformTypeDecl().name};\n";
     }
 
-    public string VisitVarDecl(CastParser.VarDeclContext context)
-    {
-        return "";
-    }
+    // public string VisitVarDecl(CastParser.VarDeclContext context)
+    // {
+    //     return "";
+    // }
 
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        var name = context.typeDecl().variable.Text;
-        var value = Visit(context.value);
-
-        var node = Nodes[context];
+        string name = context.typeDecl().variable.Text;
+        CastSymbol node = Nodes[context];
         if (node.IsDeclaration)
             return "";
-        
-        if (node.CastType == CastType.STRUCT) return $"{node.StructName} {name} = {value}";
 
-        var type = node.CastType.ToString().ToLower();
-        return $"{type} {name} = {value}";
+        string type = node.CastType.ToString().ToLower();
+        if (node.IsStruct())
+        {
+            type = node.StructName;
+        }
+        
+        if (context.value != null)
+        {
+            string eval = Visit(context.value);
+            return $"{type} {name} = {eval}";
+        }
+        
+        return $"{type} {name}";
     }
 
     public string VisitVarAssign(CastParser.VarAssignContext context)
     {
-        var node = Nodes[context];
         var name = context.varRef.Text;
         var value = Visit(context.value);
         return $"{name} = {value};";

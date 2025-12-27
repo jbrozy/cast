@@ -7,23 +7,26 @@ using Cocona;
 
 class Program
 {
-    private static String[] std = new[] { "types", "vectors", "spaces", "math", "opengl" };
+    private static string[] std = new[] { "types", "vectors", "spaces", "math", "opengl" };
     static void Main(string[] args)
     {
         var builder = CoconaApp.CreateBuilder(args);
         var app = builder.Build();
 
-        app.AddCommand("compile", (string file, string? output) => Compile(file, output));
+        app.AddCommand("compile", (string path, string? output) => {
+            if (Directory.Exists(path)) CompileFolder(path, output);
+            if (File.Exists(path)) Compile(path, output);
+        });
         app.Run();
     }
 
-    static String getStd()
+    static string getStd()
     {
         StringBuilder builder = new StringBuilder();
         foreach (var file in std)
         {
-            String path = "std/" + file + ".cst";
-            String content = File.ReadAllText(path);
+            string path = "std/" + file + ".cst";
+            string content = File.ReadAllText(path);
             builder.Append(content);
             builder.Append("\n");
         }
@@ -31,21 +34,29 @@ class Program
         return builder.ToString();
     }
 
-    static void Compile(String file, String? output)
+    static void CompileFolder(string folder, string output)
     {
-        String std =  getStd();
+        List<string> files = Directory.GetFiles(folder, "*.cst").ToList();
+        foreach (string file in files) {
+            Compile(file, null);
+        }
+    }
+
+    static void Compile(string file, string? output)
+    {
+        string std =  getStd();
         if (!File.Exists(file))
         {
             Console.WriteLine($"File {file} not found");
             return;
         }
 
-        String sourceFileContent = File.ReadAllText(file);
+        string sourceFileContent = File.ReadAllText(file);
         StringBuilder sourceBuilder = new StringBuilder();
         sourceBuilder.Append(std);
         sourceBuilder.Append(sourceFileContent);
-        
-        String source = sourceBuilder.ToString();
+
+        string source = sourceBuilder.ToString();
         AntlrInputStream  inputStream = new AntlrInputStream(source);
         CastLexer  lexer = new CastLexer(inputStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -61,9 +72,9 @@ class Program
             semanticPassVisitor.Visit(context);
         
             GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
-            String result = glslPassVisitor.Visit(context);
+            string result = glslPassVisitor.Visit(context);
 
-            String outFileName = file.Replace(".cst", ".glsl");
+            string outFileName = file.Replace(".cst", ".glsl");
             if (output != null)
             {
                 outFileName = output;

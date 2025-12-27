@@ -83,11 +83,3 @@ declare fn (float) __div__(other: int) : float;
 declare fn (float) __mul__(other: int) : float;
 declare fn (float) __add__(other: int) : float;
 declare fn (float) __sub__(other: int) : float;
-
-fn (float) saturate() : float {
-    return self.clamp(0.0, 1.0);
-}
-
-fn (vec3) saturate() : vec3 {
-    return vec3(self.x.saturate(), self.y.saturate(), self.z.saturate());
-}

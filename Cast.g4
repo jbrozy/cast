@@ -27,9 +27,8 @@ importStmt
     ;
 	
 assignment
-    : DECLARE? LET typeDecl      					 # VarDecl
-    | LET typeDecl EQUAL value=simpleExpression      # VarDeclAssign
-    | varRef=ID EQUAL value=simpleExpression         # VarAssign
+    : DECLARE? LET typeDecl EQUAL value=simpleExpression    # VarDeclAssign
+    | varRef=ID EQUAL value=simpleExpression         		# VarAssign
     ;
     
 inStmt 

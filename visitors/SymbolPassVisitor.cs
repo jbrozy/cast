@@ -60,68 +60,71 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Nodes[context] = typeSymbol;
     }
 
-    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
-    {
-        String name = context.typeDecl().variable.Text;
-        CastSymbol symbol = Types.ResolveType(name);
+    // public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    // {
+    //     String name = context.typeDecl().variable.Text;
+    //     CastSymbol symbol = Types.ResolveType(name);
 
-        if (context.typeDecl().typeSpace()?.spaceName != null)
-        {
-            CastSymbol space = _scope.Lookup(context.typeDecl().typeSpace().spaceName.Text);
-            if (space == null)
-                throw new Exception($"Space not found '{context.typeDecl().typeSpace().spaceName.Text}'");
-            space = space.Clone();
-            symbol.TypeSpace = space;
-            symbol.SpaceName = context.typeDecl().typeSpace().spaceName.Text;
-        }
+    //     if (context.typeDecl().typeSpace()?.spaceName != null)
+    //     {
+    //         CastSymbol space = _scope.Lookup(context.typeDecl().typeSpace().spaceName.Text);
+    //         if (space == null)
+    //             throw new Exception($"Space not found '{context.typeDecl().typeSpace().spaceName.Text}'");
+    //         space = space.Clone();
+    //         symbol.TypeSpace = space;
+    //         symbol.SpaceName = context.typeDecl().typeSpace().spaceName.Text;
+    //     }
 
-        symbol.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
-        
-        _scope.Define(name, symbol);
-        return symbol;
-    }
+    //     symbol.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+    //     
+    //     _scope.Define(name, symbol);
+    //     return symbol;
+    // }
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        var varName = context.typeDecl().variable.Text;
-        var @type = "";
-        var typeSpace = "";
+        CastSymbol lhs = CastSymbol.Void;
+        CastSymbol rhs = CastSymbol.Void;
 
-        if (context.typeDecl().typeSpace() != null)
+        string varName = context.typeDecl().variable.Text;
+
+        // infer on lhs
+        if (context.typeDecl()?.type != null)
         {
-            typeSpace = context.typeDecl().typeSpace().spaceName.Text;
-        }
-
-        if (context.typeDecl() != null && context.typeDecl().type != null)
-            if (!string.IsNullOrEmpty(context.typeDecl().type.Text))
+            lhs = Visit(context.typeDecl());
+            if (context.typeDecl().typeSpace()?.spaceName != null)
             {
-                @type = context.typeDecl().type.Text;
-                if (context.typeDecl().typeSpace() != null) typeSpace = context.typeDecl().typeSpace().spaceName.Text;
-            }
+                string spaceName = context.typeDecl().typeSpace()?.spaceName.Text;
+                if (!_scope.TryGetSymbol(spaceName, out CastSymbol space))
+                {
+                    throw new Exception($"Space '{spaceName}' not found");
+                }
 
-        CastSymbol? typeSymbol = null;
-        if (!string.IsNullOrEmpty(@type))
-        {
-            typeSymbol = Types.ResolveType(@type);
-            if (!string.IsNullOrEmpty(@typeSpace))
-            {
-                typeSymbol.TypeSpace = _scope.Lookup(@typeSpace);
-                typeSymbol.SpaceName = typeSymbol.TypeSpace.SpaceName;
+                lhs.SpaceName = spaceName;
+                lhs.TypeSpace = space;
             }
         }
-        else
+
+        if (context.value != null)
         {
-            typeSymbol = Visit(context.simpleExpression());
+            rhs = Visit(context.simpleExpression());
+
+            if (lhs.CastType != rhs.CastType)
+            {
+                throw new Exception($"Incompatible types, left is '{lhs.CastType}' and right was '{rhs.CastType}'");
+            }
+            
+            if (lhs.StructName != rhs.StructName)
+            {
+                throw new Exception($"Incompatible types, left is '{lhs.StructName}' and right was '{rhs.StructName}'");
+            }
         }
 
-        if (context.typeDecl() == null)
-        {
-            typeSymbol = Visit(context.simpleExpression());
-        }
-
-        _scope.Define(varName, typeSymbol);
-
-        return typeSymbol;
+        lhs = lhs.Clone();
+        Nodes[context] = lhs;
+        _scope.Define(varName, lhs);
+        
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
@@ -570,7 +573,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         
         var resolveType = Types.ResolveType(context.type.Text);
         resolveType.IsUniform = isInUniformBlock;
-        _scope.Define(context.variable.Text, resolveType);
+        // _scope.Define(context.variable.Text, resolveType);
         Nodes[context] = resolveType;
         return resolveType;
     }

@@ -50,56 +50,53 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return node;
     }
 
-    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
-    {
-        return CastSymbol.Void;
-    }
+    // public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    // {
+    //     return CastSymbol.Void;
+    // }
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        var target = CastSymbol.Void;
-        if (context.typeDecl() != null)
+        String variableName = context.typeDecl().variable.Text;
+        CastSymbol lhs = CastSymbol.Void;
+        CastSymbol rhs = CastSymbol.Void;
+
+        // type based on lhs
+        if (context.typeDecl()?.type != null)
         {
-            if (context.typeDecl().type == null)
+            lhs = Visit(context.typeDecl());
+        }
+        if (context.value != null)
+        {
+            // infer type based on rhs
+            rhs = Visit(context.simpleExpression()).Clone();
+        }
+
+        if (rhs.CastType != CastType.VOID)
+        {
+            if (lhs.StructName != rhs.StructName)
             {
-                target = Visit(context.value).Clone();
-                if (target.ReturnType != null)
-                    target = target.ReturnType.Clone();
-                
-                if (_scope.Exists(context.typeDecl().variable.Text))
-                    _scope.Assign(context.typeDecl().variable.Text, target);
-                else
-                    _scope.Define(context.typeDecl().variable.Text, target);
-                Nodes[context] = target;
-                return target;
+                throw new Exception($"Incompatible types:  '{lhs.StructName}' and '{rhs.StructName}'");
             }
 
-            var typeName = context.typeDecl().type.Text;
-            target = _scope.Lookup(typeName);
-            if (target == null) throw new Exception($"Type {typeName} not found");
-
-            target = target.Clone();
-            if (context.typeDecl().typeSpace() != null)
+            if (lhs.SpaceName != rhs.SpaceName)
             {
-                string name = context.typeDecl().typeSpace().spaceName.Text;
-                target.TypeSpace = _scope.Lookup(name);
-                target.SpaceName = name;
+                throw new Exception($"Incompatible spaces: '{lhs.SpaceName}' and '{rhs.SpaceName}'");
             }
         }
 
-        var rhs = Visit(context.value);
-        if (rhs.ReturnType != null) rhs = rhs.ReturnType;
+        if (_scope.Exists(variableName))
+        {
+            _scope.Assign(variableName, lhs);
+        }
+        else
+        {
+            _scope.Define(variableName, lhs);
+        }
 
-        if (rhs.CastType != target.CastType)
-            throw new Exception($"Unable to assign {rhs.CastType} to variable of type {target.CastType}");
-
-        if (target.CastType == CastType.STRUCT)
-            if (target.StructName != rhs.StructName)
-                throw new Exception($"Unable to assign {rhs.StructName} to variable of type {target.StructName}");
-
-        var clone = target.Clone();
-        _scope.Define(context.typeDecl().variable.Text, clone);
-        return Nodes[context] = clone;
+        lhs.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+        Nodes[context] = lhs;
+        return lhs;
     }
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
@@ -109,13 +106,16 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (!_scope.TryGetSymbol(varRef, out CastSymbol? lhs))
         {
-            throw new  Exception($"Variable '{varRef}' not found");
+            lhs = rhs.Clone();
+            // throw new  Exception($"Variable '{varRef}' not found");
         }
 
         if (lhs?.CastType != rhs.CastType)
         {
             throw new  Exception($"Incompatible Types, left is '{lhs.CastType}' and right was '{rhs.CastType}'.");
         }
+
+        rhs = rhs.Clone();
 
         // assign space inheritance from left to right
         if (!String.IsNullOrEmpty(lhs.SpaceName) && String.IsNullOrEmpty(rhs.SpaceName))
@@ -131,6 +131,15 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             {
                 throw new Exception($"Incompatible space left: '{lhs.SpaceName}' and right: '{rhs.SpaceName}'");
             }
+        }
+
+        if (!_scope.Exists(varRef))
+        {
+            _scope.Define(varRef, rhs);
+        }
+        else
+        {
+            _scope.Assign(varRef, rhs);
         }
         
         Nodes[context] = rhs;
@@ -390,6 +399,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         {
             return Nodes[context] = _scope.Lookup(context.varRef.Text).Clone();
         }
+        
         throw new Exception($"Compilation  error: {context.varRef.Text} was not found in scope.");
     }
 
@@ -495,7 +505,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
                 foreach (var type in context.paramList().typeDecl())
                 {
                     var result = Visit(type).Clone();
-                    _scope.Assign(type.variable.Text, result);
+                    _scope.Define(type.variable.Text, result);
                 }
 
         String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
@@ -622,7 +632,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             type.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text).Clone();
             type.SpaceName = context.typeSpace().spaceName.Text;
         }
-        _scope.Define(context.variable.Text, type);
+        
+        // _scope.Define(context.variable.Text, type);
         Nodes[context] = type;
         return type;
     }
