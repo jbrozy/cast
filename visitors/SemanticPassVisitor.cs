@@ -50,6 +50,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return node;
     }
 
+    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
         var target = CastSymbol.Void;
@@ -70,12 +75,13 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             }
 
             var typeName = context.typeDecl().type.Text;
-            target = _scope.Lookup(typeName).Clone();
+            target = _scope.Lookup(typeName);
             if (target == null) throw new Exception($"Type {typeName} not found");
 
+            target = target.Clone();
             if (context.typeDecl().typeSpace() != null)
             {
-                String name = context.typeDecl().typeSpace().spaceName.Text;
+                string name = context.typeDecl().typeSpace().spaceName.Text;
                 target.TypeSpace = _scope.Lookup(name);
                 target.SpaceName = name;
             }
@@ -98,7 +104,37 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
-        return _scope.Lookup(context.varRef.Text).Clone();
+        string varRef = context.varRef.Text;
+        CastSymbol rhs = Visit(context.simpleExpression());
+
+        if (!_scope.TryGetSymbol(varRef, out CastSymbol? lhs))
+        {
+            throw new  Exception($"Variable '{varRef}' not found");
+        }
+
+        if (lhs?.CastType != rhs.CastType)
+        {
+            throw new  Exception($"Incompatible Types, left is '{lhs.CastType}' and right was '{rhs.CastType}'.");
+        }
+
+        // assign space inheritance from left to right
+        if (!String.IsNullOrEmpty(lhs.SpaceName) && String.IsNullOrEmpty(rhs.SpaceName))
+        {
+            CastSymbol space = lhs.TypeSpace.Clone();
+            rhs.TypeSpace = space;
+            rhs.SpaceName = lhs.SpaceName;
+        }
+        
+        if (!string.IsNullOrEmpty(lhs.SpaceName) && !String.IsNullOrEmpty(rhs.SpaceName))
+        {
+            if (lhs.SpaceName != rhs.SpaceName)
+            {
+                throw new Exception($"Incompatible space left: '{lhs.SpaceName}' and right: '{rhs.SpaceName}'");
+            }
+        }
+        
+        Nodes[context] = rhs;
+        return rhs;
     }
 
     public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -391,11 +427,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.GetChild(0));
     }
 
-    public CastSymbol VisitPrimitiveDecl(CastParser.PrimitiveDeclContext context)
-    {
-        throw new NotImplementedException();
-    }
-
     public CastSymbol VisitInOut(CastParser.InOutContext context)
     {
         throw new NotImplementedException();
@@ -408,7 +439,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
     {
-        return Visit(context.GetChild(0));
+        var result = Visit(context);
+        return Nodes[context] = result;
     }
 
     public CastSymbol VisitInStmt(CastParser.InStmtContext context)
@@ -480,7 +512,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         }
         else
         {
-            String name = "";
+            string name = "";
 
             if (!String.IsNullOrEmpty(context.functionIdentifier()?.functionName?.Text))
             {
@@ -539,7 +571,9 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (context.args.simpleExpression() != null)
             foreach (var arg in context.args.simpleExpression())
+            {
                 args.Add(Visit(arg));
+            }
 
         // use typed functions functions
         if (fn.Functions.Count > 0)
@@ -551,7 +585,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             }
             else
             {
-                throw new Exception($"Function {functionName} does not exist");
+                String @params = string.Join(", ", key.Types.Select(c => c.CastType.ToString()));
+                throw new Exception($"Function {functionName} does not exist with Parameters: {@params}");
             }
         }
 

@@ -35,14 +35,15 @@ public class Scope<T>(Scope<T>? parent = null)
 
     public bool TryGetSymbol(string name, out T? symbol)
     {
-        if (Exists(name))
+        var look = Lookup(name);
+        if (look == null)
         {
-            symbol = Lookup(name);
-            return true;
+            symbol = null;
+            return false;
         }
 
-        symbol = null;
-        return false;
+        symbol = look;
+        return true;
     }
 
     public bool Exists(string symbolName)

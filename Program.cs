@@ -7,7 +7,7 @@ using Cocona;
 
 class Program
 {
-    private static String[] std = new[] { "types", "vectors", "spaces", "math" };
+    private static String[] std = new[] { "types", "vectors", "spaces", "math", "opengl" };
     static void Main(string[] args)
     {
         var builder = CoconaApp.CreateBuilder(args);
@@ -69,6 +69,7 @@ class Program
                 outFileName = output;
             }
         
+            Console.WriteLine(source);
             File.WriteAllText(outFileName, result);
         } catch (Exception e)
         {

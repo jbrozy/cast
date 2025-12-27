@@ -56,12 +56,20 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return $"uniform {context.uniformTypeDecl().type.Text} {context.uniformTypeDecl().name};\n";
     }
 
+    public string VisitVarDecl(CastParser.VarDeclContext context)
+    {
+        return "";
+    }
+
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
         var name = context.typeDecl().variable.Text;
         var value = Visit(context.value);
 
         var node = Nodes[context];
+        if (node.IsDeclaration)
+            return "";
+        
         if (node.CastType == CastType.STRUCT) return $"{node.StructName} {name} = {value}";
 
         var type = node.CastType.ToString().ToLower();
@@ -70,9 +78,10 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitVarAssign(CastParser.VarAssignContext context)
     {
+        var node = Nodes[context];
         var name = context.varRef.Text;
         var value = Visit(context.value);
-        return $"{name} = {value}";
+        return $"{name} = {value};";
     }
 
     public string VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -85,6 +94,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
             ins.Append(Visit(inTypeDecl));
             ins.Append("\n");
         }
+        
         return ins.ToString();
     }
 
@@ -117,9 +127,9 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitBooleanExpression(CastParser.BooleanExpressionContext context)
     {
-        String left = Visit(context.left);
-        String right = Visit(context.right);
-        String symbol = context.op.Text;
+        string left = Visit(context.left);
+        string right = Visit(context.right);
+        string symbol = context.op.Text;
         
         return $"{left} {symbol} {right}";
     }
@@ -180,7 +190,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitAssignStmt(CastParser.AssignStmtContext context)
     {
-        return Visit(context.assignment()) + ";";
+        return Visit(context.assignment());
     }
 
     public string VisitStructDeclStmt(CastParser.StructDeclStmtContext context)
@@ -252,11 +262,6 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
-    public string VisitPrimitiveDecl(CastParser.PrimitiveDeclContext context)
-    {
-        throw new NotImplementedException();
-    }
-
     public string VisitInOut(CastParser.InOutContext context)
     {
         throw new NotImplementedException();
@@ -308,7 +313,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         builder.Append(" {\n");
 
         indent += 1;
-        String indentLevel = new string('\t', int.Max(0, indent));
+        string indentLevel = new string('\t', int.Max(0, indent));
         foreach (var statementContext in context.statement())
         {
             builder.Append(indentLevel + Visit(statementContext) + "\n");
@@ -329,7 +334,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         builder.Append($"struct {context.name.Text}");
         builder.Append(" {\n");
         indent += 1;
-        String indentLevel = new string('\t', int.Max(0, indent));
+        string indentLevel = new string('\t', int.Max(0, indent));
         foreach (var typeDeclContext in context.typeDecl())
         {
             builder.Append(indentLevel + Visit(typeDeclContext) + ";\n");

@@ -17,10 +17,6 @@ statement
     | () simpleExpression ';'     				    # ExprStmt
     ;
 
-primitiveDecl
-	:	
-	;
-
 inOut
 	: IN
 	| OUT
@@ -31,7 +27,8 @@ importStmt
     ;
 	
 assignment
-    : LET typeDecl EQUAL value=simpleExpression      # VarDeclAssign
+    : DECLARE? LET typeDecl      					 # VarDecl
+    | LET typeDecl EQUAL value=simpleExpression      # VarDeclAssign
     | varRef=ID EQUAL value=simpleExpression         # VarAssign
     ;
     
@@ -51,15 +48,15 @@ uniformStmt
     ;
 	
 outTypeDecl
-	: name=ID ':' type=ID
+	: name=ID ':' type=ID typeSpace?
 	;
 
 inTypeDecl
-	: name=ID ':' type=ID
+	: name=ID ':' type=ID typeSpace?
 	;
 
 uniformTypeDecl
-	: name=ID ':' type=ID
+	: name=ID ':' type=ID typeSpace?
 	;
 	
 block
@@ -105,7 +102,7 @@ typeDecl
 spaceDecl
     : DECLARE SPACE spaceName=ID;
 
-	simpleExpression
+simpleExpression
 	: expr=simpleExpression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
 	| expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
 	| left=simpleExpression op=(LT | GT | LTE | GTE) right=simpleExpression      	  # BooleanExpression

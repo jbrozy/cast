@@ -60,6 +60,27 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Nodes[context] = typeSymbol;
     }
 
+    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    {
+        String name = context.typeDecl().variable.Text;
+        CastSymbol symbol = Types.ResolveType(name);
+
+        if (context.typeDecl().typeSpace()?.spaceName != null)
+        {
+            CastSymbol space = _scope.Lookup(context.typeDecl().typeSpace().spaceName.Text);
+            if (space == null)
+                throw new Exception($"Space not found '{context.typeDecl().typeSpace().spaceName.Text}'");
+            space = space.Clone();
+            symbol.TypeSpace = space;
+            symbol.SpaceName = context.typeDecl().typeSpace().spaceName.Text;
+        }
+
+        symbol.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+        
+        _scope.Define(name, symbol);
+        return symbol;
+    }
+
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
         var varName = context.typeDecl().variable.Text;
@@ -105,16 +126,17 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
-        var varName = context.varRef.Text;
-        var varSymbol = _scope.Lookup(varName);
-        if (varSymbol == null)
-            throw new Exception($"No value found for var {varName}");
+        return CastSymbol.Void;
+        // var varName = context.varRef.Text;
+        // var varSymbol = _scope.Lookup(varName);
+        // if (varSymbol == null)
+        //     throw new Exception($"No value found for var {varName}");
 
-        var rhs = Visit(context.value);
-        if (!Equals(varSymbol.CastType, rhs.CastType))
-            throw new Exception($"Unable to assign {rhs.CastType} to  {varSymbol.CastType}");
+        // var rhs = Visit(context.value);
+        // if (!Equals(varSymbol.CastType, rhs.CastType))
+        //     throw new Exception($"Unable to assign {rhs.CastType} to  {varSymbol.CastType}");
 
-        return rhs;
+        // return rhs;
     }
 
     public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -135,7 +157,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         foreach (var typeDecl in context._members)
         {
-            Nodes[typeDecl] = Visit(typeDecl);
+            Visit(typeDecl);
         }
         
         return CastSymbol.Void;
@@ -304,11 +326,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context);
     }
 
-    public CastSymbol VisitPrimitiveDecl(CastParser.PrimitiveDeclContext context)
-    {
-        throw new NotImplementedException();
-    }
-
     public CastSymbol VisitInOut(CastParser.InOutContext context)
     {
         throw new NotImplementedException();
@@ -343,6 +360,21 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         string name = context.name.Text;
         CastSymbol? symbol = Types.ResolveType(context.type.Text);
+        
+        if (context.typeSpace()?.spaceName != null)
+        {
+            CastSymbol space = _scope.Lookup(context.typeSpace().spaceName.Text);
+            
+            if (space == null)
+            {
+                throw new Exception($"Space not found: '{context.typeSpace().spaceName.Text}'");
+            }
+
+            space = space.Clone();
+            symbol.TypeSpace = space;
+            symbol.SpaceName = context.typeSpace().spaceName.Text;
+        }
+        
         _scope.Define(name, symbol);
         Nodes[context] = symbol;
         return symbol;

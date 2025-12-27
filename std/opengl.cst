@@ -1,0 +1,5 @@
+﻿declare let gl_Position : vec4<Clip>;
+declare let gl_FragCoord : vec4<Screen>;
+declare let gl_FrontFacing : bool;
+declare let gl_VertexID : int;
+declare let gl_InstanceID : int;
