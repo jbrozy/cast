@@ -30,6 +30,16 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
+    public string VisitOutVarDecl(CastParser.OutVarDeclContext context)
+    {
+        string name = context.outTypeDecl().name.Text;
+        string type = context.outTypeDecl().type.Text;
+        
+        Console.WriteLine($"out {type} {name};");
+        
+        return $"out {type} {name};";
+    }
+
     public string VisitUniformBlockDecl(CastParser.UniformBlockDeclContext context)
     {
         StringBuilder uniforms = new StringBuilder();
@@ -43,7 +53,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitUniformVarDecl(CastParser.UniformVarDeclContext context)
     {
-        return $"uniform {context.typeDecl().type.Text} {context.typeDecl().variable.Text};\n";
+        return $"uniform {context.uniformTypeDecl().type.Text} {context.uniformTypeDecl().name};\n";
     }
 
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
@@ -62,8 +72,40 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     {
         var name = context.varRef.Text;
         var value = Visit(context.value);
-        var node = Nodes[context.value];
         return $"{name} = {value}";
+    }
+
+    public string VisitInBlockDecl(CastParser.InBlockDeclContext context)
+    {
+        StringBuilder ins = new StringBuilder();
+        ins.Append("\n");
+        
+        foreach (var inTypeDecl in context._members)
+        {
+            ins.Append(Visit(inTypeDecl));
+            ins.Append("\n");
+        }
+        return ins.ToString();
+    }
+
+    public string VisitInVarDecl(CastParser.InVarDeclContext context)
+    {
+        string name = context.inTypeDecl().name.Text;
+        string type = context.inTypeDecl().type.Text;
+        
+        return $"in {type} {name};";
+    }
+
+    public string VisitOutBlockDecl(CastParser.OutBlockDeclContext context)
+    {
+        StringBuilder outs = new StringBuilder();
+        outs.Append("\n");
+        foreach (var outTypeDecl in context._members)
+        {
+            outs.Append(Visit(outTypeDecl));
+            outs.Append("\n");
+        }
+        return outs.ToString();
     }
 
     public string VisitAddSub(CastParser.AddSubContext context)
@@ -71,6 +113,15 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         if (context.op.Text == "+") return Visit(context.left) + " + " + Visit(context.right);
 
         return Visit(context.left) + " - " + Visit(context.right);
+    }
+
+    public string VisitBooleanExpression(CastParser.BooleanExpressionContext context)
+    {
+        String left = Visit(context.left);
+        String right = Visit(context.right);
+        String symbol = context.op.Text;
+        
+        return $"{left} {symbol} {right}";
     }
 
     public string VisitMemberAccessExpr(CastParser.MemberAccessExprContext context)
@@ -119,7 +170,12 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitExprStmt(CastParser.ExprStmtContext context)
     {
-        throw new NotImplementedException();
+        return "";
+    }
+
+    public string VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
+    {
+        return Visit(context.outStmt());
     }
 
     public string VisitAssignStmt(CastParser.AssignStmtContext context)
@@ -140,6 +196,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitUniformStmtWrapper(CastParser.UniformStmtWrapperContext context)
     {
         return Visit(context.uniformStmt());
+    }
+
+    public string VisitInStmtWrapper(CastParser.InStmtWrapperContext context)
+    {
+        return Visit(context.inStmt());
     }
 
     public string VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
@@ -211,9 +272,29 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
+    public string VisitInStmt(CastParser.InStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public string VisitOutStmt(CastParser.OutStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitUniformStmt(CastParser.UniformStmtContext context)
     {
         throw new NotImplementedException();
+    }
+
+    public string VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
+    {
+        return $"out {context.type.Text} {context.name.Text};";
+    }
+
+    public string VisitInTypeDecl(CastParser.InTypeDeclContext context)
+    {
+        return $"in {context.type.Text} {context.name.Text};";
     }
 
     public string VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)

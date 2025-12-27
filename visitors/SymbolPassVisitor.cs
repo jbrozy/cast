@@ -36,6 +36,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
+    public CastSymbol VisitOutVarDecl(CastParser.OutVarDeclContext context)
+    {
+        return Visit(context.outTypeDecl());
+    }
+
     public CastSymbol VisitUniformBlockDecl(CastParser.UniformBlockDeclContext context)
     {
         foreach (var uniform in context.uniformTypeDecl())
@@ -49,9 +54,9 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitUniformVarDecl(CastParser.UniformVarDeclContext context)
     {
-        CastSymbol typeSymbol = Visit(context.typeDecl()).Clone();
+        CastSymbol typeSymbol = Visit(context.uniformTypeDecl()).Clone();
         typeSymbol.IsUniform = true;
-        _scope.Assign(context.typeDecl().variable.Text, typeSymbol);
+        _scope.Assign(context.uniformTypeDecl().name.Text, typeSymbol);
         return Nodes[context] = typeSymbol;
     }
 
@@ -112,6 +117,30 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return rhs;
     }
 
+    public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
+    {
+        foreach (var typeDecl in context._members)
+        {
+            Nodes[typeDecl] = Visit(typeDecl);
+        }
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitInVarDecl(CastParser.InVarDeclContext context)
+    {
+        return Visit(context.inTypeDecl());
+    }
+
+    public CastSymbol VisitOutBlockDecl(CastParser.OutBlockDeclContext context)
+    {
+        foreach (var typeDecl in context._members)
+        {
+            Nodes[typeDecl] = Visit(typeDecl);
+        }
+        
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitAddSub(CastParser.AddSubContext context)
     {
         var left = Visit(context.left);
@@ -121,6 +150,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             throw new Exception($"Type mismatch between: {context.left.GetText()} and {context.right.GetText()}");
         Nodes[context] = left;
         return left;
+    }
+
+    public CastSymbol VisitBooleanExpression(CastParser.BooleanExpressionContext context)
+    {
+        return CastSymbol.Bool;
     }
 
     public CastSymbol VisitMemberAccessExpr(CastParser.MemberAccessExprContext context)
@@ -186,6 +220,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.simpleExpression());
     }
 
+    public CastSymbol VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
+    {
+        return Visit(context.outStmt());
+    }
+
     public CastSymbol VisitAssignStmt(CastParser.AssignStmtContext context)
     {
         return Visit(context.assignment());
@@ -199,6 +238,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitUniformStmtWrapper(CastParser.UniformStmtWrapperContext context)
     {
         return Visit(context.uniformStmt());
+    }
+
+    public CastSymbol VisitInStmtWrapper(CastParser.InStmtWrapperContext context)
+    {
+        return Visit(context.inStmt());
     }
 
     public CastSymbol VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
@@ -280,9 +324,38 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context);
     }
 
+    public CastSymbol VisitInStmt(CastParser.InStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitOutStmt(CastParser.OutStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitUniformStmt(CastParser.UniformStmtContext context)
     {
         return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
+    {
+        string name = context.name.Text;
+        CastSymbol? symbol = Types.ResolveType(context.type.Text);
+        _scope.Define(name, symbol);
+        Nodes[context] = symbol;
+        return symbol;
+    }
+
+    public CastSymbol VisitInTypeDecl(CastParser.InTypeDeclContext context)
+    {
+        string name = context.name.Text;
+        CastSymbol? symbol = _scope.Lookup(context.type.Text);
+        if (symbol == null) symbol = Types.ResolveType(context.type.Text);
+        _scope.Define(name, symbol);
+        Nodes[context] = symbol;
+        return symbol;
     }
 
     public CastSymbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)

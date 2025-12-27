@@ -1,0 +1,8 @@
+out {
+	int a;
+	float b;
+}
+
+fn main() {
+	let a = 1 < 2;
+}

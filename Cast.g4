@@ -9,6 +9,8 @@ statement
     | functionDecl                  				# FnDeclStmt
     | block                         				# BlockStmt
 	| uniformStmt                 					# UniformStmtWrapper
+	| inStmt                 						# InStmtWrapper
+	| outStmt                 						# OutStmtWrapper
     | assignment ';'                				# AssignStmt
     | spaceDecl ';'                 				# SpaceDeclStmt
     | RETURN simpleExpression ';'   				# ReturnStmt    
@@ -33,11 +35,29 @@ assignment
     | varRef=ID EQUAL value=simpleExpression         # VarAssign
     ;
     
+inStmt 
+    : IN '{' (members+=inTypeDecl (',' members+=inTypeDecl)*)? '}' 		# InBlockDecl
+    | IN inTypeDecl ';'                                           	 	# InVarDecl
+	;
+
+outStmt 
+    : OUT '{' (members+=outTypeDecl (',' members+=outTypeDecl)*)? '}' 	# OutBlockDecl
+    | OUT outTypeDecl ';'                                           	# OutVarDecl
+	;
+
 uniformStmt
     : UNIFORM '{' (members+=uniformTypeDecl (',' members+=uniformTypeDecl)*)? '}' 	# UniformBlockDecl
-    | UNIFORM typeDecl ';'                                           			  	# UniformVarDecl
+    | UNIFORM uniformTypeDecl ';'                                           		# UniformVarDecl
     ;
 	
+outTypeDecl
+	: name=ID ':' type=ID
+	;
+
+inTypeDecl
+	: name=ID ':' type=ID
+	;
+
 uniformTypeDecl
 	: name=ID ':' type=ID
 	;
@@ -85,12 +105,13 @@ typeDecl
 spaceDecl
     : DECLARE SPACE spaceName=ID;
 
-simpleExpression
-    : expr=simpleExpression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
-    | expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
-    | left=simpleExpression op=(MULTIPLY | DIVIDE) right=simpleExpression # MultDiv
-    | left=simpleExpression op=(PLUS | MINUS) right=simpleExpression      # AddSub
-    | atom                                                                # AtomExpr
+	simpleExpression
+	: expr=simpleExpression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
+	| expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
+	| left=simpleExpression op=(LT | GT | LTE | GTE) right=simpleExpression      	  # BooleanExpression
+	| left=simpleExpression op=(MULTIPLY | DIVIDE) right=simpleExpression # MultDiv
+	| left=simpleExpression op=(PLUS | MINUS) right=simpleExpression      # AddSub
+	| atom                                                                # AtomExpr
     ;
 
 atom
@@ -128,7 +149,9 @@ CLOSE_PAR: ')';
 OPEN_CURLY: '{';
 CLOSE_CURLY: '}';
 LT      : '<';
+LTE      : '<=';
 GT      : '>';
+GTE      : '>=';
 DOT     : '.';
 COMMA   : ',';
 

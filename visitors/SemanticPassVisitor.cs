@@ -34,6 +34,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
+    public CastSymbol VisitOutVarDecl(CastParser.OutVarDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitUniformBlockDecl(CastParser.UniformBlockDeclContext context)
     {
         return CastSymbol.Void;
@@ -96,6 +101,21 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return _scope.Lookup(context.varRef.Text).Clone();
     }
 
+    public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitInVarDecl(CastParser.InVarDeclContext context)
+    {
+        return Visit(context.inTypeDecl());
+    }
+
+    public CastSymbol VisitOutBlockDecl(CastParser.OutBlockDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitAddSub(CastParser.AddSubContext context)
     {
         var left = Visit(context.left);
@@ -140,7 +160,12 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         Nodes[context] = fn.ReturnType;
         return fn.ReturnType;
     }
-    
+
+    public CastSymbol VisitBooleanExpression(CastParser.BooleanExpressionContext context)
+    {
+        return CastSymbol.Bool;
+    }
+
     private string GetReadableName(CastSymbol sym)
     {
         return sym.IsStruct() ? sym.StructName : sym.CastType.ToString().ToLower();
@@ -267,6 +292,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.simpleExpression());
     }
 
+    public CastSymbol VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
+    {
+        return Visit(context.outStmt());
+    }
+
     public CastSymbol VisitAssignStmt(CastParser.AssignStmtContext context)
     {
         var result = Visit(context.assignment());
@@ -282,6 +312,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitUniformStmtWrapper(CastParser.UniformStmtWrapperContext context)
     {
         return Visit(context.uniformStmt());
+    }
+
+    public CastSymbol VisitInStmtWrapper(CastParser.InStmtWrapperContext context)
+    {
+        return  Visit(context.inStmt());
     }
 
     public CastSymbol VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
@@ -376,9 +411,29 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.GetChild(0));
     }
 
+    public CastSymbol VisitInStmt(CastParser.InStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitOutStmt(CastParser.OutStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitUniformStmt(CastParser.UniformStmtContext context)
     {
         throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitInTypeDecl(CastParser.InTypeDeclContext context)
+    {
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
