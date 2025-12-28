@@ -63,7 +63,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        string name = context.typeDecl().variable.Text;
+        string name = context.variable.Text;
         CastSymbol node = Nodes[context];
         if (node.IsDeclaration)
             return "";

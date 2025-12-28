@@ -87,15 +87,15 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol lhs = CastSymbol.Void;
         CastSymbol rhs = CastSymbol.Void;
 
-        string varName = context.typeDecl().variable.Text;
+        string varName = context.variable.Text;
 
         // infer on lhs
-        if (context.typeDecl()?.type != null)
+        if (context.type != null)
         {
-            lhs = Visit(context.typeDecl());
-            if (context.typeDecl().typeSpace()?.spaceName != null)
+            lhs = _scope.Lookup(context.type.Text);// Visit(context.typeDecl());
+            if (context.typeSpace()?.spaceName != null)
             {
-                string spaceName = context.typeDecl().typeSpace()?.spaceName.Text;
+                string spaceName = context.typeSpace()?.spaceName.Text;
                 if (!_scope.TryGetSymbol(spaceName, out CastSymbol space))
                 {
                     throw new Exception($"Space '{spaceName}' not found");

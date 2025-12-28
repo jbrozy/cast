@@ -57,14 +57,14 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        String variableName = context.typeDecl().variable.Text;
+        String variableName = context.variable.Text;
         CastSymbol lhs = CastSymbol.Void;
         CastSymbol rhs = CastSymbol.Void;
 
         // type based on lhs
-        if (context.typeDecl()?.type != null)
+        if (context.type != null)
         {
-            lhs = Visit(context.typeDecl());
+            lhs = _scope.Lookup(context.type.Text); // Visit(context.typ);
         }
         if (context.value != null)
         {

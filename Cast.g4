@@ -1,7 +1,9 @@
 grammar Cast;
 
-program: 
-	| importStmt* statement+;
+program
+	: statement+
+	| EOF
+	;
 
 statement
 	: IF OPEN_PAR simpleExpression CLOSE_PAR block  # IfStmt
@@ -27,8 +29,8 @@ importStmt
     ;
 	
 assignment
-    : DECLARE? LET typeDecl EQUAL value=simpleExpression    # VarDeclAssign
-    | varRef=ID EQUAL value=simpleExpression         		# VarAssign
+    : DECLARE? LET variable=ID (':' type=ID typeSpace?)? EQUAL value=simpleExpression  # VarDeclAssign
+    | varRef=ID EQUAL value=simpleExpression                                           # VarAssign
     ;
     
 inStmt 

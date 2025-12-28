@@ -2,6 +2,7 @@
 using System.Text;
 using Antlr4.Runtime;
 using Cast;
+using Cast.listeners;
 using Cast.Visitors;
 using ConsoleAppFramework;
 
@@ -16,9 +17,98 @@ class Program
             if (File.Exists(path)) Compile(path, output);
         });
         
+        app.Add("repl", () => {
+            Repl();
+        });
+        
         app.Run(args);
     }
 
+static void Repl()
+{
+    Console.WriteLine("Cast Shader Language REPL");
+    Console.WriteLine("Type code, then 'run' to compile. Type 'exit' to quit.");
+    Console.WriteLine("-----------------------------------------------------");
+
+    // 1. Move StringBuilder OUTSIDE the loop so it remembers previous lines
+    StringBuilder sb = new StringBuilder();
+
+    while (true)
+    {
+        // Simple prompt: ">" for new command, "|" for continuation
+        Console.Write(sb.Length == 0 ? "> " : "| ");
+
+        string? line = Console.ReadLine();
+
+        // 2. Handle Exit
+        if (line == "exit" || line == null)
+        {
+            break;
+        }
+
+        // 3. Handle Run
+        if (line == "run")
+        {
+            string source = sb.ToString();
+            
+            if (string.IsNullOrWhiteSpace(source)) 
+            {
+                sb.Clear();
+                continue;
+            }
+
+            try 
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("Compiling...");
+                Console.ResetColor();
+
+                // --- ANTLR PIPELINE ---
+                AntlrInputStream  inputStream = new AntlrInputStream(source);
+                CastLexer  lexer = new CastLexer(inputStream);
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                CastParser  parser = new CastParser(tokens);
+
+                // Optional: Remove default error listeners if you want custom ones
+                parser.RemoveErrorListeners();
+                parser.AddErrorListener(new VisualErrorListener(sb.ToString()));
+
+                // Parse the input (Start at your root rule, e.g., 'program' or 'statement')
+                var tree = parser.program(); 
+
+                if (parser.NumberOfSyntaxErrors == 0)
+                {
+                    // Run your Visitor
+                    SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
+                    symbolPassVisitor.Visit(tree);
+                
+                    SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
+                    semanticPassVisitor.Visit(tree);
+                
+                    GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
+                    string result = glslPassVisitor.Visit(tree);
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Output: \n" + result); 
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+            finally 
+            {
+                Console.ResetColor();
+                sb.Clear();
+            }
+        }
+        else
+        {
+            sb.AppendLine(line);
+        }
+    }
+}
     static void CompileFolder(string folder, string output)
     {
         List<string> files = Directory.GetFiles(folder, "*.*").ToList();
