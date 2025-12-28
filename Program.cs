@@ -63,22 +63,18 @@ static void Repl()
                 Console.WriteLine("Compiling...");
                 Console.ResetColor();
 
-                // --- ANTLR PIPELINE ---
                 AntlrInputStream  inputStream = new AntlrInputStream(source);
                 CastLexer  lexer = new CastLexer(inputStream);
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 CastParser  parser = new CastParser(tokens);
 
-                // Optional: Remove default error listeners if you want custom ones
                 parser.RemoveErrorListeners();
                 parser.AddErrorListener(new VisualErrorListener(sb.ToString()));
 
-                // Parse the input (Start at your root rule, e.g., 'program' or 'statement')
                 var tree = parser.program(); 
 
                 if (parser.NumberOfSyntaxErrors == 0)
                 {
-                    // Run your Visitor
                     SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
                     symbolPassVisitor.Visit(tree);
                 
