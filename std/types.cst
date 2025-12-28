@@ -6,6 +6,7 @@ declare struct ivec2 { x: int, y: int }
 declare struct ivec3 { x: int, y: int, z: int }
 declare struct ivec4 { x: int, y: int, z: int, w: int }
 
+declare struct mat3 { c0: vec3, c1: vec3, c2: vec3 }
 declare struct mat4 { c0: vec4, c1: vec4, c2: vec4, c3: vec4 }
 
 declare struct sampler2D {}

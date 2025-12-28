@@ -31,10 +31,20 @@ declare fn (vec3) __sub__(rhs: float) : vec3;
 declare fn (vec3) __mul__(rhs: float) : vec3;
 declare fn (vec3) __div__(rhs: float) : vec3;
 
+declare fn (vec3) __add__(rhs: int) : vec3;
+declare fn (vec3) __sub__(rhs: int) : vec3;
+declare fn (vec3) __mul__(rhs: int) : vec3;
+declare fn (vec3) __div__(rhs: int) : vec3;
+
 declare fn (float) __add__(rhs: vec3) : vec3;
 declare fn (float) __sub__(rhs: vec3) : vec3;
 declare fn (float) __mul__(rhs: vec3) : vec3;
 declare fn (float) __div__(rhs: vec3) : vec3;
+
+declare fn (int) __add__(rhs: vec3) : vec3;
+declare fn (int) __sub__(rhs: vec3) : vec3;
+declare fn (int) __mul__(rhs: vec3) : vec3;
+declare fn (int) __div__(rhs: vec3) : vec3;
 
 declare fn (vec3) length() : float;
 declare fn (vec3) normalize() : vec3;

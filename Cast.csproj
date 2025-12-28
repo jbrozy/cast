@@ -8,6 +8,16 @@
         <PublishSingleFile>true</PublishSingleFile>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <AssemblyName>castc</AssemblyName>
+        <PublishAot>true</PublishAot>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <OptimizationPreference>Size</OptimizationPreference>
+        <StackTraceSupport>false</StackTraceSupport>
+        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+        <DebuggerSupport>false</DebuggerSupport>
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        <EventSourceSupport>false</EventSourceSupport>
+        <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,6 +26,10 @@
         </None>
         <None Remove="Test\**" />
     </ItemGroup>
+
+    <PropertyGroup>
+        <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
+    </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Antlr4" Version="4.6.6">
@@ -27,7 +41,10 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
-        <PackageReference Include="Cocona" Version="2.2.0" />
+        <PackageReference Include="ConsoleAppFramework" Version="5.7.13">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>

@@ -77,10 +77,10 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         if (context.value != null)
         {
             string eval = Visit(context.value);
-            return $"{type} {name} = {eval}";
+            return $"{type} {name} = {eval};";
         }
         
-        return $"{type} {name}";
+        return $"{type} {name};";
     }
 
     public string VisitVarAssign(CastParser.VarAssignContext context)

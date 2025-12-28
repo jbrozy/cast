@@ -74,14 +74,19 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (rhs.CastType != CastType.VOID)
         {
-            if (lhs.StructName != rhs.StructName)
+            if (lhs.CastType != CastType.VOID && lhs.StructName != rhs.StructName)
             {
-                throw new Exception($"Incompatible types:  '{lhs.StructName}' and '{rhs.StructName}'");
+                throw new Exception($"Incompatible types: '{lhs.StructName}' and '{rhs.StructName}'");
             }
 
-            if (lhs.SpaceName != rhs.SpaceName)
+            if (lhs.CastType != CastType.VOID && lhs.SpaceName != rhs.SpaceName)
             {
                 throw new Exception($"Incompatible spaces: '{lhs.SpaceName}' and '{rhs.SpaceName}'");
+            }
+
+            if (lhs.CastType == CastType.VOID)
+            {
+                lhs = rhs.Clone();
             }
         }
 
@@ -293,11 +298,13 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             ? left.StructName 
             : left.CastType.ToString().ToLower();
 
-        CastSymbol typeSymbol = _scope.Lookup(targetTypeName).Clone();
+        CastSymbol typeSymbol = _scope.Lookup(targetTypeName);
         if (typeSymbol == null)
         {
             throw new Exception($"Type definition for '{targetTypeName}' not found.");
         }
+
+        typeSymbol = typeSymbol.Clone();
 
         FunctionKey key = FunctionKey.Of(opName, args);
         if (!typeSymbol.Functions.TryGetValue(key, out CastSymbol fn))
@@ -500,6 +507,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
         _scope = new Scope<CastSymbol>(_scope);
+        var node = Nodes[context];
         if (context.paramList() != null)
             if (context.paramList().typeDecl() != null)
                 foreach (var type in context.paramList().typeDecl())
@@ -513,8 +521,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         {
             _scope.Define("self", _scope.Lookup(typeFn).Clone());
         }
-        
-        Visit(context.block());
+
+        if (context.block() != null)
+        {
+            Visit(context.block());
+        }
         _scope = _scope.Parent;
         if (context.functionIdentifier() != null && context.typedFunctionDecl() == null)
         {
@@ -535,6 +546,10 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             }
             
             var fn = _scope.Lookup(typeFn);
+            if (typeFn == "mat4")
+            {
+                Console.WriteLine("dbeug");
+            }
 
             var paramTypes = new List<CastSymbol>();
             if (fn.CastType == CastType.STRUCT) paramTypes.Add(fn.Constructor.ReturnType);

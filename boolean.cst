@@ -1,3 +1,9 @@
+uniform {
+    gtexture : sampler2D,
+    lightmap : sampler2D,
+    normals : sampler2D
+}
+
 fn main() {
-    gl_Position = vec4<Clip>(1.0);
+    gl_Position = vec4<Clip>(1.0, 1.0, 1.0, 1.0);
 }

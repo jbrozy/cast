@@ -83,3 +83,12 @@ declare fn (float) __div__(other: int) : float;
 declare fn (float) __mul__(other: int) : float;
 declare fn (float) __add__(other: int) : float;
 declare fn (float) __sub__(other: int) : float;
+
+declare fn (mat4) mat3() : mat3;
+
+declare fn (mat3) __div__(rhs: mat3) : mat3;
+declare fn (mat3) __mul__(rhs: mat3) : mat3;
+declare fn (mat3) __add__(rhs: mat3) : mat3;
+declare fn (mat3) __sub__(rhs: mat3) : mat3;
+
+declare fn (mat3) __mul__(rhs: vec3) : vec3;

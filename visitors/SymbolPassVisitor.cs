@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime.Tree;
+using Cast.core.exceptions;
 
 namespace Cast.Visitors;
 
@@ -108,38 +109,41 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         if (context.value != null)
         {
             rhs = Visit(context.simpleExpression());
-
-            if (lhs.CastType != rhs.CastType)
+            if (lhs.CastType == CastType.VOID)
             {
-                throw new Exception($"Incompatible types, left is '{lhs.CastType}' and right was '{rhs.CastType}'");
+                lhs = rhs.Clone();
             }
-            
-            if (lhs.StructName != rhs.StructName)
+
+            if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
             {
-                throw new Exception($"Incompatible types, left is '{lhs.StructName}' and right was '{rhs.StructName}'");
+                throw new InvalidAssignmentException(lhs, rhs);
             }
         }
 
         lhs = lhs.Clone();
         Nodes[context] = lhs;
         _scope.Define(varName, lhs);
-        
-        return CastSymbol.Void;
+
+        return lhs;
     }
 
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
-        return CastSymbol.Void;
-        // var varName = context.varRef.Text;
-        // var varSymbol = _scope.Lookup(varName);
-        // if (varSymbol == null)
-        //     throw new Exception($"No value found for var {varName}");
+        string name = context.varRef.Text;
+        CastSymbol? lhs = _scope.Lookup(name);
+        if (lhs == null)
+        {
+            throw new VariableNotFoundException(name);
+        }
+        
+        CastSymbol rhs = Visit(context.value);
 
-        // var rhs = Visit(context.value);
-        // if (!Equals(varSymbol.CastType, rhs.CastType))
-        //     throw new Exception($"Unable to assign {rhs.CastType} to  {varSymbol.CastType}");
+        if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName != rhs.SpaceName)
+        {
+            throw new InvalidAssignmentException(lhs, rhs);
+        }
 
-        // return rhs;
+        return lhs;
     }
 
     public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -170,11 +174,23 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         var left = Visit(context.left);
         var right = Visit(context.right);
+        
+        // left to right op
+        string functionName = left.CastType.ToString().ToLower();
+        if (left.IsStruct())
+        {
+            functionName = left.StructName;
+        }
+        
+        var parameters = new List<CastSymbol>();
+        parameters.Add(right);
 
-        if (!left.Equals(right))
-            throw new Exception($"Type mismatch between: {context.left.GetText()} and {context.right.GetText()}");
-        Nodes[context] = left;
-        return left;
+        FunctionKey key = FunctionKey.Of(functionName, parameters);
+        CastSymbol function = left.Functions[key];
+        CastSymbol result = function.ReturnType.Clone();
+        
+        Nodes[context] = result;
+        return result;
     }
 
     public CastSymbol VisitBooleanExpression(CastParser.BooleanExpressionContext context)
@@ -446,12 +462,14 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         var paramTypes = new List<CastSymbol>();
         if (context.paramList() != null)
+        {
             foreach (var @param in context.paramList().typeDecl())
             {
                 var typeName = param.type.Text;
                 var t = Types.ResolveType(typeName);
                 paramTypes.Add(t);
             }
+        }
 
         if (context.typedFunctionDecl() == null && context.functionIdentifier() != null)
         {
@@ -474,8 +492,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             var returnTypeText = string.IsNullOrEmpty(type) ? "void" : type;
             var returnType = Types.ResolveType(returnTypeText);
             
-            var pTypes = new List<CastSymbol>();
-            pTypes.Add(returnType);
+            var pTypes = new List<CastSymbol>() { returnType };
             pTypes.AddRange(paramTypes);
 
             var funcInfo = CastSymbol.Function(type, pTypes, returnType);
@@ -490,6 +507,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             return funcInfo;
         }
 
+        Nodes[context] = CastSymbol.Void;
         return CastSymbol.Void;
     }
 
