@@ -127,6 +127,33 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return lhs;
     }
 
+    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    {
+        string name = context.variable.Text;
+        string type = context.type.Text;
+
+        if (!_scope.TryGetSymbol(type, out CastSymbol? typeSymbol))
+        {
+            throw new Exception($"Type not found '{type}'");
+        }
+
+        CastSymbol clone = typeSymbol.Clone();
+        if (context.typeSpace() != null)
+        {
+            if (!_scope.TryGetSymbol(context.typeSpace().spaceName.Text, out CastSymbol space))
+            {
+                throw new Exception($"Space not found '{context.typeSpace().spaceName.Text}'");
+            }
+
+            clone.TypeSpace = space;
+            clone.SpaceName = context.typeSpace().spaceName.Text;
+        }
+
+        clone.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+        
+        return clone;
+    }
+
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
         string name = context.varRef.Text;
@@ -176,17 +203,15 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         var right = Visit(context.right);
         
         // left to right op
-        string functionName = left.CastType.ToString().ToLower();
-        if (left.IsStruct())
-        {
-            functionName = left.StructName;
-        }
+        string functionName = context.op.Text == "+" ? "__add__" : "__sub__";
         
         var parameters = new List<CastSymbol>();
         parameters.Add(right);
 
         FunctionKey key = FunctionKey.Of(functionName, parameters);
-        CastSymbol function = left.Functions[key];
+
+        CastSymbol lhsTypeInfo = _scope.Lookup(left.StructName);
+        CastSymbol function = lhsTypeInfo.Functions[key];
         CastSymbol result = function.ReturnType.Clone();
         
         Nodes[context] = result;
@@ -249,6 +274,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
     {
         return Visit(context.functionDecl());
+    }
+
+    public CastSymbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
+    {
+        return Visit(context.typedFunctionDecl());
     }
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
@@ -460,6 +490,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
+        Console.WriteLine(context.GetText());
+        string returnTypeText = context.returnType?.Text ?? "void";
+        CastSymbol? returnType = _scope.Lookup(returnTypeText);
+        string functionName = context.functionIdentifier().functionName.Text;
+        
         var paramTypes = new List<CastSymbol>();
         if (context.paramList() != null)
         {
@@ -470,45 +505,12 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 paramTypes.Add(t);
             }
         }
-
-        if (context.typedFunctionDecl() == null && context.functionIdentifier() != null)
-        {
-            var functionName = context.functionIdentifier().GetText();
-            var type = string.IsNullOrEmpty(context.returnType?.Text) ? "void" : context.returnType.Text;
-            var returnType = Types.ResolveType(type);
-
-            var function = CastSymbol.Function(functionName, paramTypes, returnType);
-            _scope.Define(functionName, function);
-            return Nodes[context] = function;
-        }
-
-        // typed functions
-        if (context.typedFunctionDecl()?.typeFn != null && context.functionIdentifier() == null)
-        {
-            var type = context.typedFunctionDecl().typeFn.Text;
-            if (string.IsNullOrEmpty(type)) throw new Exception($"Type is missing in {context.GetText()}");
-
-            var typeSymbol = _scope.Lookup(type);
-            var returnTypeText = string.IsNullOrEmpty(type) ? "void" : type;
-            var returnType = Types.ResolveType(returnTypeText);
-            
-            var pTypes = new List<CastSymbol>() { returnType };
-            pTypes.AddRange(paramTypes);
-
-            var funcInfo = CastSymbol.Function(type, pTypes, returnType);
-            funcInfo.ReturnType = typeSymbol.Constructor.ReturnType;
-            typeSymbol.IsDeclaration = context.DECLARE() != null && 
-                                       context.DECLARE().Symbol.Text == "declare";
-
-            var key = FunctionKey.Of(type, paramTypes);
-            typeSymbol.Functions.Add(key, funcInfo);
-
-            Nodes[context] = funcInfo;
-            return funcInfo;
-        }
-
-        Nodes[context] = CastSymbol.Void;
-        return CastSymbol.Void;
+        
+        CastSymbol function = CastSymbol.Function(functionName, paramTypes, returnType);
+        function.IsDeclaration =  context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
+        _scope.Define(functionName, function);
+        Nodes[context] = function;
+        return function;
     }
 
     public CastSymbol VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)
@@ -518,8 +520,34 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        var functionName = context.typeFn.Text;
-        return Nodes[context] = CastSymbol.ID(functionName);
+        string returnTypeText = context.returnType?.Text ?? "void";
+        CastSymbol? returnType = _scope.Lookup(returnTypeText);
+        string typeFnText = context.typeFn.Text;
+
+        string functionName = context.functionIdentifier() == null ? 
+            typeFnText : 
+            context.functionIdentifier().functionName.Text;
+        
+        var paramTypes = new List<CastSymbol>();
+        paramTypes.Add(Types.ResolveType(typeFnText));
+        if (context.paramList() != null)
+        {
+            foreach (var @param in context.paramList().typeDecl())
+            {
+                var typeName = param.type.Text;
+                var t = Types.ResolveType(typeName);
+                paramTypes.Add(t);
+            }
+        }
+        
+        CastSymbol function = CastSymbol.Function(functionName, paramTypes, returnType);
+        function.IsDeclaration =  context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
+
+        CastSymbol? type = _scope.Lookup(typeFnText);
+        FunctionKey key = FunctionKey.Of(functionName, paramTypes);
+        type.Functions.Add(key, function);
+        
+        return Nodes[context] = function;
     }
 
     public CastSymbol VisitFunctionCall(CastParser.FunctionCallContext context)
@@ -620,5 +648,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         _scope.Define("float", CastSymbol.Float);
         _scope.Define("int", CastSymbol.Int);
         _scope.Define("bool", CastSymbol.Bool);
+        _scope.Define("void", CastSymbol.Void);
     }
 }

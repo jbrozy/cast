@@ -33,6 +33,9 @@ static void Repl()
     // 1. Move StringBuilder OUTSIDE the loop so it remembers previous lines
     StringBuilder sb = new StringBuilder();
 
+    string std = StdHelper.getStd();
+    sb.AppendLine(std);
+
     while (true)
     {
         // Simple prompt: ">" for new command, "|" for continuation
@@ -44,6 +47,13 @@ static void Repl()
         if (line == "exit" || line == null)
         {
             break;
+        }
+
+        if (line == "reset")
+        {
+            sb.Clear();
+            sb.AppendLine(StdHelper.getStd());
+            continue;
         }
 
         // 3. Handle Run
@@ -92,6 +102,7 @@ static void Repl()
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Trace: {ex.StackTrace}");
             }
             finally 
             {

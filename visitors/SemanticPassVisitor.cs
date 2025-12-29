@@ -104,6 +104,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return lhs;
     }
 
+    public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
         string varRef = context.varRef.Text;
@@ -323,13 +328,21 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.functionDecl());
     }
 
+    public CastSymbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
     {
         _scope = new Scope<CastSymbol>(_scope);
         try
         {
             Visit(context.simpleExpression());
-            Visit(context.block());
+            if (context.block() != null)
+            {
+                Visit(context.block());
+            }
         }
         finally
         {
@@ -506,72 +519,72 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
-        _scope = new Scope<CastSymbol>(_scope);
-        var node = Nodes[context];
-        if (context.paramList() != null)
-            if (context.paramList().typeDecl() != null)
-                foreach (var type in context.paramList().typeDecl())
-                {
-                    var result = Visit(type).Clone();
-                    _scope.Define(type.variable.Text, result);
-                }
+        // _scope = new Scope<CastSymbol>(_scope);
+        // var node = Nodes[context];
+        // if (context.paramList() != null)
+        //     if (context.paramList().typeDecl() != null)
+        //         foreach (var type in context.paramList().typeDecl())
+        //         {
+        //             var result = Visit(type).Clone();
+        //             _scope.Define(type.variable.Text, result);
+        //         }
 
-        String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
-        if (typeFn != null)
-        {
-            _scope.Define("self", _scope.Lookup(typeFn).Clone());
-        }
+        // String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
+        // if (typeFn != null)
+        // {
+        //     _scope.Define("self", _scope.Lookup(typeFn).Clone());
+        // }
 
-        if (context.block() != null)
-        {
-            Visit(context.block());
-        }
-        _scope = _scope.Parent;
-        if (context.functionIdentifier() != null && context.typedFunctionDecl() == null)
-        {
-            Nodes[context] = _scope.Lookup(context.functionIdentifier().functionName.Text);
-        }
-        else
-        {
-            string name = "";
+        // if (context.block() != null)
+        // {
+        //     Visit(context.block());
+        // }
+        // _scope = _scope.Parent;
+        // if (context.functionIdentifier() != null && context.typedFunctionDecl() == null)
+        // {
+        //     Nodes[context] = _scope.Lookup(context.functionIdentifier().functionName.Text);
+        // }
+        // else
+        // {
+        //     string name = "";
 
-            if (!String.IsNullOrEmpty(context.functionIdentifier()?.functionName?.Text))
-            {
-                name = context.functionIdentifier()?.functionName?.Text;
-            }
+        //     if (!String.IsNullOrEmpty(context.functionIdentifier()?.functionName?.Text))
+        //     {
+        //         name = context.functionIdentifier()?.functionName?.Text;
+        //     }
 
-            if (string.IsNullOrEmpty(name))
-            {
-                name = typeFn;
-            }
-            
-            var fn = _scope.Lookup(typeFn);
-            if (typeFn == "mat4")
-            {
-                Console.WriteLine("dbeug");
-            }
+        //     if (string.IsNullOrEmpty(name))
+        //     {
+        //         name = typeFn;
+        //     }
+        //     
+        //     var fn = _scope.Lookup(typeFn);
+        //     if (typeFn == "mat4")
+        //     {
+        //         Console.WriteLine("dbeug");
+        //     }
 
-            var paramTypes = new List<CastSymbol>();
-            if (fn.CastType == CastType.STRUCT) paramTypes.Add(fn.Constructor.ReturnType);
-            foreach (var @param in context.paramList().typeDecl())
-            {
-                var typeName = param.type.Text;
-                var t = Types.ResolveType(typeName);
-                paramTypes.Add(t);
-            }
-            
-            var type = string.IsNullOrEmpty(context.returnType?.Text) ? "void" : context.returnType.Text;
-            var returnType = Types.ResolveType(type);
+        //     var paramTypes = new List<CastSymbol>();
+        //     if (fn.CastType == CastType.STRUCT) paramTypes.Add(fn.Constructor.ReturnType);
+        //     foreach (var @param in context.paramList().typeDecl())
+        //     {
+        //         var typeName = param.type.Text;
+        //         var t = Types.ResolveType(typeName);
+        //         paramTypes.Add(t);
+        //     }
+        //     
+        //     var type = string.IsNullOrEmpty(context.returnType?.Text) ? "void" : context.returnType.Text;
+        //     var returnType = Types.ResolveType(type);
 
-            var key = FunctionKey.Of(name, paramTypes);
-            var function = CastSymbol.Function(typeFn, paramTypes, returnType);
-            function.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
-            fn.Functions[key] = function;
-            var c = function.Clone();
-            c.Identifier =  name;
-            Nodes[context] = c;
-            return c;
-        }
+        //     var key = FunctionKey.Of(name, paramTypes);
+        //     var function = CastSymbol.Function(typeFn, paramTypes, returnType);
+        //     function.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+        //     fn.Functions[key] = function;
+        //     var c = function.Clone();
+        //     c.Identifier =  name;
+        //     Nodes[context] = c;
+        //     return c;
+        // }
 
         return CastSymbol.Void;
     }

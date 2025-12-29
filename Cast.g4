@@ -9,6 +9,7 @@ statement
 	: IF OPEN_PAR simpleExpression CLOSE_PAR block  # IfStmt
 	| structDecl                    				# StructDeclStmt
     | functionDecl                  				# FnDeclStmt
+    | typedFunctionDecl                  			# TypedFnDeclStmt
     | block                         				# BlockStmt
 	| uniformStmt                 					# UniformStmtWrapper
 	| inStmt                 						# InStmtWrapper
@@ -30,6 +31,7 @@ importStmt
 	
 assignment
     : DECLARE? LET variable=ID (':' type=ID typeSpace?)? EQUAL value=simpleExpression  # VarDeclAssign
+    | DECLARE? LET variable=ID (':' type=ID typeSpace?)?    						   # VarDecl
     | varRef=ID EQUAL value=simpleExpression                                           # VarAssign
     ;
     
@@ -67,18 +69,18 @@ block
 structDecl
     : (DECLARE)? STRUCT name=ID OPEN_CURLY (members+=typeDecl (',' members+=typeDecl)*)? CLOSE_CURLY
     ;
-    
+
 functionDecl
-    : (DECLARE)? FN typedFunctionDecl? functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? block
+    : (DECLARE)? FN functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
+    ;
+
+typedFunctionDecl
+    : (DECLARE)? FN OPEN_PAR typeFn=ID CLOSE_PAR functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
     ;
 	
 functionIdentifier
 	: functionName=ID
 	;
-	
-typedFunctionDecl
-    : OPEN_PAR typeFn=ID CLOSE_PAR
-    ;
 
 functionCall
     : name=ID typeSpace? OPEN_PAR args=argList CLOSE_PAR
