@@ -472,6 +472,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
+    public CastSymbol VisitStages(CastParser.StagesContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
     {
         var result = Visit(context);

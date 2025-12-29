@@ -401,6 +401,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
+    public CastSymbol VisitStages(CastParser.StagesContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
     {
         return Visit(context);

@@ -293,6 +293,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
+    public string VisitStages(CastParser.StagesContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitAssignment(CastParser.AssignmentContext context)
     {
         throw new NotImplementedException();
