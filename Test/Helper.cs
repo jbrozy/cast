@@ -6,21 +6,10 @@ namespace Test;
 
 public class Helper
 {
-    public static CastParser Setup(string? input = null)
+    public static CastParser Setup(string input)
     {
         StringBuilder sourceBuilder = new StringBuilder();
-        string std = StdHelper.getStd();
-        if (input != null)
-        {
-            sourceBuilder.Append(input);
-        }
-        else
-        {
-            sourceBuilder.Append(std);
-        }
-
-        string source = sourceBuilder.ToString();
-        AntlrInputStream  inputStream = new AntlrInputStream(source);
+        AntlrInputStream  inputStream = new AntlrInputStream(input);
         CastLexer  lexer = new CastLexer(inputStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         CastParser  parser = new CastParser(tokens);

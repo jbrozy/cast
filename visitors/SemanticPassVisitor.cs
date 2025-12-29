@@ -323,6 +323,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return fn.ReturnType;
     }
 
+    public CastSymbol VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
     {
         return Visit(context.functionDecl());
@@ -587,6 +592,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         // }
 
         return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
+    {
+        throw new NotImplementedException();
     }
 
     public CastSymbol VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)

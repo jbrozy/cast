@@ -7,6 +7,33 @@ namespace Test;
 public class Functions
 {
     [Test]
+    public void ConstructorFunctionDecl()
+    {
+        StringBuilder sourceBuilder = new StringBuilder();
+        sourceBuilder.AppendLine(StdHelper.getStd());
+        sourceBuilder.AppendLine("declare fn (vec3) (rhs: vec2) : vec3;");
+        
+        string source = sourceBuilder.ToString();
+        CastParser parser = Helper.Setup(source);
+        
+        SymbolPassVisitor visitor = new SymbolPassVisitor();
+        visitor.Visit(parser.program());
+        CastSymbol? symbol = visitor.Scope.Lookup("vec3");
+        CastSymbol? param = visitor.Scope.Lookup("vec2");
+        
+        Assert.That(symbol.CastType == CastType.STRUCT);
+
+        List<CastSymbol> parameters = new List<CastSymbol>()
+        {
+            param
+        };
+
+        FunctionKey key = FunctionKey.Of("vec3", parameters);
+        CastSymbol? fn = symbol.Functions[key];
+        Assert.That(fn, Is.Not.EqualTo(null));
+    }
+    
+    [Test]
     public void DeclaredTypedFunctionDecl()
     {
         StringBuilder sourceBuilder = new StringBuilder();

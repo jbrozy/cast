@@ -174,6 +174,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return Visit(context.left) + " / " + Visit(context.right);
     }
 
+    public string VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
     {
         return Visit(context.functionDecl());
@@ -386,6 +391,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         builder.Append(Visit(context.block()));
         builder.Append("\n");
         return builder.ToString();
+    }
+
+    public string VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
+    {
+        throw new NotImplementedException();
     }
 
     public string VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)

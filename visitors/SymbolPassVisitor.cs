@@ -150,6 +150,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         }
 
         clone.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
+        _scope.Define(name, clone);
         
         return clone;
     }
@@ -269,6 +270,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             throw new Exception($"Type mismatch between: {context.left.GetText()} and {context.right.GetText()}");
         Nodes[context] = left;
         return left;
+    }
+
+    public CastSymbol VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
+    {
+        return Visit(context.constructorFunctionDecl());
     }
 
     public CastSymbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
@@ -513,6 +519,39 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return function;
     }
 
+    public CastSymbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
+    {
+        Console.WriteLine(context.GetText());
+        string constr = context.typeFn.Text;
+        var paramTypes = new List<CastSymbol>();
+        if (context.paramList() != null)
+        {
+            foreach (var @param in context.paramList().typeDecl())
+            {
+                var typeName = param.type.Text;
+                var t = Types.ResolveType(typeName);
+                paramTypes.Add(t);
+            }
+        }
+        
+        string returnTypeText = context.returnType?.Text ?? "void";
+        CastSymbol? returnType = _scope.Lookup(returnTypeText);
+        
+        if(returnType == null)
+            throw new Exception($"Return Type not found: {returnTypeText}");
+        
+        CastSymbol function = CastSymbol.Function(constr, paramTypes, returnType);
+        FunctionKey key =  FunctionKey.Of(constr, paramTypes);
+
+        if (!_scope.TryGetSymbol(constr, out CastSymbol type))
+        {
+            throw new TypeNotFoundException(constr);
+        }
+        
+        type.Functions.Add(key, function);
+        return function;
+    }
+
     public CastSymbol VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)
     {
         return CastSymbol.ID(context.GetText());
@@ -545,7 +584,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
         CastSymbol? type = _scope.Lookup(typeFnText);
         FunctionKey key = FunctionKey.Of(functionName, paramTypes);
-        type.Functions.Add(key, function);
+        type.Functions.TryAdd(key, function);
         
         return Nodes[context] = function;
     }
@@ -553,25 +592,18 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitFunctionCall(CastParser.FunctionCallContext context)
     {
         var functionName = context.name.Text;
-        Console.WriteLine(functionName);
         var fn = _scope.Lookup(functionName);
         if (fn == null)
         {
             throw new Exception($"Function {functionName} could not be found");
         }
         if (fn.CastType == CastType.STRUCT) fn = fn.Constructor;
-
+        
         if (context.typeSpace() != null)
         {
             fn.TypeSpace = Visit(context.typeSpace());
             fn.SpaceName = context.typeSpace()?.spaceName?.Text;
         }
-
-        // if (fn.Parameters.Count != context.args.simpleExpression().Length)
-        // {
-        //     Console.WriteLine($"{fn.Parameters.Count}, {context.args.simpleExpression().Length}");
-        //     throw new Exception($"Insufficient amount of Parameters given.");
-        // }
 
         var providedArgs = context.args != null
             ? context.args.simpleExpression()

@@ -9,6 +9,7 @@ statement
 	: IF OPEN_PAR simpleExpression CLOSE_PAR block  # IfStmt
 	| structDecl                    				# StructDeclStmt
     | functionDecl                  				# FnDeclStmt
+	| constructorFunctionDecl						# ConstructorFnDeclStmt
     | typedFunctionDecl                  			# TypedFnDeclStmt
     | block                         				# BlockStmt
 	| uniformStmt                 					# UniformStmtWrapper
@@ -69,7 +70,7 @@ block
 structDecl
     : (DECLARE)? STRUCT name=ID OPEN_CURLY (members+=typeDecl (',' members+=typeDecl)*)? CLOSE_CURLY
     ;
-
+	
 functionDecl
     : (DECLARE)? FN functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
     ;
@@ -77,6 +78,10 @@ functionDecl
 typedFunctionDecl
     : (DECLARE)? FN OPEN_PAR typeFn=ID CLOSE_PAR functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
     ;
+
+constructorFunctionDecl
+    : (DECLARE)? FN OPEN_PAR typeFn=ID CLOSE_PAR OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
+	;
 	
 functionIdentifier
 	: functionName=ID
