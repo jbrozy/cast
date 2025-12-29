@@ -4,7 +4,7 @@ using Cast.Visitors;
 
 namespace Test;
 
-public class Functions
+public class FunctionTests
 {
     [Test]
     public void ConstructorFunctionDecl()

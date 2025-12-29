@@ -1,7 +1,8 @@
 grammar Cast;
 
 program
-	: statement+
+	: AT 'stage' OPEN_PAR stageName=stages CLOSE_PAR
+	| statement+
 	| EOF
 	;
 
@@ -30,6 +31,12 @@ importStmt
     : INCLUDE path=STRING ';'
     ;
 	
+stages
+	: 'vertex'
+	| 'fragment'
+	| 'compute'
+	;
+	
 assignment
     : DECLARE? LET variable=ID (':' type=ID typeSpace?)? EQUAL value=simpleExpression  # VarDeclAssign
     | DECLARE? LET variable=ID (':' type=ID typeSpace?)?    						   # VarDecl
@@ -50,7 +57,7 @@ uniformStmt
     : UNIFORM '{' (members+=uniformTypeDecl (',' members+=uniformTypeDecl)*)? '}' 	# UniformBlockDecl
     | UNIFORM uniformTypeDecl ';'                                           		# UniformVarDecl
     ;
-	
+
 outTypeDecl
 	: name=ID ':' type=ID typeSpace?
 	;
@@ -143,6 +150,7 @@ IF		: 'if';
 IN		: 'in';
 OUT		: 'out';
 
+AT 		: '@';
 PLUS    : '+';
 MINUS   : '-';
 MULTIPLY: '*';

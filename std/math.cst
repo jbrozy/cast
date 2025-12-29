@@ -79,6 +79,11 @@ declare fn (int) __mul__(other: float) : float;
 declare fn (int) __add__(other: float) : float;
 declare fn (int) __sub__(other: float) : float;
 
+declare fn (int) __div__(other: int) : int;
+declare fn (int) __mul__(other: int) : int;
+declare fn (int) __add__(other: int) : int;
+declare fn (int) __sub__(other: int) : int;
+
 declare fn (float) __div__(other: int) : float;
 declare fn (float) __mul__(other: int) : float;
 declare fn (float) __add__(other: int) : float;

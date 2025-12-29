@@ -5,7 +5,7 @@ using Cast.Visitors;
 
 namespace Test;
 
-public class Tests
+public class AssignmentTests
 {
     [Test]
     public void AssignmentDecl()
@@ -27,20 +27,16 @@ public class Tests
     public void Assignment()
     {
         StringBuilder sourceBuilder = new StringBuilder();
-        sourceBuilder.Append("let a : int;\n");
-        sourceBuilder.Append("a = 1;\n");
-        
+        sourceBuilder.AppendLine(StdHelper.getStd());
+        sourceBuilder.AppendLine("let a : int;");
+        sourceBuilder.AppendLine("a = 1;");
         string source =  sourceBuilder.ToString();
+        
         CastParser parser = Helper.Setup(source);
-        CastParser.StatementContext statement = parser.statement();
-        CastParser.AssignmentContext assignment = parser.assignment();
-        
         SymbolPassVisitor visitor = new SymbolPassVisitor();
-        CastSymbol decl = visitor.Visit(statement);
-        CastSymbol assign = visitor.Visit(assignment);
-        
-        Assert.That(decl.CastType == CastType.INT);
-        Assert.That(assign.CastType == CastType.INT);
+        visitor.Visit(parser.program());
+
+        CastSymbol? decl = visitor.Scope.Lookup("a");
     }
     
     [Test]

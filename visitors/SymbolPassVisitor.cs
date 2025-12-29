@@ -207,11 +207,21 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         string functionName = context.op.Text == "+" ? "__add__" : "__sub__";
         
         var parameters = new List<CastSymbol>();
+
+        string lookupName = "";
+        if (left.IsStruct())
+        {
+            parameters.Add(left);
+            lookupName = left.StructName;
+        }
+        else
+        {
+            lookupName = left.CastType.ToString().ToLower();
+        }
         parameters.Add(right);
-
+        
         FunctionKey key = FunctionKey.Of(functionName, parameters);
-
-        CastSymbol lhsTypeInfo = _scope.Lookup(left.StructName);
+        CastSymbol? lhsTypeInfo = _scope.Lookup(lookupName);
         CastSymbol function = lhsTypeInfo.Functions[key];
         CastSymbol result = function.ReturnType.Clone();
         
@@ -568,7 +578,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             context.functionIdentifier().functionName.Text;
         
         var paramTypes = new List<CastSymbol>();
-        paramTypes.Add(Types.ResolveType(typeFnText));
+        if (Types.ResolveType(typeFnText).IsStruct())
+        {
+            paramTypes.Add(Types.ResolveType(typeFnText));
+        }
+        
         if (context.paramList() != null)
         {
             foreach (var @param in context.paramList().typeDecl())
