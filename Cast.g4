@@ -19,7 +19,7 @@ statement
     | spaceDecl ';'                 				# SpaceDeclStmt
     | RETURN simpleExpression ';'   				# ReturnStmt    
     | () simpleExpression ';'     				    # ExprStmt
-	| AT OPEN_PAR stageName=stage CLOSE_PAR					# StageStmt
+	| AT STAGE OPEN_PAR stageName=stage CLOSE_PAR	# StageStmt
     ;
 
 inOut
@@ -138,6 +138,7 @@ atom
     | '(' simpleExpression ')'          # ParenAtom
     ;
 
+STAGE : 'stage';
 TYPE : 'type';
 INCLUDE : 'include';
 STRING : '"' (~'"')* '"';
