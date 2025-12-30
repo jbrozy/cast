@@ -97,3 +97,8 @@ declare fn (mat3) __add__(rhs: mat3) : mat3;
 declare fn (mat3) __sub__(rhs: mat3) : mat3;
 
 declare fn (mat3) __mul__(rhs: vec3) : vec3;
+
+declare fn (mat4) __mul__(rhs: vec4) : vec4;
+declare fn (mat4) __div__(rhs: vec4) : vec4;
+declare fn (mat4) __add__(rhs: vec4) : vec4;
+declare fn (mat4) __sub__(rhs: vec4) : vec4;

@@ -3,7 +3,7 @@ using Cast;
 using Cast.core.exceptions;
 using Cast.Visitors;
 
-namespace Test;
+namespace Test.cases;
 
 public class AssignmentTests
 {

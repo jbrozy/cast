@@ -20,7 +20,6 @@ out {
 
 fn main() {
     gl_Position = matrix * vec4(position, 1.0);
-    let a = matrix * vec4(position, 1.0).xyz;
     fragPosition = (matrix * vec4(position, 1.0)).xyz;
     uv = texCoords;
     

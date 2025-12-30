@@ -1,4 +1,5 @@
-﻿using Antlr4.Runtime.Tree;
+﻿using System.Data;
+using Antlr4.Runtime.Tree;
 using Cast.core.exceptions;
 
 namespace Cast.Visitors;
@@ -95,22 +96,25 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol lhs = CastSymbol.Void;
         CastSymbol rhs = CastSymbol.Void;
 
-        string varName = context.variable.Text;
+        string varName = context.typeDecl().variable.Text;
 
         // infer on lhs
-        if (context.type != null)
+        if (context.typeDecl() != null)
         {
-            lhs = _scope.Lookup(context.type.Text);// Visit(context.typeDecl());
-            if (context.typeSpace()?.spaceName != null)
+            if (context.typeDecl().type != null)
             {
-                string spaceName = context.typeSpace()?.spaceName.Text;
-                if (!_scope.TryGetSymbol(spaceName, out CastSymbol space))
+                lhs = _scope.Lookup(context.typeDecl().type.Text);// Visit(context.typeDecl());
+                if (context.typeDecl()?.typeSpace()?.spaceName != null)
                 {
-                    throw new Exception($"Space '{spaceName}' not found");
-                }
+                    string spaceName = context.typeDecl().typeSpace()?.spaceName.Text;
+                    if (!_scope.TryGetSymbol(spaceName, out CastSymbol space))
+                    {
+                        throw new Exception($"Space '{spaceName}' not found");
+                    }
 
-                lhs.SpaceName = spaceName;
-                lhs.TypeSpace = space;
+                    lhs.SpaceName = spaceName;
+                    lhs.TypeSpace = space;
+                }
             }
         }
 
@@ -137,8 +141,8 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
     {
-        string name = context.variable.Text;
-        string type = context.type.Text;
+        string name = context.typeDecl().variable.Text;
+        string type = context.typeDecl().type.Text;
 
         if (!_scope.TryGetSymbol(type, out CastSymbol? typeSymbol))
         {
@@ -146,19 +150,43 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         }
 
         CastSymbol clone = typeSymbol.Clone();
-        if (context.typeSpace() != null)
+        if (context.typeDecl().typeSpace() != null)
         {
-            if (!_scope.TryGetSymbol(context.typeSpace().spaceName.Text, out CastSymbol space))
+            if (!_scope.TryGetSymbol(context.typeDecl().typeSpace().spaceName.Text, out CastSymbol space))
             {
-                throw new Exception($"Space not found '{context.typeSpace().spaceName.Text}'");
+                throw new Exception($"Space not found '{context.typeDecl().typeSpace().spaceName.Text}'");
             }
 
             clone.TypeSpace = space;
-            clone.SpaceName = context.typeSpace().spaceName.Text;
+            clone.SpaceName = context.typeDecl().typeSpace().spaceName.Text;
+        }
+
+        if (context.typeDecl().typeSpaceConversion() != null)
+        {
+            string from = context.typeDecl().typeSpaceConversion().From.Text;
+            string to = context.typeDecl().typeSpaceConversion().To.Text;
+
+            if (from == to)
+                throw new InvalidConversionMatrixException(from, to);
+            
+            CastSymbol fromSpace = CastSymbol.Void;
+            CastSymbol toSpace = CastSymbol.Void;
+
+            if (!_scope.TryGetSymbol(from, out fromSpace))
+            {
+                throw new SpaceNotFoundException(from);
+            }
+            if (!_scope.TryGetSymbol(to, out toSpace))
+            {
+                throw new SpaceNotFoundException(to);
+            }
+
+            clone.Conversion = (fromSpace, toSpace)!;
         }
 
         clone.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
         _scope.Define(name, clone);
+        Nodes[context] = clone;
         
         return clone;
     }
@@ -286,6 +314,22 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
         if (!left.Equals(right))
             throw new Exception($"Type mismatch between: {context.left.GetText()} and {context.right.GetText()}");
+        
+        // handle matrix conversions
+        if (left.Conversion != null)
+        {
+            string leftConversionSpace = left.Conversion.Value.from.SpaceName;
+            string endSpace = left.Conversion.Value.to.SpaceName;
+
+            if (right.SpaceName != leftConversionSpace)
+            {
+                throw new InvalidSpaceConversionException(context.left.GetText(), leftConversionSpace);
+            }
+            
+            left = _scope.Lookup(endSpace);
+        }
+
+        left = left.Clone();
         Nodes[context] = left;
         return left;
     }
@@ -673,20 +717,43 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return CastSymbol.Space(context.spaceName.Text);
     }
 
+    public CastSymbol VisitTypeSpaceConversion(CastParser.TypeSpaceConversionContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitTypeDecl(CastParser.TypeDeclContext context)
     {
         if (String.IsNullOrEmpty(context.variable?.Text))
             return CastSymbol.Void;
+
+        CastSymbol? fromSpace = null;
+        CastSymbol? toSpace = null;
+        
+        if (context.typeSpaceConversion() != null)
+        {
+            CastParser.TypeSpaceConversionContext ctx =  context.typeSpaceConversion();
+            string from = ctx.From.Text;
+            string to = ctx.To.Text;
+            
+            if (!_scope.TryGetSymbol(from, out fromSpace))
+            {
+                throw new SpaceNotFoundException(from);
+            }
+            if (!_scope.TryGetSymbol(to, out fromSpace))
+            {
+                throw new SpaceNotFoundException(to);
+            }
+        }
         
         if (_scope.TryGetSymbol(context.variable?.Text, out CastSymbol type))
         {
             type.IsUniform = isInUniformBlock;
             return Nodes[context] = type;
         }
-        
+
         var resolveType = Types.ResolveType(context.type.Text);
         resolveType.IsUniform = isInUniformBlock;
-        // _scope.Define(context.variable.Text, resolveType);
         Nodes[context] = resolveType;
         return resolveType;
     }

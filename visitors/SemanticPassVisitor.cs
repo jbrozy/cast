@@ -62,15 +62,20 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        String variableName = context.variable.Text;
+        String variableName = context.typeDecl().variable.Text;
         CastSymbol lhs = CastSymbol.Void;
         CastSymbol rhs = CastSymbol.Void;
 
         // type based on lhs
-        if (context.type != null)
+        if (context.typeDecl() != null)
         {
-            lhs = _scope.Lookup(context.type.Text); // Visit(context.typ);
+            if (context.typeDecl().type != null)
+            {
+                string typeDeclName = context.typeDecl().type.Text;
+                lhs = _scope.Lookup(typeDeclName); // Visit(context.typ);
+            }
         }
+        
         if (context.value != null)
         {
             // infer type based on rhs
@@ -675,6 +680,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitTypeSpace(CastParser.TypeSpaceContext context)
     {
         return CastSymbol.Space(context.spaceName.Text);
+    }
+
+    public CastSymbol VisitTypeSpaceConversion(CastParser.TypeSpaceConversionContext context)
+    {
+        throw new NotImplementedException();
     }
 
     public CastSymbol VisitTypeDecl(CastParser.TypeDeclContext context)

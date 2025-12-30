@@ -30,7 +30,8 @@ inOut
 importStmt
     : INCLUDE path=STRING ';'
     ;
-	
+
+
 stage
 	: 'vertex'
 	| 'fragment'
@@ -38,9 +39,9 @@ stage
 	;
 	
 assignment
-    : DECLARE? LET variable=ID (':' type=ID typeSpace?)? EQUAL value=simpleExpression  # VarDeclAssign
-    | DECLARE? LET variable=ID (':' type=ID typeSpace?)?    						   # VarDecl
-    | varRef=ID EQUAL value=simpleExpression                                           # VarAssign
+    : DECLARE? LET typeDecl    						   		# VarDecl
+    | DECLARE? LET typeDecl EQUAL value=simpleExpression  	# VarDeclAssign
+    | varRef=ID EQUAL value=simpleExpression            	# VarAssign
     ;
 	
 locationDecl
@@ -113,9 +114,16 @@ paramList
 typeSpace
     : LT spaceName=ID GT
     ;
+
+typeSpaceConversion
+	: LT From=ID ',' To=ID GT
+	;
 	
 typeDecl
-    : variable=ID ':' type=ID typeSpace?
+	: variable=ID ':' type=ID
+	| variable=ID ':' type=ID typeSpaceConversion
+    | variable=ID ':' type=ID typeSpace
+	| variable=ID
     ;
     
 spaceDecl

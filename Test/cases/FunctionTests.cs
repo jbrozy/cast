@@ -2,7 +2,7 @@
 using Cast;
 using Cast.Visitors;
 
-namespace Test;
+namespace Test.cases;
 
 public class FunctionTests
 {

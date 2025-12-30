@@ -21,11 +21,15 @@ public class CastSymbol
     public IDictionary<FunctionKey, CastSymbol> Functions { get; set;  } = new Dictionary<FunctionKey, CastSymbol>();
     public string ParamName { get; set; }
     public CastSymbol? ReturnType { get; set; }
-    public CastSymbol? TypeSpace { get; set; }
+    public CastSymbol TypeSpace { get; set; }
     public CastSymbol? Constructor { get; set; }
+    
+    // for conversion matrices
+    public (CastSymbol from, CastSymbol to)? Conversion; 
+    
     public bool IsUniform { get; set; } = false;
-    public string FunctionName { get; set; }
-    public string SpaceName { get; set; }
+    public string FunctionName { get; init; }
+    public string SpaceName { get; set; } = "None";
     public string Identifier { get; set; }
     public bool IsReturn { get; set; } = false;
     public bool IsDeclaration { get; set; } = false;
@@ -34,11 +38,6 @@ public class CastSymbol
     {
         return CastType == CastType.STRUCT;
     }
-
-    // When this is set to true, the field ConversionFrom and ConversionTo are set
-    public bool IsConversionMatrix { get; set; } = false;
-    public CastSymbol? ConversionFrom { get; set; }
-    public CastSymbol? ConversionTo { get; set; }
 
     public bool IsFunction => CastType == CastType.FUNCTION;
 
@@ -118,10 +117,7 @@ public class CastSymbol
             IsUniform = this.IsUniform,
             IsReturn = this.IsReturn,
             IsDeclaration = this.IsDeclaration,
-
-            IsConversionMatrix = this.IsConversionMatrix,
-            ConversionFrom = this.ConversionFrom,
-            ConversionTo = this.ConversionTo
+            Conversion = this.Conversion,
         };
     }
 }

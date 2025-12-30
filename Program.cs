@@ -163,8 +163,6 @@ static void Repl()
             {
                 outFileName = output + Path.GetFileName(file);
             }
-        
-            Console.WriteLine(source);
             File.WriteAllText(outFileName, result);
         } catch (Exception e)
         {

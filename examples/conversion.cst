@@ -1,0 +1,3 @@
+﻿let modelMatrix : mat4<None, Model>;
+let a : vec4<None>;
+let b = modelMatrix * a;

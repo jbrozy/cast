@@ -68,7 +68,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        string name = context.variable.Text;
+        string name = context.typeDecl().variable.Text;
         CastSymbol node = Nodes[context];
         if (node.IsDeclaration)
             return "";
@@ -90,7 +90,15 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitVarDecl(CastParser.VarDeclContext context)
     {
-        return "";
+        var node = Nodes[context];
+        if (node.IsDeclaration)
+        {
+            return "";
+        }
+        string name = context.typeDecl().variable.Text;
+        string type = context.typeDecl().type.Text;
+        
+        return $"\n{type} {name};\n";
     }
 
     public string VisitVarAssign(CastParser.VarAssignContext context)
@@ -448,6 +456,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitTypeSpace(CastParser.TypeSpaceContext context)
     {
         throw new NotImplementedException();
+    }
+
+    public string VisitTypeSpaceConversion(CastParser.TypeSpaceConversionContext context)
+    {
+        return "";
     }
 
     public string VisitTypeDecl(CastParser.TypeDeclContext context)
