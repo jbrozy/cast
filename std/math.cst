@@ -70,35 +70,52 @@ declare fn (vec3) mix(target: vec3, t: vec3) : vec3;
 declare fn (vec3) mix(target: vec3, t: float) : vec3;
 
 declare fn (float) __add__(other: float) : float;
-declare fn (float) __sub__(other: float) : float;
-declare fn (float) __mul__(other: float) : float;
 declare fn (float) __div__(other: float) : float;
+declare fn (float) __mul__(other: float) : float;
+declare fn (float) __sub__(other: float) : float;
 
+declare fn (int) __add__(other: float) : float;
 declare fn (int) __div__(other: float) : float;
 declare fn (int) __mul__(other: float) : float;
-declare fn (int) __add__(other: float) : float;
 declare fn (int) __sub__(other: float) : float;
 
+declare fn (int) __add__(other: int) : int;
 declare fn (int) __div__(other: int) : int;
 declare fn (int) __mul__(other: int) : int;
-declare fn (int) __add__(other: int) : int;
 declare fn (int) __sub__(other: int) : int;
 
+declare fn (float) __add__(other: int) : float;
 declare fn (float) __div__(other: int) : float;
 declare fn (float) __mul__(other: int) : float;
-declare fn (float) __add__(other: int) : float;
 declare fn (float) __sub__(other: int) : float;
 
 declare fn (mat4) mat3() : mat3;
 
+declare fn (mat3) __add__(rhs: mat3) : mat3;
 declare fn (mat3) __div__(rhs: mat3) : mat3;
 declare fn (mat3) __mul__(rhs: mat3) : mat3;
-declare fn (mat3) __add__(rhs: mat3) : mat3;
 declare fn (mat3) __sub__(rhs: mat3) : mat3;
 
-declare fn (mat3) __mul__(rhs: vec3) : vec3;
-
-declare fn (mat4) __mul__(rhs: vec4) : vec4;
-declare fn (mat4) __div__(rhs: vec4) : vec4;
 declare fn (mat4) __add__(rhs: vec4) : vec4;
-declare fn (mat4) __sub__(rhs: vec4) : vec4;
+declare fn (mat4) __mul__(rhs: vec4) : vec4;
+
+declare fn (mat4) __add__(rhs: mat4) : vec4;
+declare fn (mat4) __div__(rhs: mat4) : vec4;
+declare fn (mat4) __mul__(rhs: mat4) : vec4;
+declare fn (mat4) __sub__(rhs: mat4) : vec4;
+
+declare fn (float) dFdx() : float;
+declare fn (float) dFdy() : float;
+declare fn (float) fwidth() : float;
+
+declare fn (vec2) dFdx() : vec2;
+declare fn (vec2) dFdy() : vec2;
+declare fn (vec2) fwidth() : vec2;
+
+declare fn (vec3) dFdx() : vec3;
+declare fn (vec3) dFdy() : vec3;
+declare fn (vec3) fwidth() : vec3;
+
+declare fn (vec4) dFdx() : vec4;
+declare fn (vec4) dFdy() : vec4;
+declare fn (vec4) fwidth() : vec4;

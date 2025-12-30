@@ -294,7 +294,14 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
         {
-            if (left.SpaceName != right.SpaceName)
+            string leftSpace = left.SpaceName;
+            string rightSpace = left.SpaceName;
+            if (leftSpace == "None")
+            {
+                leftSpace = right.SpaceName;
+            }
+            
+            if (leftSpace != rightSpace)
                 throw new Exception($"Space mismatch: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
         }
 

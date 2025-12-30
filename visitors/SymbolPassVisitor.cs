@@ -291,6 +291,10 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             if (left == null) throw new Exception($"No struct with Name {leftExpr.StructName} defined");
 
             var argTypes = new List<CastSymbol>();
+            if (left.IsStruct())
+            {
+                argTypes.Add(left);
+            }
             foreach (var arg in context.args.simpleExpression()) argTypes.Add(Visit(arg));
 
             var functionKey = FunctionKey.Of(context.name.Text, argTypes);
@@ -326,7 +330,8 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 throw new InvalidSpaceConversionException(context.left.GetText(), leftConversionSpace);
             }
             
-            left = _scope.Lookup(endSpace);
+            left.TypeSpace = _scope.Lookup(endSpace);
+            left.SpaceName = endSpace;
         }
 
         left = left.Clone();
