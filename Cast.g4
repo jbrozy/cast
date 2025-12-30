@@ -42,7 +42,11 @@ assignment
     | DECLARE? LET variable=ID (':' type=ID typeSpace?)?    						   # VarDecl
     | varRef=ID EQUAL value=simpleExpression                                           # VarAssign
     ;
-    
+	
+locationDecl
+	: AT 'loc' OPEN_PAR (layoutId=INT) CLOSE_PAR
+	;
+	
 inStmt 
     : IN '{' (members+=inTypeDecl (',' members+=inTypeDecl)*)? '}' 		# InBlockDecl
     | IN inTypeDecl ';'                                           	 	# InVarDecl
@@ -59,7 +63,7 @@ uniformStmt
     ;
 
 outTypeDecl
-	: name=ID ':' type=ID typeSpace?
+	: name=ID ':' locationDecl? type=ID typeSpace?
 	;
 
 inTypeDecl

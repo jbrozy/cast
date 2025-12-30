@@ -143,6 +143,8 @@ static void Repl()
         CastLexer  lexer = new CastLexer(inputStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         CastParser  parser = new CastParser(tokens);
+        parser.RemoveErrorListeners();
+        parser.AddErrorListener(new VisualErrorListener(source));
 
         try
         {

@@ -421,6 +421,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context);
     }
 
+    public CastSymbol VisitLocationDecl(CastParser.LocationDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitInStmt(CastParser.InStmtContext context)
     {
         throw new NotImplementedException();
@@ -439,6 +444,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
     {
         string name = context.name.Text;
+        Console.WriteLine(context.GetText());
         CastSymbol? symbol = Types.ResolveType(context.type.Text);
         
         if (context.typeSpace()?.spaceName != null)

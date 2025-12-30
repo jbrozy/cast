@@ -488,6 +488,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Nodes[context] = result;
     }
 
+    public CastSymbol VisitLocationDecl(CastParser.LocationDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitInStmt(CastParser.InStmtContext context)
     {
         throw new NotImplementedException();

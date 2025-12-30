@@ -13,9 +13,9 @@ in {
 }
 
 out {
-    outNormals : vec3,
-    fragPosition : vec3,
-    uv : vec2
+    outNormals : @loc(0) vec3,
+    fragPosition : @loc(1) vec3,
+    uv : @loc(2) vec2
 }
 
 fn main() {

@@ -128,8 +128,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         outs.Append("\n");
         foreach (var outTypeDecl in context._members)
         {
-            outs.Append(Visit(outTypeDecl));
-            outs.Append("\n");
+            outs.AppendLine(Visit(outTypeDecl));
         }
         return outs.ToString();
     }
@@ -308,6 +307,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
+    public string VisitLocationDecl(CastParser.LocationDeclContext context)
+    {
+        return "";
+    }
+
     public string VisitInStmt(CastParser.InStmtContext context)
     {
         throw new NotImplementedException();
@@ -325,7 +329,15 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
     {
-        return $"out {context.type.Text} {context.name.Text};";
+        StringBuilder output = new StringBuilder();
+        if (context.locationDecl() != null)
+        {
+            string layoutId = context.locationDecl().layoutId.Text;
+            output.Append($"layout(location = {layoutId}) ");
+        }
+        
+        output.Append($"out {context.type.Text} {context.name.Text};");
+        return output.ToString();
     }
 
     public string VisitInTypeDecl(CastParser.InTypeDeclContext context)
