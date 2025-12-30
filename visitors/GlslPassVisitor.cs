@@ -61,6 +61,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     //     return "";
     // }
 
+    public string VisitStageStmt(CastParser.StageStmtContext context)
+    {
+        return "";
+    }
+
     public string VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
         string name = context.variable.Text;
@@ -176,7 +181,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
     {
-        throw new NotImplementedException();
+        return "";
     }
 
     public string VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
@@ -186,7 +191,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
     {
-        throw new NotImplementedException();
+        return "";
     }
 
     public string VisitIfStmt(CastParser.IfStmtContext context)
@@ -293,9 +298,9 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
-    public string VisitStages(CastParser.StagesContext context)
+    public string VisitStage(CastParser.StageContext context)
     {
-        throw new NotImplementedException();
+        return "";
     }
 
     public string VisitAssignment(CastParser.AssignmentContext context)

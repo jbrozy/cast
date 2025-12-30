@@ -1,8 +1,7 @@
 grammar Cast;
 
 program
-	: AT 'stage' OPEN_PAR stageName=stages CLOSE_PAR
-	| statement+
+	: statement+
 	| EOF
 	;
 
@@ -20,6 +19,7 @@ statement
     | spaceDecl ';'                 				# SpaceDeclStmt
     | RETURN simpleExpression ';'   				# ReturnStmt    
     | () simpleExpression ';'     				    # ExprStmt
+	| AT OPEN_PAR stageName=stage CLOSE_PAR					# StageStmt
     ;
 
 inOut
@@ -31,7 +31,7 @@ importStmt
     : INCLUDE path=STRING ';'
     ;
 	
-stages
+stage
 	: 'vertex'
 	| 'fragment'
 	| 'compute'

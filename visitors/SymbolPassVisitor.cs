@@ -7,6 +7,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 {
     private Scope<CastSymbol> _scope = new();
     private bool isInUniformBlock = false;
+    private Stage _stage = Stage.NONE;
 
     public SymbolPassVisitor()
     {
@@ -81,6 +82,13 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     //     _scope.Define(name, symbol);
     //     return symbol;
     // }
+
+    public CastSymbol VisitStageStmt(CastParser.StageStmtContext context)
+    {
+        string stageName = context.stageName.GetText();
+        this._stage = Enum.TryParse(stageName.ToUpper(), out Stage stage) ? stage : Stage.NONE;
+        return CastSymbol.Void;
+    }
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
@@ -401,9 +409,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
-    public CastSymbol VisitStages(CastParser.StagesContext context)
+    public CastSymbol VisitStage(CastParser.StageContext context)
     {
-        throw new NotImplementedException();
+        string stageName = context.GetText();
+        Console.WriteLine(stageName);
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)

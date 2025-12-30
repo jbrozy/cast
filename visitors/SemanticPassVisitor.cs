@@ -55,6 +55,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     //     return CastSymbol.Void;
     // }
 
+    public CastSymbol VisitStageStmt(CastParser.StageStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
         String variableName = context.variable.Text;
@@ -325,7 +330,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
     {
-        throw new NotImplementedException();
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
@@ -335,7 +340,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
     {
-        throw new NotImplementedException();
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
@@ -472,9 +477,9 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
-    public CastSymbol VisitStages(CastParser.StagesContext context)
+    public CastSymbol VisitStage(CastParser.StageContext context)
     {
-        throw new NotImplementedException();
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitAssignment(CastParser.AssignmentContext context)
