@@ -1,6 +1,34 @@
-﻿fn (self: vec3) sfd() : float {
-    let s = vec3(0.0, 1.2, 0.0);
-    let sphereDist = (self - s).length() - 1.0;
-    let planeDist = self.y;
-    return sphereDist.min(planeDist);
+﻿uniform {
+    modelViewMatrix : mat4<Model, View>,
+    projectionMatrix : mat4<View, Clip>,
+    normalMatrix : mat3<Model, View>,
+    gbufferModelViewInverse : mat4<View, Model>,
+    chunkOffset: vec3<Model>
+}
+
+in {
+    vaUV0 : vec2,
+    vaUV2 : vec2,
+    vaPosition : vec3<Model>,
+    vaColor : vec4,
+    vaNormal : vec3<Model>
+}
+
+out {
+    fsUV0 : vec2,
+    fsUV2 : vec2,
+    fsColor : vec4,
+    fsNormal : vec3<View>,
+    fsPosition : vec3<View>,
+    fsLMCoords : vec2
+}
+
+fn main() {
+    fsUV0 = vaUV0;
+    fsUV2 = vaUV2;
+    fsColor = vaColor;
+    fsNormal = normalMatrix * vaNormal;
+    fsLMCoords = vaUV2 * (1.0 / 256.0) + (1.0 / 32.0);
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
 }

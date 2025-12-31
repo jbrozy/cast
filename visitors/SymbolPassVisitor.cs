@@ -245,9 +245,9 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         var parameters = new List<CastSymbol>();
 
         string lookupName = "";
+        parameters.Add(left);
         if (left.IsStruct())
         {
-            parameters.Add(left);
             lookupName = left.StructName;
         }
         else
@@ -603,7 +603,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
-        Console.WriteLine(context.GetText());
         string returnTypeText = context.returnType?.Text ?? "void";
         CastSymbol? returnType = _scope.Lookup(returnTypeText);
         string functionName = context.functionIdentifier().functionName.Text;
@@ -676,10 +675,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         var paramTypes = new List<CastSymbol>();
         if (context.typeVarName != null)
         {
-            if (Types.ResolveType(typeFnText).IsStruct())
-            {
-                paramTypes.Add(Types.ResolveType(typeFnText));
-            }
+            paramTypes.Add(Types.ResolveType(typeFnText));
         }
         
         if (context.paramList() != null)

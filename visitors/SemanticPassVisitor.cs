@@ -139,13 +139,20 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             rhs.TypeSpace = space;
             rhs.SpaceName = lhs.SpaceName;
         }
-        
-        if (!string.IsNullOrEmpty(lhs.SpaceName) && !String.IsNullOrEmpty(rhs.SpaceName))
+
+        if (lhs.SpaceName == "None")
         {
-            if (lhs.SpaceName != rhs.SpaceName)
-            {
-                throw new Exception($"Incompatible space left: '{lhs.SpaceName}' and right: '{rhs.SpaceName}'");
-            }
+            lhs.SpaceName = rhs.SpaceName;
+        }
+        
+        if (rhs.SpaceName == "None")
+        {
+            rhs.SpaceName = lhs.SpaceName;
+        }
+        
+        if (lhs.SpaceName != rhs.SpaceName)
+        {
+            throw new Exception($"Incompatible space left: '{lhs.SpaceName}' and right: '{rhs.SpaceName}'");
         }
 
         if (!_scope.Exists(varRef))
@@ -302,19 +309,12 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             }
             
             if (leftSpace != rightSpace)
-                throw new Exception($"Space mismatch: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
+                throw new Exception($"Space MISMATCH: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
         }
 
         string opName = context.op.Text == "*" ? "__mul__" : "__div__";
         var args = new List<CastSymbol> {};
-        if (left.IsStruct())
-        {
-            args.AddRange( right );
-        }
-        else
-        {
-            args.Add( right );
-        }
+        args.AddRange( left, right );
 
         string targetTypeName = left.IsStruct() 
             ? left.StructName 

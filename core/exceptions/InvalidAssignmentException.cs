@@ -20,7 +20,6 @@ public class InvalidAssignmentException(CastSymbol left, CastSymbol right) : Exc
             }
         }
         
-        
         if (left.SpaceName != right.SpaceName)
         {
             sb.Append($"Incompatible space: '{left.SpaceName}'. Expected: '{right.SpaceName}'\n");
