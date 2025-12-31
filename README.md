@@ -24,6 +24,13 @@ let b = vec3<World>(1.0);
 let c = a * b;  // unable to mix Model * World
 ```
 
+```rust
+let matrix: mat4<Model, World>;
+let position = vec4<Model>(...);
+let worldPos : vec4<World> = matrix * position; // converts Model to World Position
+```
+
+
 ### Object Oriented Structs
 
 ```rust
