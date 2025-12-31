@@ -72,8 +72,11 @@ inTypeDecl
 	;
 
 uniformTypeDecl
-	: name=ID ':' type=ID typeSpace?
-	;
+	: variable=ID ':' type=ID
+	| variable=ID ':' type=ID typeSpaceConversion
+    | variable=ID ':' type=ID typeSpace
+	| variable=ID
+    ;
 	
 block
     : OPEN_CURLY  statement* CLOSE_CURLY
@@ -88,7 +91,7 @@ functionDecl
     ;
 
 typedFunctionDecl
-    : (DECLARE)? FN OPEN_PAR typeFn=ID CLOSE_PAR functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
+    : (DECLARE)? FN OPEN_PAR (typeVarName=ID ':')? typeFn=ID CLOSE_PAR functionIdentifier? OPEN_PAR params=paramList? CLOSE_PAR (':' returnType=ID)? (block | ';')
     ;
 
 constructorFunctionDecl

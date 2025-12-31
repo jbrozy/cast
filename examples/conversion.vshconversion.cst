@@ -1,0 +1,8 @@
+#version 330
+
+float sfd(vec3 self) {
+	vec3 s = vec3(0.0, 1.2, 0.0);
+	float sphereDist = length(self - s) - 1.0;
+	float planeDist = self.y;
+	return min(sphereDist, planeDist);
+}

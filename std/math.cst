@@ -119,3 +119,8 @@ declare fn (vec3) fwidth() : vec3;
 declare fn (vec4) dFdx() : vec4;
 declare fn (vec4) dFdy() : vec4;
 declare fn (vec4) fwidth() : vec4;
+
+declare fn (vec4) __add__() : vec4;
+declare fn (vec4) __div__() : vec4;
+declare fn (vec4) __mul__() : vec4;
+declare fn (vec4) __sub__() : vec4;

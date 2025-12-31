@@ -49,7 +49,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         foreach (var uniform in context.uniformTypeDecl())
         {
             CastSymbol uniformTypeSymbol = Visit(uniform);
-            _scope.Define(uniform.name.Text, uniformTypeSymbol);
+            _scope.Define(uniform.variable.Text, uniformTypeSymbol);
             Nodes[uniform] = uniformTypeSymbol;
         }
         return CastSymbol.Void;
@@ -59,7 +59,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     {
         CastSymbol typeSymbol = Visit(context.uniformTypeDecl()).Clone();
         typeSymbol.IsUniform = true;
-        _scope.Assign(context.uniformTypeDecl().name.Text, typeSymbol);
+        _scope.Assign(context.uniformTypeDecl().variable.Text, typeSymbol);
         return Nodes[context] = typeSymbol;
     }
 
@@ -330,8 +330,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 throw new InvalidSpaceConversionException(context.left.GetText(), leftConversionSpace);
             }
             
+            left = left.Conversion.Value.to.Clone();
+            left.StructName = right.StructName;
             left.TypeSpace = _scope.Lookup(endSpace);
             left.SpaceName = endSpace;
+            left.CastType = right.CastType;
         }
 
         left = left.Clone();
@@ -528,6 +531,30 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
     {
         var resolveType = Types.ResolveType(context.type.Text);
+        CastSymbol? fromSpace = null;
+        CastSymbol? toSpace = null;
+        
+        if (context.typeSpaceConversion() != null)
+        {
+            CastParser.TypeSpaceConversionContext ctx =  context.typeSpaceConversion();
+            string from = ctx.From.Text;
+            string to = ctx.To.Text;
+            
+            if (!_scope.TryGetSymbol(from, out fromSpace))
+            {
+                throw new SpaceNotFoundException(from);
+            }
+            if (!_scope.TryGetSymbol(to, out toSpace))
+            {
+                throw new SpaceNotFoundException(to);
+            }
+
+            fromSpace.SpaceName = from;
+            toSpace.SpaceName = to;
+        }
+
+        resolveType.Conversion = (fromSpace, toSpace)!;
+        
         resolveType.IsUniform = true;
         return Nodes[context] = resolveType;
     }
@@ -601,7 +628,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
-        Console.WriteLine(context.GetText());
         string constr = context.typeFn.Text;
         var paramTypes = new List<CastSymbol>();
         if (context.paramList() != null)
@@ -648,9 +674,12 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             context.functionIdentifier().functionName.Text;
         
         var paramTypes = new List<CastSymbol>();
-        if (Types.ResolveType(typeFnText).IsStruct())
+        if (context.typeVarName != null)
         {
-            paramTypes.Add(Types.ResolveType(typeFnText));
+            if (Types.ResolveType(typeFnText).IsStruct())
+            {
+                paramTypes.Add(Types.ResolveType(typeFnText));
+            }
         }
         
         if (context.paramList() != null)
@@ -666,9 +695,16 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol function = CastSymbol.Function(functionName, paramTypes, returnType);
         function.IsDeclaration =  context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
 
-        CastSymbol? type = _scope.Lookup(typeFnText);
-        FunctionKey key = FunctionKey.Of(functionName, paramTypes);
-        type.Functions.TryAdd(key, function);
+        if (function.IsDeclaration)
+        {
+            CastSymbol? type = _scope.Lookup(typeFnText);
+            FunctionKey key = FunctionKey.Of(functionName, paramTypes);
+            type.Functions.TryAdd(key, function);
+        }
+        else
+        {
+            _scope.Define(functionName, function);
+        }
         
         return Nodes[context] = function;
     }

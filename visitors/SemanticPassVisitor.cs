@@ -50,11 +50,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return node;
     }
 
-    // public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
-    // {
-    //     return CastSymbol.Void;
-    // }
-
     public CastSymbol VisitStageStmt(CastParser.StageStmtContext context)
     {
         return CastSymbol.Void;
@@ -62,7 +57,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        String variableName = context.typeDecl().variable.Text;
+        string variableName = context.typeDecl().variable.Text;
         CastSymbol lhs = CastSymbol.Void;
         CastSymbol rhs = CastSymbol.Void;
 
@@ -295,10 +290,15 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
         {
             string leftSpace = left.SpaceName;
-            string rightSpace = left.SpaceName;
+            string rightSpace = right.SpaceName;
             if (leftSpace == "None")
             {
                 leftSpace = right.SpaceName;
+            }
+
+            if (rightSpace == "None")
+            {
+                rightSpace =  left.SpaceName;
             }
             
             if (leftSpace != rightSpace)
@@ -309,7 +309,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var args = new List<CastSymbol> {};
         if (left.IsStruct())
         {
-            args.AddRange( left, right );
+            args.AddRange( right );
         }
         else
         {
@@ -352,7 +352,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
     {
-        return CastSymbol.Void;
+        return Visit(context.typedFunctionDecl());
     }
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
@@ -551,73 +551,14 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
-        // _scope = new Scope<CastSymbol>(_scope);
-        // var node = Nodes[context];
-        // if (context.paramList() != null)
-        //     if (context.paramList().typeDecl() != null)
-        //         foreach (var type in context.paramList().typeDecl())
-        //         {
-        //             var result = Visit(type).Clone();
-        //             _scope.Define(type.variable.Text, result);
-        //         }
-
-        // String? typeFn = context.typedFunctionDecl()?.typeFn?.Text;
-        // if (typeFn != null)
-        // {
-        //     _scope.Define("self", _scope.Lookup(typeFn).Clone());
-        // }
-
-        // if (context.block() != null)
-        // {
-        //     Visit(context.block());
-        // }
-        // _scope = _scope.Parent;
-        // if (context.functionIdentifier() != null && context.typedFunctionDecl() == null)
-        // {
-        //     Nodes[context] = _scope.Lookup(context.functionIdentifier().functionName.Text);
-        // }
-        // else
-        // {
-        //     string name = "";
-
-        //     if (!String.IsNullOrEmpty(context.functionIdentifier()?.functionName?.Text))
-        //     {
-        //         name = context.functionIdentifier()?.functionName?.Text;
-        //     }
-
-        //     if (string.IsNullOrEmpty(name))
-        //     {
-        //         name = typeFn;
-        //     }
-        //     
-        //     var fn = _scope.Lookup(typeFn);
-        //     if (typeFn == "mat4")
-        //     {
-        //         Console.WriteLine("dbeug");
-        //     }
-
-        //     var paramTypes = new List<CastSymbol>();
-        //     if (fn.CastType == CastType.STRUCT) paramTypes.Add(fn.Constructor.ReturnType);
-        //     foreach (var @param in context.paramList().typeDecl())
-        //     {
-        //         var typeName = param.type.Text;
-        //         var t = Types.ResolveType(typeName);
-        //         paramTypes.Add(t);
-        //     }
-        //     
-        //     var type = string.IsNullOrEmpty(context.returnType?.Text) ? "void" : context.returnType.Text;
-        //     var returnType = Types.ResolveType(type);
-
-        //     var key = FunctionKey.Of(name, paramTypes);
-        //     var function = CastSymbol.Function(typeFn, paramTypes, returnType);
-        //     function.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
-        //     fn.Functions[key] = function;
-        //     var c = function.Clone();
-        //     c.Identifier =  name;
-        //     Nodes[context] = c;
-        //     return c;
-        // }
-
+        var node = Nodes[context];
+        if (context.block() != null)
+        {
+            foreach (var child in context.block().statement())
+            {
+                Visit(child);
+            }
+        }
         return CastSymbol.Void;
     }
 
@@ -633,7 +574,22 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        return CastSymbol.Void;
+        var fn = Nodes[context];
+
+        _scope = new Scope<CastSymbol>(_scope);
+        if (context.typeVarName != null)
+        {
+            CastSymbol type = _scope.Lookup(context.typeFn.Text).Clone();
+            _scope.Define(context.typeVarName.Text, type);
+        }
+        
+        if (context.block() != null)
+        {
+            Visit(context.block());
+        }
+
+        _scope = _scope.Parent;
+        return fn;
     }
 
     public CastSymbol VisitFunctionCall(CastParser.FunctionCallContext context)

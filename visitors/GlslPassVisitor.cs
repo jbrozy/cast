@@ -53,7 +53,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitUniformVarDecl(CastParser.UniformVarDeclContext context)
     {
-        return $"uniform {context.uniformTypeDecl().type.Text} {context.uniformTypeDecl().name};\n";
+        return $"uniform {context.uniformTypeDecl().type.Text} {context.uniformTypeDecl().variable.Text};\n";
     }
 
     // public string VisitVarDecl(CastParser.VarDeclContext context)
@@ -198,7 +198,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
     {
-        return "";
+        return Visit(context.typedFunctionDecl());
     }
 
     public string VisitIfStmt(CastParser.IfStmtContext context)
@@ -355,7 +355,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
     {
-        return $"uniform {context.type.Text} {context.name.Text};\n";
+        return $"uniform {context.type.Text} {context.variable.Text};\n";
     }
 
     public string VisitBlock(CastParser.BlockContext context)
@@ -418,8 +418,10 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         foreach (var arg in context.@params.typeDecl()) 
             args.Add($"{arg.type.Text} {arg.variable.Text}");
         builder.Append($"{type} {functionName.ToLower()}({string.Join(", ", args)})");
-        builder.Append(Visit(context.block()));
-        builder.Append("\n");
+        if (context.block() != null)
+        {
+            builder.Append(Visit(context.block()));
+        }
         return builder.ToString();
     }
 
@@ -435,7 +437,27 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        throw new NotImplementedException();
+        var fn = Nodes[context];
+        if (fn.IsDeclaration) return "";
+
+        var functionName = String.IsNullOrEmpty(fn.Identifier) ? fn.FunctionName : fn.Identifier;
+        var builder = new StringBuilder();
+        builder.Append("\n");
+        var args = new List<string>();
+        if (context.typeVarName != null)
+        {
+            args.Add($"{context.typeFn.Text} {context.typeVarName.Text}");
+        }
+
+        string type = context.returnType.Text;
+        foreach (var arg in context.@params.typeDecl()) 
+            args.Add($"{arg.type.Text} {arg.variable.Text}");
+        builder.Append($"{type} {functionName.ToLower()}({string.Join(", ", args)})");
+        if (context.block() != null)
+        {
+            builder.Append(Visit(context.block()));
+        }
+        return builder.ToString();
     }
 
     public string VisitFunctionCall(CastParser.FunctionCallContext context)
