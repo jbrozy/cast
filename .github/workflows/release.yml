@@ -1,0 +1,62 @@
+name: Release
+
+# Trigger ONLY when a tag starting with 'v' is pushed (e.g., v1.0.0)
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # Needed to create the GitHub Release
+
+jobs:
+  build-and-release:
+    name: Release for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive_name: cast-linux-x64.tar.gz
+          - os: windows-latest
+            rid: win-x64
+            archive_name: cast-windows-x64.zip
+          - os: macos-latest
+            rid: osx-x64 # Compatible with Intel & Apple Silicon (via Rosetta)
+            archive_name: cast-macos-x64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Publish creates the actual executable
+      - name: Publish Binary
+        run: |
+          dotnet publish --configuration Release \
+          --runtime ${{ matrix.rid }} \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          --output ./publish_output
+
+      # Zip/Tar the binary to make it a nice download
+      - name: Archive Release (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Compress-Archive -Path ./publish_output/* -DestinationPath ${{ matrix.archive_name }}
+
+      - name: Archive Release (Linux/Mac)
+        if: matrix.os != 'windows-latest'
+        run: |
+          tar -czvf ${{ matrix.archive_name }} -C ./publish_output .
+
+      # Upload the archive to the GitHub Release page
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.archive_name }}
