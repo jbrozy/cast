@@ -65,6 +65,7 @@ vec3 a = max(pow(vec3(1.0), vec3(2.2)), 1.0);
 ```
 ### For Loops
 ```rust
-for (i=0.0 to (1.0 + 2.0) inc=0.5) {...} // 0 <= 3 with i = i + 0.5
-for (i=0 until 1) {...} // 0 < 1 with i = i + 1
+for (i=0.0 to (1.0 + 2.0) inc=0.5) {...} // i <= 3 with i = i + 0.5
+for (i=0 until 1) {...} // i < 1 with i = i + 1
+for (i=2.0 until 0.0 dec=0.1) {} // i > 0 with i = i - 0.1
 ```
