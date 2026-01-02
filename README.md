@@ -10,7 +10,7 @@ Cast is designed to solve the common frustrations of shader programming. Writing
 
 ## Examples
 ### Coordinate Space Definitions
-Cast already defines spaces for Model, World, View, Clip and Space.
+Cast already defines spaces for Model, World, View, Clip and Screen.
 
 ```rust
 declare space Model;
