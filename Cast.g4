@@ -11,6 +11,7 @@ statement
     | functionDecl                  				# FnDeclStmt
 	| constructorFunctionDecl						# ConstructorFnDeclStmt
     | typedFunctionDecl                  			# TypedFnDeclStmt
+	| forStmt										# ForDeclStmt
     | block                         				# BlockStmt
 	| uniformStmt                 					# UniformStmtWrapper
 	| inStmt                 						# InStmtWrapper
@@ -80,6 +81,11 @@ uniformTypeDecl
 	| variable=ID ':' type=ID typeSpaceConversion
     | variable=ID ':' type=ID typeSpace
 	| variable=ID
+    ;
+	
+forStmt
+    : 'for' OPEN_PAR var=ID EQUAL start=simpleExpression '..' end=simpleExpression CLOSE_PAR block
+    | 'for' OPEN_PAR var=ID EQUAL start=simpleExpression '..' end=simpleExpression ',' 'inc' EQUAL inc=simpleExpression CLOSE_PAR block
     ;
 	
 block

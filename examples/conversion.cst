@@ -17,7 +17,6 @@ out {
 }
 
 fn main() {
-    let a = vec4(1.0, 1.0, 1.0, 1.0);
-    let xyz : vec3 = a.xyz;
-    let xy : vec2 = a.xy;
+    for (i=(0.5 + 0.5)..(1.0 + 2.0)) {
+    }
 }

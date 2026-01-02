@@ -357,6 +357,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.typedFunctionDecl());
     }
 
+    public CastSymbol VisitForDeclStmt(CastParser.ForDeclStmtContext context)
+    {
+        return Visit(context.forStmt());
+    }
+
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
     {
         return CastSymbol.Void;
@@ -561,6 +566,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         
         resolveType.IsUniform = true;
         return Nodes[context] = resolveType;
+    }
+
+    public CastSymbol VisitForStmt(CastParser.ForStmtContext context)
+    {
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitBlock(CastParser.BlockContext context)

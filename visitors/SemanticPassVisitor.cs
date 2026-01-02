@@ -407,6 +407,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.typedFunctionDecl());
     }
 
+    public CastSymbol VisitForDeclStmt(CastParser.ForDeclStmtContext context)
+    {
+        return Visit(context.forStmt());
+    }
+
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
     {
         _scope = new Scope<CastSymbol>(_scope);
@@ -590,6 +595,30 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
     {
         throw new NotImplementedException();
+    }
+
+    public CastSymbol VisitForStmt(CastParser.ForStmtContext context)
+    {
+        CastSymbol start = Visit(context.start);
+        CastSymbol end = Visit(context.end);
+
+        if (start.CastType != end.CastType)
+        {
+            throw new Exception($"Incompatible start: '{start.CastType}' and end '{end.CastType}' conditions");
+        }
+
+        _scope = new Scope<CastSymbol>(_scope);
+        string it = context.var.Text;
+        _scope.Define(it, start);
+
+        if (context.block() != null)
+        {
+            Visit(context.block());
+        }
+
+        // _scope = _scope.Parent;
+        
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitBlock(CastParser.BlockContext context)

@@ -201,6 +201,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return Visit(context.typedFunctionDecl());
     }
 
+    public string VisitForDeclStmt(CastParser.ForDeclStmtContext context)
+    {
+        return Visit(context.forStmt());
+    }
+
     public string VisitIfStmt(CastParser.IfStmtContext context)
     {
         StringBuilder ifStmt = new StringBuilder();
@@ -361,6 +366,28 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
     {
         return $"uniform {context.type.Text} {context.variable.Text};\n";
+    }
+
+    public string VisitForStmt(CastParser.ForStmtContext context)
+    {
+        StringBuilder builder = new StringBuilder();
+        string var = context.var.Text;
+        CastSymbol varType = _scope.Lookup(var);
+        string varTypeText = varType.CastType.ToString().ToLower();
+
+        string start = Visit(context.start);
+        string end = Visit(context.end);
+
+        string inc = $"{var}++";
+        if (context.inc != null)
+        {
+            inc = $"{var} += ({context.inc.GetText()})";
+        }
+
+        builder.Append($"for ({varTypeText} {var} = {start}; {var} < {end}; {inc})");
+        builder.Append(Visit(context.block()));
+        builder.AppendLine();
+        return builder.ToString();
     }
 
     public string VisitBlock(CastParser.BlockContext context)
