@@ -262,7 +262,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         
         // swizzling currently only works for vector types
         // I am not sure if this would work for other types
-        if (parent.ReturnType.AllowSwizzle)
+        if (parent.ReturnType.AllowSwizzle || parent.AllowSwizzle)
         {
             var match = System.Text.RegularExpressions.Regex.Match(parent.StructName, @"^([a-z]?vec)([234])$");
             if (!match.Success)

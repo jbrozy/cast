@@ -64,4 +64,8 @@
       <EmbeddedResource Remove="Test\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="examples\Phong\out\" />
+    </ItemGroup>
+
 </Project>
