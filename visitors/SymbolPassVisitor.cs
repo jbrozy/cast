@@ -645,6 +645,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 var typeName = param.type.Text;
                 var t = Types.ResolveType(typeName);
                 paramTypes.Add(t);
+                _scope.Define(param.variable.Text, t);
             }
         }
         

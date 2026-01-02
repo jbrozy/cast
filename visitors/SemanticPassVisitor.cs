@@ -633,6 +633,12 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         CastSymbol start = Visit(context.start);
         CastSymbol end = Visit(context.end);
+        
+        if (start.IsFunction)
+            start = start.ReturnType;
+
+        if (end.IsFunction)
+            end = end.ReturnType;
 
         if (start.CastType != end.CastType)
         {
@@ -669,7 +675,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
-        var node = Nodes[context];
         if (context.block() != null)
         {
             foreach (var child in context.block().statement())

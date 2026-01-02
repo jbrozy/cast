@@ -58,10 +58,6 @@
         <Link>Test\UnitTest1.cs</Link>
       </Compile>
       <Compile Remove="Test\**" />
-      <None Remove="std\color.cst" />
-      <Content Include="std\color.cst">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
