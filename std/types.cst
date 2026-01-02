@@ -1,10 +1,10 @@
-﻿declare struct vec2 { x: float, y: float }
-declare struct vec3 { x: float, y: float, z: float }
-declare struct vec4 { x: float, y: float, z: float, w: float }
+﻿@swizzle declare struct vec2 { x: float, y: float }
+@swizzle declare struct vec3 { x: float, y: float, z: float }
+@swizzle declare struct vec4 { x: float, y: float, z: float, w: float }
 
-declare struct ivec2 { x: int, y: int }
-declare struct ivec3 { x: int, y: int, z: int }
-declare struct ivec4 { x: int, y: int, z: int, w: int }
+@swizzle declare struct ivec2 { x: int, y: int }
+@swizzle declare struct ivec3 { x: int, y: int, z: int }
+@swizzle declare struct ivec4 { x: int, y: int, z: int, w: int }
 
 declare struct mat3 { c0: vec3, c1: vec3, c2: vec3 }
 declare struct mat4 { c0: vec4, c1: vec4, c2: vec4, c3: vec4 }

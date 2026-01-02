@@ -478,6 +478,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return CastSymbol.Void;
     }
 
+    public CastSymbol VisitSwizzleDecl(CastParser.SwizzleDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitInStmt(CastParser.InStmtContext context)
     {
         throw new NotImplementedException();
@@ -496,7 +501,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
     {
         string name = context.name.Text;
-        Console.WriteLine(context.GetText());
         CastSymbol? symbol = Types.ResolveType(context.type.Text);
         
         if (context.typeSpace()?.spaceName != null)
@@ -569,11 +573,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitStructDecl(CastParser.StructDeclContext context)
     {
         var structName = context.name.Text;
-        if (_scope.TryGetSymbol(structName, out CastSymbol result))
-        {
-            Nodes[context] = result;
-            return result;
-        }
+        // if (_scope.TryGetSymbol(structName, out CastSymbol result))
+        // {
+        //     Nodes[context] = result;
+        //     return result;
+        // }
 
         var fields = new Dictionary<string, CastSymbol>();
 
@@ -585,6 +589,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         }
 
         var @struct = CastSymbol.Struct(structName, fields);
+        @struct.AllowSwizzle = context.swizzleDecl() != null;
         _scope.Define(structName, @struct);
 
         // constructor

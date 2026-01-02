@@ -1,6 +1,6 @@
 ﻿declare fn (float) __sub__(rhs: vec3) : vec3;
 
-fn (float) fresnelSchlick(other: vec3) : vec3 {
+fn (self: float) fresnelSchlick(other: vec3) : vec3 {
     return other + (1.0 - other) * (1.0 - self).clamp(0.0, 1.0).pow(5.0);
 }
 

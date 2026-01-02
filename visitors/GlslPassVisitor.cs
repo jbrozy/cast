@@ -320,6 +320,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return "";
     }
 
+    public string VisitSwizzleDecl(CastParser.SwizzleDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public string VisitInStmt(CastParser.InStmtContext context)
     {
         throw new NotImplementedException();
@@ -367,7 +372,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         string indentLevel = new string('\t', int.Max(0, indent));
         foreach (var statementContext in context.statement())
         {
-            builder.Append(indentLevel + Visit(statementContext) + "\n");
+            builder.Append(indentLevel + Visit(statementContext));
         }
 
         indent -= 1;

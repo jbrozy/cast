@@ -43,9 +43,13 @@ assignment
     | DECLARE? LET typeDecl EQUAL value=simpleExpression  	# VarDeclAssign
     | varRef=ID EQUAL value=simpleExpression            	# VarAssign
     ;
-	
+
 locationDecl
 	: AT 'loc' OPEN_PAR (layoutId=INT) CLOSE_PAR
+	;
+	
+swizzleDecl
+	: AT 'swizzle'
 	;
 	
 inStmt 
@@ -83,7 +87,7 @@ block
     ;
 
 structDecl
-    : (DECLARE)? STRUCT name=ID OPEN_CURLY (members+=typeDecl (',' members+=typeDecl)*)? CLOSE_CURLY
+    : swizzleDecl? (DECLARE)? STRUCT name=ID OPEN_CURLY (members+=typeDecl (',' members+=typeDecl)*)? CLOSE_CURLY
     ;
 	
 functionDecl

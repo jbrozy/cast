@@ -1,10 +1,10 @@
-﻿declare fn (sampler2D) texture(uv: vec2) : vec4;
-declare fn (sampler2D) texture(uv: vec2, bias: float) : vec4;
-declare fn (sampler2D) textureLod(uv: vec2, lod: float) : vec4;
-declare fn (sampler2D) textureProj(uv: vec3) : vec4;
-declare fn (sampler2D) textureProj(uv: vec4) : vec4;
-declare fn (sampler2D) size(lod: int) : ivec2;
-declare fn (sampler2D) fetch(coord: ivec2, lod: int) : vec4;
+﻿declare fn (self: sampler2D) texture(uv: vec2) : vec4;
+declare fn (self: sampler2D) texture(uv: vec2, bias: float) : vec4;
+declare fn (self: sampler2D) textureLod(uv: vec2, lod: float) : vec4;
+declare fn (self: sampler2D) textureProj(uv: vec3) : vec4;
+declare fn (self: sampler2D) textureProj(uv: vec4) : vec4;
+declare fn (self: sampler2D) size(lod: int) : ivec2;
+declare fn (self: sampler2D) fetch(coord: ivec2, lod: int) : vec4;
 
 declare fn (sampler3D) texture(uv: vec3) : vec4;
 declare fn (sampler3D) textureLod(uv: vec3, lod: float) : vec4;

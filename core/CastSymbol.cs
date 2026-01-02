@@ -33,6 +33,7 @@ public class CastSymbol
     public string Identifier { get; set; }
     public bool IsReturn { get; set; } = false;
     public bool IsDeclaration { get; set; } = false;
+    public bool AllowSwizzle { get; set; } = false;
 
     public bool IsStruct()
     {

@@ -1,4 +1,5 @@
 ﻿using Antlr4.Runtime.Tree;
+using Cast.core.exceptions;
 
 namespace Cast.Visitors;
 
@@ -197,14 +198,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         string opName = context.op.Text == "+" ? "__add__" : "__sub__";
         var args = new List<CastSymbol> {  };
         
-        if (left.IsStruct())
-        {
-            args.AddRange( left, right );
-        }
-        else
-        {
-            args.Add( right );
-        }
+        args.AddRange( left, right );
 
         string targetTypeName = left.IsStruct() 
             ? left.StructName 
@@ -238,14 +232,72 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return sym.IsStruct() ? sym.StructName : sym.CastType.ToString().ToLower();
     }
     
+    private int GetSwizzleIndex(char c)
+    {
+        return c switch
+        {
+            'x' or 'r' or 's' => 0,
+            'y' or 'g' or 't' => 1,
+            'z' or 'b' or 'p' => 2,
+            'w' or 'a' or 'q' => 3,
+            _ => -1
+        };
+    }
+    
     public CastSymbol VisitMemberAccessExpr(CastParser.MemberAccessExprContext context)
     {
         var parent = Visit(context.expr);
+        
         if (parent.CastType != CastType.STRUCT)
             throw new Exception($"Cannot access Member: '{context.name.Text}' on non-struct type '{parent.CastType}'");
 
         var memberName = context.name.Text;
-        CastSymbol structSymbol = _scope.Lookup(parent.StructName);
+        CastSymbol? structSymbol = _scope.Lookup(parent.StructName);
+        if (structSymbol == null)
+        {
+            throw new TypeNotFoundException(parent.StructName);
+        }
+        
+        // swizzling currently only works for vector types
+        // I am not sure if this would work for other types
+        if (parent.ReturnType.AllowSwizzle)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(parent.StructName, @"^([a-z]?vec)([234])$");
+            if (!match.Success)
+            {
+                throw new Exception($"Error while swizzling on struct '{parent.StructName}'");
+            }
+            string prefix =  match.Groups[1].Value;
+            int dim =  int.Parse(match.Groups[2].Value);
+
+            int swizzleLength = memberName.Length;
+            if (swizzleLength < 1 ||  swizzleLength > 4)
+            {
+                throw new Exception($"Unable to swizzle with length: {swizzleLength} on Struct '{parent.StructName}'");
+            }
+
+            foreach (char c in memberName)
+            {
+                int index = GetSwizzleIndex(c);
+                if (index == -1)
+                {
+                    throw new Exception($"Swizzle '{c}' not found on Struct '{parent.StructName}'");
+                }
+                if (index >= dim)
+                {
+                    throw new Exception($"Swizzling out of bounds on  Struct '{parent.StructName}'");
+                }
+            }
+            
+            string name = prefix + swizzleLength;
+            if (!_scope.TryGetSymbol(name, out CastSymbol swizzleType))
+            {
+                throw new Exception($"Unable to swizzle on Struct '{parent.StructName}', outgoing struct not found in scope.");
+            }
+
+            return swizzleType.Clone();
+        }
+
         CastSymbol member = structSymbol.Fields[memberName];
         if (!string.IsNullOrEmpty(parent.SpaceName))
             if (member.CastType == CastType.STRUCT && string.IsNullOrEmpty(member.SpaceName))
@@ -501,6 +553,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     }
 
     public CastSymbol VisitLocationDecl(CastParser.LocationDeclContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitSwizzleDecl(CastParser.SwizzleDeclContext context)
     {
         return CastSymbol.Void;
     }

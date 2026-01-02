@@ -1,20 +1,9 @@
 ﻿uniform {
-    modelViewMatrix : mat4<Model, View>,
-    projectionMatrix : mat4<View, Clip>,
-    normalMatrix : mat3<Model, View>,
-    gbufferModelViewInverse : mat4<View, Model>,
-    chunkOffset: vec3<Model>
+    colortex0 : sampler2D,
+    colortex1 : sampler2D
 }
 
 in {
-    vaUV0 : vec2,
-    vaUV2 : vec2,
-    vaPosition : vec3<Model>,
-    vaColor : vec4,
-    vaNormal : vec3<Model>
-}
-
-out {
     fsUV0 : vec2,
     fsUV2 : vec2,
     fsColor : vec4,
@@ -23,12 +12,12 @@ out {
     fsLMCoords : vec2
 }
 
-fn main() {
-    fsUV0 = vaUV0;
-    fsUV2 = vaUV2;
-    fsColor = vaColor;
-    fsNormal = normalMatrix * vaNormal;
-    fsLMCoords = vaUV2 * (1.0 / 256.0) + (1.0 / 32.0);
+out {
+    color : @loc(0) vec4
+}
 
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(vaPosition + chunkOffset, 1.0);
+fn main() {
+    let a = vec4(1.0, 1.0, 1.0, 1.0);
+    let xyz : vec3 = a.xyz;
+    let xy : vec2 = a.xy;
 }
