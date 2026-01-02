@@ -36,7 +36,7 @@ let worldPos : vec4<World> = matrix * position; // converts Model to World Posit
 ```rust
 struct SomeStruct { x: float, y: float }
 
-fn (SomeStruct) swap() : SomeStruct {
+fn (self: SomeStruct) swap() : SomeStruct {
   return SomeStruct(self.y, self.x);
 }
 ```
