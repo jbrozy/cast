@@ -37,6 +37,7 @@ public class AssignmentTests
         visitor.Visit(parser.program());
 
         CastSymbol? decl = visitor.Scope.Lookup("a");
+        Assert.That(decl, Is.Not.Null);
     }
     
     [Test]
@@ -73,5 +74,39 @@ public class AssignmentTests
         Exception exception = Assert.Throws<InvalidAssignmentException>(() => visitor.Visit(statement));
         
         Console.WriteLine(exception.Message);
+    }
+    
+    [Test]
+    public void StructAssignment()
+    {
+        StringBuilder sourceBuilder = new StringBuilder();
+        sourceBuilder.AppendLine(StdHelper.getStd());
+        sourceBuilder.AppendLine("let a : vec3;");
+        sourceBuilder.AppendLine("a = -vec3(1.0);");
+        string source =  sourceBuilder.ToString();
+        
+        CastParser parser = Helper.Setup(source);
+        SymbolPassVisitor visitor = new SymbolPassVisitor();
+        visitor.Visit(parser.program());
+
+        CastSymbol? decl = visitor.Scope.Lookup("a");
+        Assert.That(decl, Is.Not.Null);
+    }
+    
+    [Test]
+    public void NegativeStructAssignment()
+    {
+        StringBuilder sourceBuilder = new StringBuilder();
+        sourceBuilder.AppendLine(StdHelper.getStd());
+        sourceBuilder.AppendLine("let a : vec3;");
+        sourceBuilder.AppendLine("a = -vec3(1.0);");
+        string source =  sourceBuilder.ToString();
+        
+        CastParser parser = Helper.Setup(source);
+        SymbolPassVisitor visitor = new SymbolPassVisitor();
+        visitor.Visit(parser.program());
+
+        CastSymbol? decl = visitor.Scope.Lookup("a");
+        Assert.That(decl, Is.Not.Null);
     }
 }

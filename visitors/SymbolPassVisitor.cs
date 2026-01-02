@@ -277,7 +277,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitUnaryMinusExpr(CastParser.UnaryMinusExprContext context)
     {
-        throw new NotImplementedException();
+        return Visit(context.expr);
     }
 
     public CastSymbol VisitAtomExpr(CastParser.AtomExprContext context)
