@@ -18,6 +18,8 @@ statement
 	| outStmt                 						# OutStmtWrapper
     | assignment ';'                				# AssignStmt
     | spaceDecl ';'                 				# SpaceDeclStmt
+	| CONTINUE ';'									# ContinueStmt
+	| BREAK ';'										# BreakStmt
     | RETURN simpleExpression ';'   				# ReturnStmt    
     | () simpleExpression ';'     				    # ExprStmt
 	| AT STAGE OPEN_PAR stageName=stage CLOSE_PAR	# StageStmt
@@ -180,6 +182,7 @@ VAR     : 'var';
 FN      : 'fn';
 IF		: 'if';
 BREAK	: 'break';
+CONTINUE	: 'continue';
 
 IN		: 'in';
 OUT		: 'out';

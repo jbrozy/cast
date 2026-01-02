@@ -9,6 +9,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     private Scope<CastSymbol> _scope = new();
     public Scope<CastSymbol> Scope => _scope;
 
+    private bool _inLoop = false;
+
     public SemanticPassVisitor(SymbolPassVisitor visitor)
     {
         _scope = visitor.Scope;
@@ -414,7 +416,17 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitForDeclStmt(CastParser.ForDeclStmtContext context)
     {
-        return Visit(context.forStmt());
+        try
+        {
+            _inLoop = true;
+            Visit(context.forStmt());
+        }
+        finally
+        {
+            _inLoop = false;
+        }
+        
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitIfStmt(CastParser.IfStmtContext context)
@@ -473,6 +485,16 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.spaceDecl());
     }
 
+    public CastSymbol VisitContinueStmt(CastParser.ContinueStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitBreakStmt(CastParser.BreakStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
         var rhs = Visit(context.simpleExpression());
@@ -504,7 +526,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             return Nodes[context] = _scope.Lookup(context.varRef.Text).Clone();
         }
         
-        throw new Exception($"Compilation  error: {context.varRef.Text} was not found in scope.");
+        throw new Exception($"{GetLoc(context)} Compilation Error: Variable '{context.varRef.Text}' was not found in scope.");
     }
 
     public CastSymbol VisitFloatAtom(CastParser.FloatAtomContext context)
@@ -601,6 +623,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         throw new NotImplementedException();
     }
+    
+    private string GetLoc(Antlr4.Runtime.ParserRuleContext context)
+    {
+        return $"[{context.Start.Line}:{context.Start.Column}]";
+    }
 
     public CastSymbol VisitForStmt(CastParser.ForStmtContext context)
     {
@@ -609,7 +636,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (start.CastType != end.CastType)
         {
-            throw new Exception($"Incompatible start: '{start.CastType}' and end '{end.CastType}' conditions");
+            throw new Exception($"{GetLoc(context)} Incompatible start: '{start.CastType}' and end '{end.CastType}' conditions.");
         }
 
         _scope = new Scope<CastSymbol>(_scope);

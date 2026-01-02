@@ -407,6 +407,16 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Visit(context.spaceDecl());
     }
 
+    public CastSymbol VisitContinueStmt(CastParser.ContinueStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
+    public CastSymbol VisitBreakStmt(CastParser.BreakStmtContext context)
+    {
+        return CastSymbol.Void;
+    }
+
     public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
         var rhs = Visit(context.simpleExpression());

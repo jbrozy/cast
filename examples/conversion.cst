@@ -17,6 +17,5 @@ out {
 }
 
 fn main() {
-    for (a=2.0 until 0.0 dec=0.1) {}
-    for (i=0.0 to 1.0) {}
+    let a = b;
 }

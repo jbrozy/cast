@@ -218,6 +218,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         ifStmt.Append(Visit(context.simpleExpression()));
         ifStmt.Append(")");
         ifStmt.Append(Visit(context.block()));
+        ifStmt.AppendLine();
         return ifStmt.ToString();
     }
 
@@ -259,6 +260,16 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     public string VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
     {
         return "";
+    }
+
+    public string VisitContinueStmt(CastParser.ContinueStmtContext context)
+    {
+        return "continue;\n";
+    }
+
+    public string VisitBreakStmt(CastParser.BreakStmtContext context)
+    {
+        return "break;\n";
     }
 
     public string VisitReturnStmt(CastParser.ReturnStmtContext context)
