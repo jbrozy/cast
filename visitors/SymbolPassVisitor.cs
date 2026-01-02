@@ -598,12 +598,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitStructDecl(CastParser.StructDeclContext context)
     {
         var structName = context.name.Text;
-        // if (_scope.TryGetSymbol(structName, out CastSymbol result))
-        // {
-        //     Nodes[context] = result;
-        //     return result;
-        // }
-
         var fields = new Dictionary<string, CastSymbol>();
 
         foreach (var type in context.typeDecl())
@@ -621,7 +615,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         var members = fields.Values.ToList();
         var ctor = CastSymbol.Function(structName, members, @struct);
         @struct.Constructor = ctor;
-        @struct.ReturnType = @struct;
+        @struct.ReturnType = @struct.Clone();
         @struct.IsDeclaration = context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
         
         FunctionKey key = FunctionKey.Of(structName, members);

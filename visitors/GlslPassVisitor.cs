@@ -105,7 +105,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     {
         var name = context.varRef.Text;
         var value = Visit(context.value);
-        return $"{name} = {value};";
+        return $"{name} = {value};\n";
     }
 
     public string VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -274,7 +274,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        return "return " + Visit(context.simpleExpression()) + ";";
+        return "return " + Visit(context.simpleExpression()) + ";\n";
     }
 
     public string VisitCallAtom(CastParser.CallAtomContext context)
