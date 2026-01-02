@@ -82,12 +82,12 @@ uniformTypeDecl
     | variable=ID ':' type=ID typeSpace
 	| variable=ID
     ;
-	
+
 forStmt
-    : 'for' OPEN_PAR var=ID EQUAL start=simpleExpression '..' end=simpleExpression CLOSE_PAR block
-    | 'for' OPEN_PAR var=ID EQUAL start=simpleExpression '..' end=simpleExpression ',' 'inc' EQUAL inc=simpleExpression CLOSE_PAR block
+    : 'for' OPEN_PAR var=ID EQUAL start=simpleExpression cond=(TO | UNTIL) end=simpleExpression CLOSE_PAR block
+    | 'for' OPEN_PAR var=ID EQUAL start=simpleExpression cond=(TO | UNTIL) end=simpleExpression it=('inc' | 'dec') EQUAL inc=simpleExpression CLOSE_PAR block
     ;
-	
+
 block
     : OPEN_CURLY  statement* CLOSE_CURLY
     ;
@@ -141,12 +141,17 @@ typeDecl
     
 spaceDecl
     : DECLARE SPACE spaceName=ID;
+	
+unaryExpression
+	: 
+	;
 
 simpleExpression
 	: expr=simpleExpression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
 	| expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
-	| left=simpleExpression op=(LT | GT | LTE | GTE) right=simpleExpression      	  # BooleanExpression
+	| op=MINUS expr=simpleExpression                                      # UnaryMinusExpr 
 	| left=simpleExpression op=(MULTIPLY | DIVIDE) right=simpleExpression # MultDiv
+	| left=simpleExpression op=(LT | GT | LTE | GTE) right=simpleExpression      	  # BooleanExpression
 	| left=simpleExpression op=(PLUS | MINUS) right=simpleExpression      # AddSub
 	| atom                                                                # AtomExpr
     ;
@@ -159,6 +164,8 @@ atom
     | '(' simpleExpression ')'          # ParenAtom
     ;
 
+TO		: 'to';
+UNTIL		: 'until';
 STAGE : 'stage';
 TYPE : 'type';
 INCLUDE : 'include';
@@ -172,6 +179,7 @@ LET     : 'let';
 VAR     : 'var';
 FN      : 'fn';
 IF		: 'if';
+BREAK	: 'break';
 
 IN		: 'in';
 OUT		: 'out';

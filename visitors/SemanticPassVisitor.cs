@@ -306,6 +306,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         return member;
     }
 
+    public CastSymbol VisitUnaryMinusExpr(CastParser.UnaryMinusExprContext context)
+    {
+        return Visit(context.expr);
+    }
+
     public CastSymbol VisitAtomExpr(CastParser.AtomExprContext context)
     {
         return Visit(context.atom());
@@ -753,6 +758,11 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitSpaceDecl(CastParser.SpaceDeclContext context)
     {
         return _scope.Lookup(context.spaceName.Text).Clone();
+    }
+
+    public CastSymbol VisitUnaryExpression(CastParser.UnaryExpressionContext context)
+    {
+        throw new NotImplementedException();
     }
 
     public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)

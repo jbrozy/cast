@@ -164,6 +164,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return $"{leftSide}.{memberName}";
     }
 
+    public string VisitUnaryMinusExpr(CastParser.UnaryMinusExprContext context)
+    {
+        return $"-{Visit(context.expr)}";
+    }
+
     public string VisitAtomExpr(CastParser.AtomExprContext context)
     {
         return Visit(context.atom());
@@ -378,13 +383,16 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         string start = Visit(context.start);
         string end = Visit(context.end);
 
-        string inc = $"{var}++";
-        if (context.inc != null)
+        string it = $"{var}++";
+        if (context.it != null)
         {
-            inc = $"{var} += ({context.inc.GetText()})";
+            string op = context.it.Text == "inc" ? "+" : "-";
+            it = $"{var} {op}= ({context.inc.GetText()})";
         }
 
-        builder.Append($"for ({varTypeText} {var} = {start}; {var} < {end}; {inc})");
+        string cond = context.cond.Text == "to" ? "<=" : "<";
+
+        builder.Append($"for ({varTypeText} {var} = {start}; {var} {cond} {end}; {it})");
         builder.Append(Visit(context.block()));
         builder.AppendLine();
         return builder.ToString();
@@ -524,6 +532,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     }
 
     public string VisitSpaceDecl(CastParser.SpaceDeclContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    public string VisitUnaryExpression(CastParser.UnaryExpressionContext context)
     {
         throw new NotImplementedException();
     }

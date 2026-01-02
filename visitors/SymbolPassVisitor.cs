@@ -275,6 +275,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
+    public CastSymbol VisitUnaryMinusExpr(CastParser.UnaryMinusExprContext context)
+    {
+        throw new NotImplementedException();
+    }
+
     public CastSymbol VisitAtomExpr(CastParser.AtomExprContext context)
     {
         var atom = Visit(context.atom());
@@ -817,6 +822,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         Nodes[context] = space;
         _scope.Define(spaceName, space);
         return space;
+    }
+
+    public CastSymbol VisitUnaryExpression(CastParser.UnaryExpressionContext context)
+    {
+        throw new NotImplementedException();
     }
 
     public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)
