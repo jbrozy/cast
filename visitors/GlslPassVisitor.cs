@@ -387,7 +387,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         if (context.it != null)
         {
             string op = context.it.Text == "inc" ? "+" : "-";
-            it = $"{var} {op}= ({context.inc.GetText()})";
+            it = $"{var} {op}= {context.inc.GetText()}";
         }
 
         string cond = context.cond.Text == "to" ? "<=" : "<";
