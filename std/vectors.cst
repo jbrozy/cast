@@ -21,7 +21,7 @@ declare fn (vec3) (v: float) : vec3;
 declare fn (vec3) (xy: vec2, z: float) : vec3;
 declare fn (vec3) (x: float, yz: vec2) : vec3;
 
-declare fn (vec4) (xyz: vec3, z: float) : vec3;
+declare fn (vec4) (xyz: vec3, z: float) : vec4;
 
 declare fn (lhs: vec3) __add__(rhs: vec3) : vec3;
 declare fn (lhs: vec3) __sub__(rhs: vec3) : vec3;

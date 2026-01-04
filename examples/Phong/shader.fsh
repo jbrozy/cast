@@ -1,5 +1,10 @@
-uniform { matrix: mat4, lightDir: vec3 }
-in { position: vec3, color: vec3, normals: vec3, texCoords: vec2 }
+uniform {
+    modelViewMatrix : mat4<Model, View>,
+    projectionMatrix : mat4<View, Clip>,
+    normalMatrix : mat3<Model, View>,
+    gbufferModelViewInverse : mat4<View, Model>,
+    chunkOffset : vec3<Model>
+}
 
 out { 
     outNormals: @loc(0) vec3, 
@@ -8,7 +13,4 @@ out {
 }
 
 fn main() {
-    let a = vec3<World>(1.0);
-    let b = vec3<World>(1.0);
-    let c : vec3<World> = a * b;
 }

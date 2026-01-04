@@ -16,7 +16,7 @@ public class CastSymbol
 {
     public CastType CastType { get; set;  }
     public string StructName { get; set; }
-    public List<CastSymbol> Parameters { get; set; }
+    public List<CastSymbol> Parameters { get; set; } = [];
     public IDictionary<string, CastSymbol> Fields { get; set; }
     public IDictionary<FunctionKey, CastSymbol> Functions { get; set;  } = new Dictionary<FunctionKey, CastSymbol>();
     public string ParamName { get; set; }

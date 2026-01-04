@@ -52,6 +52,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             _scope.Define(uniform.variable.Text, uniformTypeSymbol);
             Nodes[uniform] = uniformTypeSymbol;
         }
+        
         return CastSymbol.Void;
     }
 
@@ -614,7 +615,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         string returnTypeText = context.returnType?.Text ?? "void";
         CastSymbol? returnType = _scope.Lookup(returnTypeText);
         string functionName = context.functionIdentifier().functionName.Text;
-        
+
         var paramTypes = new List<CastSymbol>();
         if (context.paramList() != null)
         {
@@ -699,18 +700,15 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         
         CastSymbol function = CastSymbol.Function(functionName, paramTypes, returnType);
         function.IsDeclaration =  context.DECLARE() != null && context.DECLARE().Symbol.Text == "declare";
-
-        if (function.IsDeclaration)
-        {
-            CastSymbol? type = _scope.Lookup(typeFnText);
-            FunctionKey key = FunctionKey.Of(functionName, paramTypes);
-            type.Functions.TryAdd(key, function);
-        }
-        else
-        {
-            _scope.Define(functionName, function);
-        }
         
+        CastSymbol? type = _scope.Lookup(typeFnText);
+        FunctionKey key = FunctionKey.Of(functionName, paramTypes);
+        type.Functions.TryAdd(key, function);
+
+        // int a = type.Functions.Keys.Count(k => k.Equals(key));
+        // Console.WriteLine($"dbg: {a}");
+
+        // _scope.Define(functionName, function);
         return Nodes[context] = function;
     }
 

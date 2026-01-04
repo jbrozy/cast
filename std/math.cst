@@ -1,10 +1,20 @@
-﻿declare fn (self: float) sin() : float;
+﻿declare fn (lhs: float) __add__(rhs: float) : float;
+declare fn (lhs: float) __sub__(rhs: float) : float;
+declare fn (lhs: float) __mul__(rhs: float) : float;
+declare fn (lhs: float) __div__(rhs: float) : float;
+
+
+declare fn (lhs: float) __add__(rhs: int) : float;
+declare fn (lhs: float) __sub__(rhs: int) : float;
+declare fn (lhs: float) __mul__(rhs: int) : float;
+declare fn (lhs: float) __div__(rhs: int) : float;
+
+
+declare fn (self: float) sin() : float;
 declare fn (self: float) cos() : float;
 declare fn (self: float) tan() : float;
-
 declare fn (self: float) asin() : float;
 declare fn (self: float) acos() : float;
-
 declare fn (self: float) atan(x: float) : float;
 
 declare fn (self: float) pow(exponent: float) : float;
@@ -20,15 +30,36 @@ declare fn (self: float) ceil() : float;
 declare fn (self: float) fract() : float;
 
 declare fn (self: float) mod(divisor: float) : float;
-
 declare fn (self: float) min(other: float) : float;
 declare fn (self: float) max(other: float) : float;
 declare fn (self: float) clamp(min: float, max: float) : float;
-
 declare fn (self: float) mix(target: float, t: float) : float;
 
 declare fn (self: float) step(x: float) : float;
 declare fn (self: float) smoothstep(edge1: float, x: float) : float;
+
+declare fn (self: float) dFdx() : float;
+declare fn (self: float) dFdy() : float;
+declare fn (self: float) fwidth() : float;
+
+
+declare fn (lhs: int) __add__(rhs: int) : int;
+declare fn (lhs: int) __sub__(rhs: int) : int;
+declare fn (lhs: int) __mul__(rhs: int) : int;
+declare fn (lhs: int) __div__(rhs: int) : int;
+
+
+declare fn (lhs: int) __add__(rhs: float) : float;
+declare fn (lhs: int) __sub__(rhs: float) : float;
+declare fn (lhs: int) __mul__(rhs: float) : float;
+declare fn (lhs: int) __div__(rhs: float) : float;
+
+
+declare fn (lhs: vec2) __add__(rhs: vec2) : vec2;
+declare fn (lhs: vec2) __sub__(rhs: vec2) : vec2;
+declare fn (lhs: vec2) __mul__(rhs: vec2) : vec2;
+declare fn (lhs: vec2) __div__(rhs: vec2) : vec2;
+
 
 declare fn (self: vec2) sin() : vec2;
 declare fn (self: vec2) cos() : vec2;
@@ -47,6 +78,18 @@ declare fn (self: vec2) max(other: vec2) : vec2;
 declare fn (self: vec2) clamp(min: vec2, max: vec2) : vec2;
 declare fn (self: vec2) mix(target: vec2, t: vec2) : vec2;
 declare fn (self: vec2) mix(target: vec2, t: float) : vec2;
+
+
+declare fn (self: vec2) dFdx() : vec2;
+declare fn (self: vec2) dFdy() : vec2;
+declare fn (self: vec2) fwidth() : vec2;
+
+
+declare fn (lhs: vec3) __add__(rhs: vec3) : vec3;
+declare fn (lhs: vec3) __sub__(rhs: vec3) : vec3;
+declare fn (lhs: vec3) __mul__(rhs: vec3) : vec3;
+declare fn (lhs: vec3) __div__(rhs: vec3) : vec3;
+
 
 declare fn (self: vec3) sin() : vec3;
 declare fn (self: vec3) cos() : vec3;
@@ -69,58 +112,53 @@ declare fn (self: vec3) clamp(min: float, max: float) : vec3;
 declare fn (self: vec3) mix(target: vec3, t: vec3) : vec3;
 declare fn (self: vec3) mix(target: vec3, t: float) : vec3;
 
-declare fn (lhs: float) __add__(rhs: float) : float;
-declare fn (lhs: float) __div__(rhs: float) : float;
-declare fn (lhs: float) __mul__(rhs: float) : float;
-declare fn (lhs: float) __sub__(rhs: float) : float;
-
-declare fn (lhs: int) __add__(rhs: float) : float;
-declare fn (lhs: int) __div__(rhs: float) : float;
-declare fn (lhs: int) __mul__(rhs: float) : float;
-declare fn (lhs: int) __sub__(rhs: float) : float;
-
-declare fn (lhs: int) __add__(rhs: int) : int;
-declare fn (lhs: int) __div__(rhs: int) : int;
-declare fn (lhs: int) __mul__(rhs: int) : int;
-declare fn (lhs: int) __sub__(rhs: int) : int;
-
-declare fn (lhs: float) __add__(rhs: int) : float;
-declare fn (lhs: float) __div__(rhs: int) : float;
-declare fn (lhs: float) __mul__(rhs: int) : float;
-declare fn (lhs: float) __sub__(rhs: int) : float;
-
-declare fn (self: mat4) mat3() : mat3;
-
-declare fn (lhs: mat3) __add__(rhs: mat3) : mat3;
-declare fn (lhs: mat3) __div__(rhs: mat3) : mat3;
-declare fn (lhs: mat3) __mul__(rhs: mat3) : mat3;
-declare fn (lhs: mat3) __sub__(rhs: mat3) : mat3;
-
-declare fn (lhs: mat4) __add__(rhs: vec4) : vec4;
-declare fn (lhs: mat4) __mul__(rhs: vec4) : vec4;
-
-declare fn (lhs: mat4) __add__(rhs: mat4) : vec4;
-declare fn (lhs: mat4) __div__(rhs: mat4) : vec4;
-declare fn (lhs: mat4) __mul__(rhs: mat4) : vec4;
-declare fn (lhs: mat4) __sub__(rhs: mat4) : vec4;
-
-declare fn (self: float) dFdx() : float;
-declare fn (self: float) dFdy() : float;
-declare fn (self: float) fwidth() : float;
-
-declare fn (self: vec2) dFdx() : vec2;
-declare fn (self: vec2) dFdy() : vec2;
-declare fn (self: vec2) fwidth() : vec2;
 
 declare fn (self: vec3) dFdx() : vec3;
 declare fn (self: vec3) dFdy() : vec3;
 declare fn (self: vec3) fwidth() : vec3;
 
-declare fn (vec4) dFdx() : vec4;
-declare fn (vec4) dFdy() : vec4;
-declare fn (vec4) fwidth() : vec4;
 
 declare fn (lhs: vec4) __add__(rhs: vec4) : vec4;
-declare fn (lhs: vec4) __div__(rhs: vec4) : vec4;
-declare fn (lhs: vec4) __mul__(rhs: vec4) : vec4;
 declare fn (lhs: vec4) __sub__(rhs: vec4) : vec4;
+declare fn (lhs: vec4) __mul__(rhs: vec4) : vec4;
+declare fn (lhs: vec4) __div__(rhs: vec4) : vec4;
+
+declare fn (self: vec4) sin() : vec4;
+declare fn (self: vec4) cos() : vec4;
+declare fn (self: vec4) tan() : vec4;
+declare fn (self: vec4) abs() : vec4;
+declare fn (self: vec4) floor() : vec4;
+declare fn (self: vec4) ceil() : vec4;
+declare fn (self: vec4) fract() : vec4;
+declare fn (self: vec4) sqrt() : vec4;
+declare fn (self: vec4) inversesqrt() : vec4;
+
+declare fn (self: vec4) pow(exponent: vec4) : vec4;
+declare fn (self: vec4) mod(divisor: vec4) : vec4;
+declare fn (self: vec4) min(other: vec4) : vec4;
+declare fn (self: vec4) max(other: vec4) : vec4;
+
+declare fn (self: vec4) clamp(min: vec4, max: vec4) : vec4;
+declare fn (self: vec4) clamp(min: float, max: float) : vec4;
+
+declare fn (self: vec4) mix(target: vec4, t: vec4) : vec4;
+declare fn (self: vec4) mix(target: vec4, t: float) : vec4;
+
+
+declare fn (self: vec4) dFdx() : vec4;
+declare fn (self: vec4) dFdy() : vec4;
+declare fn (self: vec4) fwidth() : vec4;
+
+
+declare fn (lhs: mat3) __add__(rhs: mat3) : mat3;
+declare fn (lhs: mat3) __sub__(rhs: mat3) : mat3;
+declare fn (lhs: mat3) __mul__(rhs: mat3) : mat3;
+declare fn (lhs: mat3) __div__(rhs: mat3) : mat3;
+
+declare fn (self: mat4) mat3() : mat3;
+
+declare fn (lhs: mat4) __add__(rhs: mat4) : mat4;
+declare fn (lhs: mat4) __sub__(rhs: mat4) : mat4;
+declare fn (lhs: mat4) __mul__(rhs: mat4) : mat4;
+declare fn (lhs: mat4) __div__(rhs: mat4) : mat4;
+declare fn (lhs: mat4) __mul__(rhs: vec4) : vec4;

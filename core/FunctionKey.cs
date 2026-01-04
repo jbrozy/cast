@@ -34,9 +34,6 @@ public class FunctionKey
             foreach (var type in Types)
             {
                 hash.Add(type.CastType.ToString());
-                // if this is set, I think we have to implement function overrides for vecN<A> * vecN<A> aswell
-                // should we maybe do this? this will require a lot more default implementations...
-                // if(!string.IsNullOrEmpty(type.SpaceName)) hash.Add(type.SpaceName);
             }
 
         return hash.ToHashCode();
@@ -48,10 +45,10 @@ public class FunctionKey
         var other = (FunctionKey)obj;
         valid = other.Name == Name;
 
-        if (other.Types.Count != Types.Count) valid = false;
+        if (other.Types.Count != Types.Count) return false;
 
         for (var i = 0; i < Types.Count; ++i)
-            if (Types[i].CastType != other.Types[i].CastType)
+            if (Types[i].CastType != other.Types[i].CastType || Types[i].StructName != other.Types[i].StructName)
                 valid = false;
 
         return valid;

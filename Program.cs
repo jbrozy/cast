@@ -2,6 +2,7 @@
 using System.Text;
 using Antlr4.Runtime;
 using Cast;
+using Cast.core.exceptions;
 using Cast.listeners;
 using Cast.Visitors;
 using ConsoleAppFramework;
@@ -166,10 +167,10 @@ static void Repl()
             
             Console.WriteLine(result);
             File.WriteAllText(outFileName, result);
-        } catch (Exception e)
+        } catch (CastException e)
         {
             Console.WriteLine($"Error: {e.Message}");
-            // Console.WriteLine($"Error: {e.StackTrace}");
+            Console.WriteLine($"Error: {e.StackTrace}");
         }
     }
 }

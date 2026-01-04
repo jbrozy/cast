@@ -355,28 +355,24 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var right = Visit(context.right);
 
         string spaceName = "";
-        if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
+        string leftSpace = left.SpaceName;
+        string rightSpace = right.SpaceName;
+        if (leftSpace == "None")
         {
-            string leftSpace = left.SpaceName;
-            string rightSpace = right.SpaceName;
-            if (leftSpace == "None")
-            {
-                leftSpace = right.SpaceName;
-            }
-
-            if (rightSpace == "None")
-            {
-                rightSpace =  left.SpaceName;
-            }
-            
-            if (leftSpace != rightSpace)
-                throw new Exception($"Space MISMATCH: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
-            spaceName = leftSpace;
+            leftSpace = right.SpaceName;
         }
 
+        if (rightSpace == "None")
+        {
+            rightSpace =  left.SpaceName;
+        }
+        
+        if (leftSpace != rightSpace)
+            throw new Exception($"Space MISMATCH: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
+        spaceName = leftSpace;
+
         string opName = context.op.Text == "*" ? "__mul__" : "__div__";
-        var args = new List<CastSymbol> {};
-        args.AddRange( left, right );
+        CastSymbol[] args = [left, right];
 
         string targetTypeName = left.IsStruct() 
             ? left.StructName 
@@ -388,9 +384,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             throw new Exception($"Type definition for '{targetTypeName}' not found.");
         }
 
-        typeSymbol = typeSymbol.Clone();
-
-        FunctionKey key = FunctionKey.Of(opName, args);
+        FunctionKey key = FunctionKey.Of(opName, args.ToList());
         if (!typeSymbol.Functions.TryGetValue(key, out CastSymbol fn))
         {
             string leftName = GetReadableName(left);
@@ -401,12 +395,18 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var clone = fn.ReturnType.Clone();
         clone.SpaceName = spaceName;
         clone.TypeSpace = _scope.Lookup(spaceName).Clone();
-        
-        if (left.CastType != right.CastType || left.StructName != right.StructName || left.SpaceName !=  right.SpaceName)
-        {
-            throw new InvalidAssignmentException(context, left, right);
-        }
 
+        for (int i = 0; i < fn.Parameters.Count; i++)
+        {
+            CastSymbol lhs = fn.Parameters[i];
+            CastSymbol rhs = args[i];
+            
+            if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
+            {
+                throw new InvalidAssignmentException(context, lhs, rhs);
+            }
+        }
+        
         return Nodes[context] = clone;
     }
 
@@ -706,13 +706,13 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var fn = Nodes[context];
 
         _scope = new Scope<CastSymbol>(_scope);
-        if (context.typeVarName != null)
-        {
-            CastSymbol type = _scope.Lookup(context.typeFn.Text).Clone();
-            _scope.Define(context.typeVarName.Text, type);
-        }
+        // if (context.typeVarName != null)
+        // {
+        //     CastSymbol type = _scope.Lookup(context.typeFn.Text).Clone();
+        //     _scope.Define(context.typeVarName.Text, type);
+        // }
         
-        if (context.block() != null)
+        if (fn.IsDeclaration && context.block() != null)
         {
             Visit(context.block());
         }
@@ -727,29 +727,41 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var fn = _scope.Lookup(functionName).Clone();
 
         var args = new List<CastSymbol>();
-        // if (fn.CastType == CastType.STRUCT) args.Add(fn);
-
         if (context.args.simpleExpression() != null)
             foreach (var arg in context.args.simpleExpression())
             {
-                args.Add(Visit(arg));
+                CastSymbol argType = Visit(arg);
+                if (argType.IsFunction)
+                {
+                    CastSymbol returnType = argType.ReturnType.Clone();
+                    args.Add(returnType);
+                }
+                else
+                {
+                    args.Add(argType);
+                }
             }
 
         // use typed functions functions
         if (fn.Functions.Count > 0)
         {
             var key = FunctionKey.Of(functionName, args);
-            if (fn.Functions.TryGetValue(key, out var typedFunction))
-            {
-                fn = typedFunction.ReturnType; 
-            }
-            else
+            if (!fn.Functions.TryGetValue(key, out var typedFunction))
             {
                 String @params = string.Join(", ", key.Types.Select(c => c.CastType.ToString()));
                 throw new Exception($"Function {functionName} does not exist with Parameters: {@params}");
             }
+            
+            typedFunction = typedFunction.ReturnType.Clone();
+            
+            if (context.typeSpace() != null)
+            {
+                typedFunction.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text).Clone();
+                typedFunction.SpaceName = context.typeSpace().spaceName.Text;
+            }
+            return Nodes[context] = typedFunction;
         }
-
+        
         if (context.typeSpace() != null)
         {
             fn.TypeSpace = _scope.Lookup(context.typeSpace().spaceName.Text).Clone();
