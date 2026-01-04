@@ -1,6 +1,4 @@
-﻿@stage(vertex)
-
-uniform { matrix: mat4, lightDir: vec3 }
+﻿uniform { matrix: mat4, lightDir: vec3 }
 in { position: vec3, color: vec3, normals: vec3, texCoords: vec2 }
 
 out { 

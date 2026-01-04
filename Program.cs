@@ -163,11 +163,13 @@ static void Repl()
             {
                 outFileName = output + Path.GetFileName(file);
             }
+            
+            Console.WriteLine(result);
             File.WriteAllText(outFileName, result);
         } catch (Exception e)
         {
             Console.WriteLine($"Error: {e.Message}");
-            Console.WriteLine($"Error: {e.StackTrace}");
+            // Console.WriteLine($"Error: {e.StackTrace}");
         }
     }
 }

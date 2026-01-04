@@ -63,27 +63,6 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         return Nodes[context] = typeSymbol;
     }
 
-    // public CastSymbol VisitVarDecl(CastParser.VarDeclContext context)
-    // {
-    //     String name = context.typeDecl().variable.Text;
-    //     CastSymbol symbol = Types.ResolveType(name);
-
-    //     if (context.typeDecl().typeSpace()?.spaceName != null)
-    //     {
-    //         CastSymbol space = _scope.Lookup(context.typeDecl().typeSpace().spaceName.Text);
-    //         if (space == null)
-    //             throw new Exception($"Space not found '{context.typeDecl().typeSpace().spaceName.Text}'");
-    //         space = space.Clone();
-    //         symbol.TypeSpace = space;
-    //         symbol.SpaceName = context.typeDecl().typeSpace().spaceName.Text;
-    //     }
-
-    //     symbol.IsDeclaration = context.DECLARE() != null && context.DECLARE().GetText() == "declare";
-    //     
-    //     _scope.Define(name, symbol);
-    //     return symbol;
-    // }
-
     public CastSymbol VisitStageStmt(CastParser.StageStmtContext context)
     {
         string stageName = context.stageName.GetText();
@@ -128,7 +107,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
             if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
             {
-                throw new InvalidAssignmentException(lhs, rhs);
+                throw new InvalidAssignmentException(context, lhs, rhs);
             }
         }
 
@@ -197,14 +176,14 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol? lhs = _scope.Lookup(name);
         if (lhs == null)
         {
-            throw new VariableNotFoundException(name);
+            throw new VariableNotFoundException(context, name);
         }
         
         CastSymbol rhs = Visit(context.value);
 
         if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName != rhs.SpaceName)
         {
-            throw new InvalidAssignmentException(lhs, rhs);
+            throw new InvalidAssignmentException(context, lhs, rhs);
         }
 
         return lhs;
@@ -340,6 +319,11 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             left.TypeSpace = _scope.Lookup(endSpace);
             left.SpaceName = endSpace;
             left.CastType = right.CastType;
+        }
+
+        if (left.SpaceName != "None" && left.SpaceName != right.SpaceName)
+        {
+            left.SpaceName = right.SpaceName;
         }
 
         left = left.Clone();

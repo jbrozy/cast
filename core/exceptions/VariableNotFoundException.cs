@@ -1,9 +1,21 @@
-﻿namespace Cast.core.exceptions;
+﻿using System.Runtime.CompilerServices;
+using System.Text;
+using Antlr4.Runtime;
 
-public class VariableNotFoundException(string variable) : Exception
+namespace Cast.core.exceptions;
+
+public class VariableNotFoundException : CastException
 {
-    public override string ToString()
+    public VariableNotFoundException(ParserRuleContext ctx, string variable) : base(buildMessage(ctx, variable))
     {
-        return $"Variable: '{variable}' not found in Scope.";
+    }
+
+    private static string buildMessage(ParserRuleContext ctx, string variable)
+    {
+        string prefix = GetLoc(ctx);
+        StringBuilder message = new StringBuilder();
+        message.AppendLine(prefix);
+        message.AppendLine($"Variable '{variable}' was not found in scope.");
+        return message.ToString();
     }
 }

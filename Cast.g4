@@ -34,7 +34,6 @@ importStmt
     : INCLUDE path=STRING ';'
     ;
 
-
 stage
 	: 'vertex'
 	| 'fragment'

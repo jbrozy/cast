@@ -70,32 +70,33 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             if (context.typeDecl().type != null)
             {
                 string typeDeclName = context.typeDecl().type.Text;
-                lhs = _scope.Lookup(typeDeclName); // Visit(context.typ);
+                lhs = _scope.Lookup(typeDeclName);
+
+                if (context.typeDecl().typeSpace() != null)
+                {
+                    string spaceName = context.typeDecl().typeSpace().spaceName.Text;
+                    if (!_scope.TryGetSymbol(spaceName, out CastSymbol? space))
+                    {
+                        throw new SpaceNotFoundException(spaceName);
+                    }
+
+                    lhs.TypeSpace = space.Clone();
+                    lhs.SpaceName = spaceName;
+                }
             }
         }
         
         if (context.value != null)
         {
-            // infer type based on rhs
             rhs = Visit(context.simpleExpression()).Clone();
         }
-
-        if (rhs.CastType != CastType.VOID)
+        if (lhs.CastType == CastType.VOID)
         {
-            if (lhs.CastType != CastType.VOID && lhs.StructName != rhs.StructName)
-            {
-                throw new Exception($"Incompatible types: '{lhs.StructName}' and '{rhs.StructName}'");
-            }
-
-            if (lhs.CastType != CastType.VOID && lhs.SpaceName != rhs.SpaceName)
-            {
-                throw new Exception($"Incompatible spaces: '{lhs.SpaceName}' and '{rhs.SpaceName}'");
-            }
-
-            if (lhs.CastType == CastType.VOID)
-            {
-                lhs = rhs.Clone();
-            }
+            lhs = rhs.Clone();
+        }
+        if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
+        {
+            throw new InvalidAssignmentException(context, lhs, rhs);
         }
 
         if (_scope.Exists(variableName))
@@ -262,7 +263,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         
         // swizzling currently only works for vector types
         // I am not sure if this would work for other types
-        if (parent.ReturnType.AllowSwizzle || parent.AllowSwizzle)
+        if (parent.ReturnType.AllowSwizzle || structSymbol.AllowSwizzle)
         {
             var match = System.Text.RegularExpressions.Regex.Match(parent.StructName, @"^([a-z]?vec)([234])$");
             if (!match.Success)
@@ -353,6 +354,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var left = Visit(context.left);
         var right = Visit(context.right);
 
+        string spaceName = "";
         if (!string.IsNullOrEmpty(left.SpaceName) && !string.IsNullOrEmpty(right.SpaceName))
         {
             string leftSpace = left.SpaceName;
@@ -369,6 +371,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             
             if (leftSpace != rightSpace)
                 throw new Exception($"Space MISMATCH: Cannot combine Space '{left.SpaceName}' with '{right.SpaceName}'");
+            spaceName = leftSpace;
         }
 
         string opName = context.op.Text == "*" ? "__mul__" : "__div__";
@@ -395,8 +398,16 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             throw new Exception($"Operator '{context.op.Text}' ({opName}) not defined for '{leftName}' and '{rightName}'");
         }
 
-        Nodes[context] = fn.ReturnType;
-        return fn.ReturnType;
+        var clone = fn.ReturnType.Clone();
+        clone.SpaceName = spaceName;
+        clone.TypeSpace = _scope.Lookup(spaceName).Clone();
+        
+        if (left.CastType != right.CastType || left.StructName != right.StructName || left.SpaceName !=  right.SpaceName)
+        {
+            throw new InvalidAssignmentException(context, left, right);
+        }
+
+        return Nodes[context] = clone;
     }
 
     public CastSymbol VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
@@ -526,7 +537,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             return Nodes[context] = _scope.Lookup(context.varRef.Text).Clone();
         }
         
-        throw new Exception($"{GetLoc(context)} Compilation Error: Variable '{context.varRef.Text}' was not found in scope.");
+        throw new VariableNotFoundException(context, context.varRef.Text);
     }
 
     public CastSymbol VisitFloatAtom(CastParser.FloatAtomContext context)
@@ -624,11 +635,6 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
     
-    private string GetLoc(Antlr4.Runtime.ParserRuleContext context)
-    {
-        return $"[{context.Start.Line}:{context.Start.Column}]";
-    }
-
     public CastSymbol VisitForStmt(CastParser.ForStmtContext context)
     {
         CastSymbol start = Visit(context.start);
@@ -642,7 +648,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
         if (start.CastType != end.CastType)
         {
-            throw new Exception($"{GetLoc(context)} Incompatible start: '{start.CastType}' and end '{end.CastType}' conditions.");
+            throw new InvalidAssignmentException(context, start, end);
         }
 
         _scope = new Scope<CastSymbol>(_scope);
