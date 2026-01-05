@@ -20,7 +20,7 @@ statement
     | spaceDecl ';'                 				# SpaceDeclStmt
 	| CONTINUE ';'									# ContinueStmt
 	| BREAK ';'										# BreakStmt
-    | RETURN simpleExpression ';'   				# ReturnStmt    
+    | RETURN simpleExpression? ';'   				# ReturnStmt    
     | () simpleExpression ';'     				    # ExprStmt
 	| AT STAGE OPEN_PAR stageName=stage CLOSE_PAR	# StageStmt
     ;

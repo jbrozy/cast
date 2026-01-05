@@ -165,7 +165,6 @@ static void Repl()
                 outFileName = output + Path.GetFileName(file);
             }
             
-            Console.WriteLine(result);
             File.WriteAllText(outFileName, result);
         } catch (CastException e)
         {

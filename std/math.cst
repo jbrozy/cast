@@ -91,6 +91,12 @@ declare fn (lhs: vec3) __mul__(rhs: vec3) : vec3;
 declare fn (lhs: vec3) __div__(rhs: vec3) : vec3;
 
 
+declare fn (lhs: mat3) __add__(rhs: vec3) : vec3;
+declare fn (lhs: mat3) __sub__(rhs: vec3) : vec3;
+declare fn (lhs: mat3) __mul__(rhs: vec3) : vec3;
+declare fn (lhs: mat3) __div__(rhs: vec3) : vec3;
+
+
 declare fn (self: vec3) sin() : vec3;
 declare fn (self: vec3) cos() : vec3;
 declare fn (self: vec3) tan() : vec3;

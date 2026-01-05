@@ -401,7 +401,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             CastSymbol lhs = fn.Parameters[i];
             CastSymbol rhs = args[i];
             
-            if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
+            if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName)
             {
                 throw new InvalidAssignmentException(context, lhs, rhs);
             }
@@ -508,11 +508,15 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        var rhs = Visit(context.simpleExpression());
-        Nodes[context] = rhs;
-        rhs.IsReturn = true;
+        if (context.simpleExpression() != null)
+        {
+            var rhs = Visit(context.simpleExpression());
+            Nodes[context] = rhs;
+            rhs.IsReturn = true;
+            return rhs;
+        }
 
-        return rhs;
+        return CastSymbol.Void;
     }
 
     public CastSymbol VisitStructDeclStmt(CastParser.StructDeclStmtContext context)

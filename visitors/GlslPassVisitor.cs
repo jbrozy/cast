@@ -274,7 +274,11 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        return "return " + Visit(context.simpleExpression()) + ";\n";
+        if (context.simpleExpression() != null)
+        {
+            return "return " + Visit(context.simpleExpression()) + ";\n";
+        }
+        return "return;\n";
     }
 
     public string VisitCallAtom(CastParser.CallAtomContext context)
