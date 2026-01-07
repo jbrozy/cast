@@ -21,7 +21,7 @@ public class CastSymbol
     public IDictionary<FunctionKey, CastSymbol> Functions { get; set;  } = new Dictionary<FunctionKey, CastSymbol>();
     public string ParamName { get; set; }
     public CastSymbol? ReturnType { get; set; }
-    public CastSymbol TypeSpace { get; set; }
+    public CastSymbol? TypeSpace { get; set; }
     public CastSymbol? Constructor { get; set; }
     
     // for conversion matrices

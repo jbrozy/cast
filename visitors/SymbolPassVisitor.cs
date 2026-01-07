@@ -106,6 +106,12 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 lhs = rhs.Clone();
             }
 
+            if (lhs.SpaceName != "None")
+            {
+                rhs.SpaceName = lhs.SpaceName;
+                rhs.TypeSpace = lhs.TypeSpace.Clone();
+            }
+
             if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
             {
                 throw new InvalidAssignmentException(context, lhs, rhs);

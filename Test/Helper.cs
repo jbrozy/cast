@@ -8,7 +8,6 @@ public class Helper
 {
     public static CastParser Setup(string input)
     {
-        StringBuilder sourceBuilder = new StringBuilder();
         AntlrInputStream  inputStream = new AntlrInputStream(input);
         CastLexer  lexer = new CastLexer(inputStream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
