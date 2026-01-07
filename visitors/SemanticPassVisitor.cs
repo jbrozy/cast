@@ -101,6 +101,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             rhs.SpaceName = lhs.SpaceName;
             rhs.TypeSpace = null;
         }
+        
         if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName !=  rhs.SpaceName)
         {
             throw new InvalidAssignmentException(context, lhs, rhs);

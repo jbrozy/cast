@@ -1,11 +1,31 @@
 ﻿using System.Text;
 using Cast;
+using Cast.core.exceptions;
 using Cast.Visitors;
 
 namespace Test.cases;
 
 public class CastingTests
 {
+    [Test]
+    public void InvalidCast()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine(StdHelper.getStd());
+        builder.AppendLine("let a = vec3<Model>(1.0);");
+        builder.AppendLine("let b : vec3<World> = a;"); // downcast
+
+        string source = builder.ToString();
+        SymbolPassVisitor symbolPass = new SymbolPassVisitor();
+        
+        CastParser parser = Helper.Setup(source);
+        var programContext = parser.program();
+        symbolPass.Visit(programContext);
+
+        SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPass);
+        Assert.Throws<InvalidAssignmentException>(() => semanticPassVisitor.Visit(programContext));
+    }
+    
     [Test]
     public void DownCast()
     {
