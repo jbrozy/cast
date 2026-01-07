@@ -54,3 +54,23 @@ declare fn (self: vec3) dot(other: vec3) : float;
 declare fn (self: vec3) cross(other: vec3) : vec3;
 declare fn (self: vec3) distance(other: vec3) : float;
 declare fn (self: vec3) reflect(normal: vec3) : vec3;
+
+declare fn (self: vec2) refract(normal: vec2, eta: float) : vec2;
+declare fn (self: vec2) faceforward(I: vec2, Nref: vec2) : vec2;
+
+declare fn (self: vec3) refract(normal: vec3, eta: float) : vec3;
+declare fn (self: vec3) faceforward(I: vec3, Nref: vec3) : vec3;
+
+declare fn (self: vec4) refract(normal: vec4, eta: float) : vec4;
+declare fn (self: vec4) faceforward(I: vec4, Nref: vec4) : vec4;
+
+declare fn (lhs: vec3) lessThan(rhs: vec3) : bvec3;
+declare fn (lhs: vec3) lessThanEqual(rhs: vec3) : bvec3;
+declare fn (lhs: vec3) greaterThan(rhs: vec3) : bvec3;
+declare fn (lhs: vec3) greaterThanEqual(rhs: vec3) : bvec3;
+declare fn (lhs: vec3) equal(rhs: vec3) : bvec3;
+declare fn (lhs: vec3) notEqual(rhs: vec3) : bvec3;
+
+declare fn (self: bvec3) any() : bool;
+declare fn (self: bvec3) all() : bool;
+declare fn (self: bvec3) not() : bvec3;

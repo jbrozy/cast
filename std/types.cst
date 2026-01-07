@@ -2,6 +2,10 @@
 @swizzle declare struct vec3 { x: float, y: float, z: float }
 @swizzle declare struct vec4 { x: float, y: float, z: float, w: float }
 
+@swizzle declare struct bvec2 { x: bool, y: bool }
+@swizzle declare struct bvec3 { x: bool, y: bool, z: bool }
+@swizzle declare struct bvec4 { x: bool, y: bool, z: bool, w: bool }
+
 @swizzle declare struct ivec2 { x: int, y: int }
 @swizzle declare struct ivec3 { x: int, y: int, z: int }
 @swizzle declare struct ivec4 { x: int, y: int, z: int, w: int }

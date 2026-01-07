@@ -168,3 +168,27 @@ declare fn (lhs: mat4) __sub__(rhs: mat4) : mat4;
 declare fn (lhs: mat4) __mul__(rhs: mat4) : mat4;
 declare fn (lhs: mat4) __div__(rhs: mat4) : mat4;
 declare fn (lhs: mat4) __mul__(rhs: vec4) : vec4;
+
+
+declare fn (self: mat3) transpose() : mat3;
+declare fn (self: mat3) determinant() : float;
+declare fn (self: mat3) inverse() : mat3;
+declare fn (lhs: mat3) matrixCompMult(rhs: mat3) : mat3;
+
+declare fn (self: mat4) transpose() : mat4;
+declare fn (self: mat4) determinant() : float;
+declare fn (self: mat4) inverse() : mat4;
+declare fn (lhs: mat4) matrixCompMult(rhs: mat4) : mat4;
+
+declare fn (self: float) sinh() : float;
+declare fn (self: float) cosh() : float;
+declare fn (self: float) tanh() : float;
+declare fn (self: float) asinh() : float;
+declare fn (self: float) acosh() : float;
+declare fn (self: float) atanh() : float;
+
+declare fn (self: float) trunc() : float;
+declare fn (self: float) round() : float;
+declare fn (self: float) roundEven() : float;
+declare fn (self: float) isNan() : bool;
+declare fn (self: float) isInf() : bool;

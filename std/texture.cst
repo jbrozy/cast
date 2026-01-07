@@ -7,19 +7,23 @@ declare fn (self: sampler2D) size(lod: int) : ivec2;
 declare fn (self: sampler2D) fetch(coord: ivec2, lod: int) : vec4;
 
 declare fn (self: sampler3D) texture(uv: vec3) : vec4;
-declare fn (sampler3D) textureLod(uv: vec3, lod: float) : vec4;
+declare fn (self: sampler3D) textureLod(uv: vec3, lod: float) : vec4;
 
-declare fn (sampler3D) size(lod: int) : ivec3;
-declare fn (sampler3D) fetch(coord: ivec3, lod: int) : vec4;
+declare fn (self: sampler3D) size(lod: int) : ivec3;
+declare fn (self: sampler3D) fetch(coord: ivec3, lod: int) : vec4;
 
-declare fn (samplerCube) texture(dir: vec3) : vec4;
-declare fn (samplerCube) textureLod(dir: vec3, lod: float) : vec4;
+declare fn (self: samplerCube) texture(dir: vec3) : vec4;
+declare fn (self: samplerCube) textureLod(dir: vec3, lod: float) : vec4;
 
-declare fn (samplerCube) size(lod: int) : ivec2;
+declare fn (self: samplerCube) size(lod: int) : ivec2;
 
-declare fn (sampler2DShadow) texture(coord: vec3) : float;
-declare fn (sampler2DShadow) textureProj(coord: vec4) : float;
-declare fn (sampler2DShadow) size(lod: int) : ivec2;
+declare fn (self :sampler2DShadow) texture(coord: vec3) : float;
+declare fn (self :sampler2DShadow) textureProj(coord: vec4) : float;
+declare fn (self :sampler2DShadow) size(lod: int) : ivec2;
 
-declare fn (sampler2DArray) texture(uv: vec3) : vec4;
-declare fn (sampler2DArray) textureLod(uv: vec3, lod: float) : vec4;
+declare fn (self: sampler2DArray) texture(uv: vec3) : vec4;
+declare fn (self: sampler2DArray) textureLod(uv: vec3, lod: float) : vec4;
+
+declare fn (self: sampler2D) textureGrad(uv: vec2, dPdx: vec2, dPdy: vec2) : vec4;
+declare fn (self: sampler3D) textureGrad(uv: vec3, dPdx: vec3, dPdy: vec3) : vec4;
+declare fn (self: samplerCube) textureGrad(uv: vec3, dPdx: vec3, dPdy: vec3) : vec4;

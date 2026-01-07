@@ -13,7 +13,7 @@ public class CastingTests
         StringBuilder builder = new StringBuilder();
         builder.AppendLine(StdHelper.getStd());
         builder.AppendLine("let a = vec3<Model>(1.0);");
-        builder.AppendLine("let b : vec3<World> = a;"); // downcast
+        builder.AppendLine("let b : vec3<World> = a;"); // recast
 
         string source = builder.ToString();
         SymbolPassVisitor symbolPass = new SymbolPassVisitor();
@@ -45,7 +45,7 @@ public class CastingTests
         semanticPassVisitor.Visit(programContext);
 
         CastSymbol b = symbolPass.Scope.Lookup("b")!;
-        Assert.That(b.SpaceName == "None");
+        Assert.That(b.SpaceName, Is.EqualTo("None"));
     }
     
     [Test]
@@ -67,6 +67,6 @@ public class CastingTests
         semanticPassVisitor.Visit(programContext);
         
         CastSymbol b = symbolPass.Scope.Lookup("b")!;
-        Assert.That(b.SpaceName == "Model");
+        Assert.That(b.SpaceName, Is.EqualTo("Model"));
     }
 }

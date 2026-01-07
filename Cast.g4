@@ -152,7 +152,7 @@ simpleExpression
 	| expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
 	| op=MINUS expr=simpleExpression                                      # UnaryMinusExpr 
 	| left=simpleExpression op=(MULTIPLY | DIVIDE) right=simpleExpression # MultDiv
-	| left=simpleExpression op=(LT | GT | LTE | GTE) right=simpleExpression      	  # BooleanExpression
+	| left=simpleExpression op=(LT | GT | LTE | GTE | AND | OR | XOR) right=simpleExpression      	  # BooleanExpression
 	| left=simpleExpression op=(PLUS | MINUS) right=simpleExpression      # AddSub
 	| atom                                                                # AtomExpr
     ;
@@ -187,16 +187,28 @@ IN		: 'in';
 OUT		: 'out';
 
 AT 		: '@';
+
+AND		: '&';
+OR		: '|';
+
+SHL		: '<<';
+SHR		: '>>';
+XOR		: '^';
+
 PLUS    : '+';
 MINUS   : '-';
 MULTIPLY: '*';
 DIVIDE  : '/';
+
 EQUAL   : '=';
 COLON   : ':';
+
 OPEN_PAR: '(';
 CLOSE_PAR: ')';
+
 OPEN_CURLY: '{';
 CLOSE_CURLY: '}';
+
 LT      : '<';
 LTE      : '<=';
 GT      : '>';
