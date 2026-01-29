@@ -65,31 +65,32 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol rhs = CastSymbol.Void;
 
         // type based on lhs
-        if (context.typeDecl() != null)
+        if (context.typeDecl()?.type != null)
         {
-            if (context.typeDecl().type != null)
+            string typeDeclName = context.typeDecl().type.Text;
+            lhs = _scope.Lookup(typeDeclName);
+
+            if (lhs.IsLValue)
+                throw new LValueException($"Unable to assign to lvalue: {lhs.CastType}");
+
+            if (context.typeDecl().typeSpace() != null)
             {
-                string typeDeclName = context.typeDecl().type.Text;
-                lhs = _scope.Lookup(typeDeclName);
-
-                if (context.typeDecl().typeSpace() != null)
+                string spaceName = context.typeDecl().typeSpace().spaceName.Text;
+                if (!_scope.TryGetSymbol(spaceName, out CastSymbol? space))
                 {
-                    string spaceName = context.typeDecl().typeSpace().spaceName.Text;
-                    if (!_scope.TryGetSymbol(spaceName, out CastSymbol? space))
-                    {
-                        throw new SpaceNotFoundException(spaceName);
-                    }
-
-                    lhs.TypeSpace = space.Clone();
-                    lhs.SpaceName = spaceName;
+                    throw new SpaceNotFoundException(spaceName);
                 }
+
+                lhs.TypeSpace = space.Clone();
+                lhs.SpaceName = spaceName;
             }
         }
         
         if (context.value != null)
         {
-            rhs = Visit(context.simpleExpression()).Clone();
+            rhs = Visit(context.expression()).Clone();
         }
+        
         if (lhs.CastType == CastType.VOID)
         {
             lhs = rhs.Clone();
@@ -129,7 +130,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     public CastSymbol VisitVarAssign(CastParser.VarAssignContext context)
     {
         string varRef = context.varRef.Text;
-        CastSymbol rhs = Visit(context.simpleExpression());
+        CastSymbol rhs = Visit(context.expression());
 
         if (!_scope.TryGetSymbol(varRef, out CastSymbol? lhs))
         {
@@ -178,6 +179,19 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         
         Nodes[context] = rhs;
         return rhs;
+    }
+
+    public CastSymbol VisitVarExprAssign(CastParser.VarExprAssignContext context)
+    {
+        CastSymbol left = Visit(context.left);
+        CastSymbol right = Visit(context.right);
+
+        if (!left.IsLValue)
+        {
+            throw new LValueException($"Unable to assign value to lvalue: {left.CastType}");
+        }
+        
+        return left.Clone();
     }
 
     public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -269,6 +283,12 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
             throw new TypeNotFoundException(parent.StructName);
         }
         
+        // if member is found immediately in struct members
+        if (structSymbol.Fields.TryGetValue(memberName, out CastSymbol? structMember))
+        {
+            return structMember.Clone();
+        }
+        
         // swizzling currently only works for vector types
         // I am not sure if this would work for other types
         if (parent.ReturnType.AllowSwizzle || structSymbol.AllowSwizzle)
@@ -338,7 +358,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
             var argList = new List<CastSymbol>();
             argList.Add(leftExpr);
-            foreach (var arg in context.args.simpleExpression())
+            foreach (var arg in context.args.expression())
             {
                 var result = Visit(arg);
                 if (result.IsFunction)
@@ -453,7 +473,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         _scope = new Scope<CastSymbol>(_scope);
         try
         {
-            Visit(context.simpleExpression());
+            Visit(context.expression());
             if (context.block() != null)
             {
                 Visit(context.block());
@@ -469,7 +489,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
     {
-        return Visit(context.simpleExpression());
+        return Visit(context.expression());
     }
 
     public CastSymbol VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
@@ -516,9 +536,9 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        if (context.simpleExpression() != null)
+        if (context.expression() != null)
         {
-            var rhs = Visit(context.simpleExpression());
+            var rhs = Visit(context.expression());
             Nodes[context] = rhs;
             rhs.IsReturn = true;
             return rhs;
@@ -539,17 +559,17 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitParenAtom(CastParser.ParenAtomContext context)
     {
-        return Nodes[context] = Visit(context.simpleExpression());
+        return Nodes[context] = Visit(context.expression());
     }
 
     public CastSymbol VisitVarAtom(CastParser.VarAtomContext context)
     {
-        if (_scope.Lookup(context.varRef.Text) != null)
+        if (!_scope.TryGetSymbol(context.varRef.Text, out CastSymbol? varRef))
         {
-            return Nodes[context] = _scope.Lookup(context.varRef.Text).Clone();
+            throw new VariableNotFoundException(context, context.varRef.Text);
         }
-        
-        throw new VariableNotFoundException(context, context.varRef.Text);
+
+        return varRef;
     }
 
     public CastSymbol VisitFloatAtom(CastParser.FloatAtomContext context)
@@ -739,8 +759,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         var fn = _scope.Lookup(functionName).Clone();
 
         var args = new List<CastSymbol>();
-        if (context.args.simpleExpression() != null)
-            foreach (var arg in context.args.simpleExpression())
+        if (context.args.expression() != null)
+            foreach (var arg in context.args.expression())
             {
                 CastSymbol argType = Visit(arg);
                 if (argType.IsFunction)
@@ -827,7 +847,7 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
-    public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)
+    public CastSymbol VisitExpression(CastParser.ExpressionContext context)
     {
         var result = Visit(context.GetChild(0));
         Nodes[context] = result.Clone();

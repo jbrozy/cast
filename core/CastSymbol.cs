@@ -23,6 +23,7 @@ public class CastSymbol
     public CastSymbol? ReturnType { get; set; }
     public CastSymbol? TypeSpace { get; set; }
     public CastSymbol? Constructor { get; set; }
+    public bool IsLValue { get; set; } = false;
     
     // for conversion matrices
     public (CastSymbol from, CastSymbol to)? Conversion; 
@@ -119,6 +120,7 @@ public class CastSymbol
             IsReturn = this.IsReturn,
             IsDeclaration = this.IsDeclaration,
             Conversion = this.Conversion,
+            IsLValue = this.IsLValue,
         };
     }
 }

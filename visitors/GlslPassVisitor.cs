@@ -108,6 +108,13 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         return $"{name} = {value};\n";
     }
 
+    public string VisitVarExprAssign(CastParser.VarExprAssignContext context)
+    {
+        String lhs = Visit(context.left);
+        String rhs = Visit(context.right);
+        return $"{lhs} = {rhs};";
+    }
+
     public string VisitInBlockDecl(CastParser.InBlockDeclContext context)
     {
         StringBuilder ins = new StringBuilder();
@@ -215,7 +222,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
     {
         StringBuilder ifStmt = new StringBuilder();
         ifStmt.Append("if (");
-        ifStmt.Append(Visit(context.simpleExpression()));
+        ifStmt.Append(Visit(context.expression()));
         ifStmt.Append(")");
         ifStmt.Append(Visit(context.block()));
         ifStmt.AppendLine();
@@ -274,9 +281,9 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        if (context.simpleExpression() != null)
+        if (context.expression() != null)
         {
-            return "return " + Visit(context.simpleExpression()) + ";\n";
+            return "return " + Visit(context.expression()) + ";\n";
         }
         return "return;\n";
     }
@@ -288,7 +295,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitParenAtom(CastParser.ParenAtomContext context)
     {
-        return Visit(context.simpleExpression());
+        return Visit(context.expression());
     }
 
     public string VisitVarAtom(CastParser.VarAtomContext context)
@@ -522,7 +529,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
 
     public string VisitArgList(CastParser.ArgListContext context)
     {
-        return string.Join(", ", context.simpleExpression().Select(c => Visit(c)));
+        return string.Join(", ", context.expression().Select(c => Visit(c)));
     }
 
     public string VisitParamList(CastParser.ParamListContext context)
@@ -556,7 +563,7 @@ public class GlslPassVisitor(SemanticPassVisitor semanticPassVisitor) : ICastVis
         throw new NotImplementedException();
     }
 
-    public string VisitSimpleExpression(CastParser.SimpleExpressionContext context)
+    public string VisitExpression(CastParser.ExpressionContext context)
     {
         throw new NotImplementedException();
     }

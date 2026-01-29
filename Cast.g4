@@ -6,7 +6,7 @@ program
 	;
 
 statement
-	: IF OPEN_PAR simpleExpression CLOSE_PAR block  # IfStmt
+	: IF OPEN_PAR expression CLOSE_PAR block  # IfStmt
 	| structDecl                    				# StructDeclStmt
     | functionDecl                  				# FnDeclStmt
 	| constructorFunctionDecl						# ConstructorFnDeclStmt
@@ -20,8 +20,8 @@ statement
     | spaceDecl ';'                 				# SpaceDeclStmt
 	| CONTINUE ';'									# ContinueStmt
 	| BREAK ';'										# BreakStmt
-    | RETURN simpleExpression? ';'   				# ReturnStmt    
-    | () simpleExpression ';'     				    # ExprStmt
+    | RETURN expression? ';'   				# ReturnStmt    
+    | () expression ';'     				    # ExprStmt
 	| AT STAGE OPEN_PAR stageName=stage CLOSE_PAR	# StageStmt
     ;
 
@@ -42,8 +42,9 @@ stage
 	
 assignment
     : DECLARE? LET typeDecl    						   		# VarDecl
-    | DECLARE? LET typeDecl EQUAL value=simpleExpression  	# VarDeclAssign
-    | varRef=ID EQUAL value=simpleExpression            	# VarAssign
+    | DECLARE? LET typeDecl EQUAL value=expression  		# VarDeclAssign
+    | varRef=ID EQUAL value=expression            			# VarAssign
+	| left=expression EQUAL right=expression				# VarExprAssign
     ;
 
 locationDecl
@@ -85,8 +86,8 @@ uniformTypeDecl
     ;
 
 forStmt
-    : 'for' OPEN_PAR var=ID EQUAL start=simpleExpression cond=(TO | UNTIL) end=simpleExpression CLOSE_PAR block
-    | 'for' OPEN_PAR var=ID EQUAL start=simpleExpression cond=(TO | UNTIL) end=simpleExpression it=('inc' | 'dec') EQUAL inc=simpleExpression CLOSE_PAR block
+    : 'for' OPEN_PAR var=ID EQUAL start=expression cond=(TO | UNTIL) end=expression CLOSE_PAR block
+    | 'for' OPEN_PAR var=ID EQUAL start=expression cond=(TO | UNTIL) end=expression it=('inc' | 'dec') EQUAL inc=expression CLOSE_PAR block
     ;
 
 block
@@ -118,7 +119,7 @@ functionCall
     ;
     
 argList
-    : (simpleExpression (',' simpleExpression)*)?
+    : (expression (',' expression)*)?
     ;
     
 paramList
@@ -147,13 +148,13 @@ unaryExpression
 	: 
 	;
 
-simpleExpression
-	: expr=simpleExpression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
-	| expr=simpleExpression '.' name=ID                                   # MemberAccessExpr
-	| op=MINUS expr=simpleExpression                                      # UnaryMinusExpr 
-	| left=simpleExpression op=(MULTIPLY | DIVIDE) right=simpleExpression # MultDiv
-	| left=simpleExpression op=(LT | GT | LTE | GTE | AND | OR | XOR) right=simpleExpression      	  # BooleanExpression
-	| left=simpleExpression op=(PLUS | MINUS) right=simpleExpression      # AddSub
+expression
+	: expr=expression '.' name=ID OPEN_PAR args=argList CLOSE_PAR   # MethodCallExpr
+	| expr=expression '.' name=ID                                   # MemberAccessExpr
+	| op=MINUS expr=expression                                      # UnaryMinusExpr 
+	| left=expression op=(MULTIPLY | DIVIDE) right=expression # MultDiv
+	| left=expression op=(LT | GT | LTE | GTE | AND | OR | XOR) right=expression      	  # BooleanExpression
+	| left=expression op=(PLUS | MINUS) right=expression      # AddSub
 	| atom                                                                # AtomExpr
     ;
 
@@ -162,7 +163,7 @@ atom
     | FLOAT                             # FloatAtom
     | functionCall                      # CallAtom
     | varRef=ID                         # VarAtom
-    | '(' simpleExpression ')'          # ParenAtom
+    | '(' expression ')'          # ParenAtom
     ;
 
 TO		: 'to';

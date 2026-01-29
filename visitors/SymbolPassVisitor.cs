@@ -100,7 +100,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
         if (context.value != null)
         {
-            rhs = Visit(context.simpleExpression());
+            rhs = Visit(context.expression());
             if (lhs.CastType == CastType.VOID)
             {
                 lhs = rhs.Clone();
@@ -185,15 +185,32 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         {
             throw new VariableNotFoundException(context, name);
         }
-        
-        CastSymbol rhs = Visit(context.value);
 
+        if (!lhs.IsLValue)
+        {
+            throw new LValueException($"Unable to assign value to lvalue: {lhs.CastType}");
+        }
+
+        CastSymbol rhs = Visit(context.value);
         if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName || lhs.SpaceName != rhs.SpaceName)
         {
             throw new InvalidAssignmentException(context, lhs, rhs);
         }
 
         return lhs;
+    }
+
+    public CastSymbol VisitVarExprAssign(CastParser.VarExprAssignContext context)
+    {
+        CastSymbol left = Visit(context.left);
+        CastSymbol right = Visit(context.right);
+
+        if (!left.IsLValue)
+        {
+            throw new LValueException($"Unable to assign value to lvalue: {left.CastType}");
+        }
+        
+        return left.Clone();
     }
 
     public CastSymbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -258,7 +275,25 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitMemberAccessExpr(CastParser.MemberAccessExprContext context)
     {
-        throw new NotImplementedException();
+        CastSymbol parent = Visit(context.expr);
+        string member = context.name.Text;
+
+        if (parent.IsFunction)
+        {
+            parent = parent.ReturnType;
+        }
+
+        if (!parent.IsLValue)
+        {
+            throw new LValueException($"Unable to assign value to lvalue: {parent.CastType}");
+        }
+
+        if (!parent.Fields.TryGetValue(member, out CastSymbol typeMember))
+        {
+            throw new MemberNotFound($"Member '{member}' not found on type '{parent.CastType}' : '{parent.StructName}'");
+        }
+        
+        return typeMember;
     }
 
     public CastSymbol VisitUnaryMinusExpr(CastParser.UnaryMinusExprContext context)
@@ -286,7 +321,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             {
                 argTypes.Add(left);
             }
-            foreach (var arg in context.args.simpleExpression()) argTypes.Add(Visit(arg));
+            foreach (var arg in context.args.expression()) argTypes.Add(Visit(arg));
 
             var functionKey = FunctionKey.Of(context.name.Text, argTypes);
             if (!left.Functions.ContainsKey(functionKey))
@@ -365,7 +400,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitExprStmt(CastParser.ExprStmtContext context)
     {
-        return Visit(context.simpleExpression());
+        return Visit(context.expression());
     }
 
     public CastSymbol VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
@@ -410,7 +445,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitReturnStmt(CastParser.ReturnStmtContext context)
     {
-        var rhs = Visit(context.simpleExpression());
+        var rhs = Visit(context.expression());
         Nodes[context] = rhs;
         rhs.IsReturn = true;
 
@@ -429,7 +464,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
 
     public CastSymbol VisitParenAtom(CastParser.ParenAtomContext context)
     {
-        return Visit(context.simpleExpression());
+        return Visit(context.expression());
     }
 
     public CastSymbol VisitVarAtom(CastParser.VarAtomContext context)
@@ -595,11 +630,13 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         {
             var t = Types.ResolveType(type.type.Text);
             Nodes[type] = t;
+            t.IsLValue = true;
             fields.Add(type.variable.Text, t);
         }
 
         var @struct = CastSymbol.Struct(structName, fields);
         @struct.AllowSwizzle = context.swizzleDecl() != null;
+        @struct.IsLValue = true;
         _scope.Define(structName, @struct);
 
         // constructor
@@ -630,6 +667,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
                 var typeName = param.type.Text;
                 var t = Types.ResolveType(typeName);
                 paramTypes.Add(t);
+                t.IsLValue = true;
                 _scope.Define(param.variable.Text, t);
             }
         }
@@ -651,6 +689,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             {
                 var typeName = param.type.Text;
                 var t = Types.ResolveType(typeName);
+                t.IsLValue = true;
                 paramTypes.Add(t);
             }
         }
@@ -700,6 +739,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             {
                 var typeName = param.type.Text;
                 var t = Types.ResolveType(typeName);
+                t.IsLValue = true;
                 paramTypes.Add(t);
             }
         }
@@ -710,11 +750,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         CastSymbol? type = _scope.Lookup(typeFnText);
         FunctionKey key = FunctionKey.Of(functionName, paramTypes);
         type.Functions.TryAdd(key, function);
-
-        // int a = type.Functions.Keys.Count(k => k.Equals(key));
-        // Console.WriteLine($"dbg: {a}");
-
-        // _scope.Define(functionName, function);
+        
         return Nodes[context] = function;
     }
 
@@ -735,21 +771,22 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         }
 
         var providedArgs = context.args != null
-            ? context.args.simpleExpression()
-            : new CastParser.SimpleExpressionContext[0];
+            ? context.args.expression()
+            : new CastParser.ExpressionContext[0];
 
-        var argCount = providedArgs.Length;
-        for (var i = 0; i < argCount; i++)
-        {
-            var arg = Visit(providedArgs[i]);
-            var expected = fn.Parameters[i];
+        // var argCount = providedArgs.Length;
+        // for (var i = 0; i < argCount; i++)
+        // {
+        //     var arg = Visit(providedArgs[i]);
+        //     var expected = fn.Parameters[i];
 
-            if (!arg.Equals(expected))
-                throw new Exception($"Incorrect type in functionCall {functionName} at position: {i + 1}");
-        }
+        //     if (!arg.Equals(expected))
+        //         throw new Exception($"Incorrect type in functionCall {functionName} at position: {i + 1}");
+        // }
 
-        Nodes[context] = fn.ReturnType;
-        return fn.ReturnType;
+        fn.IsLValue = false;
+        Nodes[context] = fn;
+        return fn;
     }
 
     public CastSymbol VisitArgList(CastParser.ArgListContext context)
@@ -790,6 +827,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
             {
                 throw new SpaceNotFoundException(from);
             }
+            
             if (!_scope.TryGetSymbol(to, out fromSpace))
             {
                 throw new SpaceNotFoundException(to);
@@ -822,7 +860,7 @@ public class SymbolPassVisitor : ICastVisitor<CastSymbol>
         throw new NotImplementedException();
     }
 
-    public CastSymbol VisitSimpleExpression(CastParser.SimpleExpressionContext context)
+    public CastSymbol VisitExpression(CastParser.ExpressionContext context)
     {
         return CastSymbol.Void;
     }
