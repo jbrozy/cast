@@ -1,15 +1,14 @@
 ﻿using Antlr4.Runtime.Tree;
+using Cast.core;
 using Cast.core.exceptions;
 
 namespace Cast.Visitors;
 
 public class SemanticPassVisitor : ICastVisitor<CastSymbol>
 {
-    public Dictionary<IParseTree, CastSymbol> Nodes { get; } = new();
-    private Scope<CastSymbol> _scope = new();
+    public Dictionary<IParseTree, CastSymbol> Nodes { get; }
+    private Scope<CastSymbol> _scope;
     public Scope<CastSymbol> Scope => _scope;
-
-    private bool _inLoop = false;
 
     public SemanticPassVisitor(SymbolPassVisitor visitor)
     {
@@ -68,7 +67,10 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         if (context.typeDecl()?.type != null)
         {
             string typeDeclName = context.typeDecl().type.Text;
-            lhs = _scope.Lookup(typeDeclName);
+            if (!_scope.TryGetSymbol(typeDeclName, out lhs))
+            {
+                throw new TypeNotFoundException(typeDeclName);
+            }
 
             if (lhs.IsLValue)
                 throw new LValueException($"Unable to assign to lvalue: {lhs.CastType}");
@@ -190,6 +192,9 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         {
             throw new LValueException($"Unable to assign value to lvalue: {left.CastType}");
         }
+
+        if (!TypeChecker.Check(left, right))
+            throw new InvalidAssignmentException(context, left, right);
         
         return left.Clone();
     }
@@ -428,8 +433,8 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
         {
             CastSymbol lhs = fn.Parameters[i];
             CastSymbol rhs = args[i];
-            
-            if (lhs.CastType != rhs.CastType || lhs.StructName != rhs.StructName)
+
+            if (!TypeChecker.Check(lhs, rhs))
             {
                 throw new InvalidAssignmentException(context, lhs, rhs);
             }
@@ -457,12 +462,10 @@ public class SemanticPassVisitor : ICastVisitor<CastSymbol>
     {
         try
         {
-            _inLoop = true;
             Visit(context.forStmt());
         }
         finally
         {
-            _inLoop = false;
         }
         
         return CastSymbol.Void;

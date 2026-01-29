@@ -17,20 +17,27 @@ public class InvalidAssignmentException : CastException
         
         if (left.CastType != right.CastType)
         {
-            sb.AppendLine($"Incompatible type: '{left.CastType}'. Expected: '{right.CastType}'.");
+            if (left.CastType != CastType.STRUCT && right.CastType == CastType.STRUCT)
+            {
+                sb.AppendLine($"Expected type: '{left.CastType}'. Given: '{right.StructName}'.");
+            }
+            else
+            {
+                sb.AppendLine($"Expected type: '{left.CastType}'. Given: '{right.CastType}'.");
+            }
 
             if (left.CastType == CastType.STRUCT)
             {
                 if (!string.IsNullOrEmpty(left.StructName) && left.StructName != right.StructName)
                 {
-                    sb.AppendLine($"Incompatible type: '{left.StructName}'. Expected: '{right.StructName}'.");
+                    sb.AppendLine($"Expected type: '{left.StructName}'. Given: '{right.StructName}'.");
                 }
             }
         }
         
         if (left.SpaceName != right.SpaceName)
         {
-            sb.AppendLine($"Incompatible space: '{left.SpaceName}'. Expected: '{right.SpaceName}'");
+            sb.AppendLine($"Expected space: '{left.SpaceName}'. Given: '{right.SpaceName}'");
         }
 
         return sb.ToString();

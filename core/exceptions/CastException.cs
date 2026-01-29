@@ -8,6 +8,8 @@ public abstract class CastException : Exception
     
     protected static string GetLoc(Antlr4.Runtime.ParserRuleContext context)
     {
-        return $"[{context.Start.Line}:{context.Start.Column}] {context.GetText()}";
+        string formatText = context.GetText().Replace("=", " = ");
+        formatText = formatText.Replace(",", ", ");
+        return $"[{context.Start.Line}:{context.Start.Column}] {formatText}";
     }
 }
