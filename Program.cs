@@ -5,6 +5,7 @@ using Cast;
 using Cast.core.exceptions;
 using Cast.listeners;
 using Cast.Visitors;
+using Cast.Visitors.v2;
 using ConsoleAppFramework;
 
 class Program
@@ -86,17 +87,22 @@ static void Repl()
 
                 if (parser.NumberOfSyntaxErrors == 0)
                 {
-                    SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
-                    symbolPassVisitor.Visit(tree);
+                    DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor();
+                    declarationPassVisitor.Visit(tree);
+                    
+                    ResolutionPassVisitor resolutionPassVisitor = new ResolutionPassVisitor(declarationPassVisitor);
+                    resolutionPassVisitor.Visit(tree);
+                    // SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
+                    // symbolPassVisitor.Visit(tree);
                 
-                    SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
-                    semanticPassVisitor.Visit(tree);
+                    // SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
+                    // semanticPassVisitor.Visit(tree);
                 
-                    GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
-                    string result = glslPassVisitor.Visit(tree);
+                    // GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
+                    // string result = glslPassVisitor.Visit(tree);
 
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Output: \n" + result); 
+                    // Console.ForegroundColor = ConsoleColor.Green;
+                    // Console.WriteLine("Output: \n" + result); 
                 }
             }
             catch (Exception ex)
@@ -149,23 +155,26 @@ static void Repl()
 
         try
         {
-            CastParser.ProgramContext context = parser.program();
-            SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
-            symbolPassVisitor.Visit(context);
-        
-            SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
-            semanticPassVisitor.Visit(context);
-        
-            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
-            string result = glslPassVisitor.Visit(context);
-
-            string outFileName = file.Replace(".cst", ".glsl");
-            if (output != null)
-            {
-                outFileName = output + Path.GetFileName(file);
-            }
             
-            File.WriteAllText(outFileName, result);
+            CastParser.ProgramContext context = parser.program();
+            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor();
+            declarationPassVisitor.Visit(context);
+            // SymbolPassVisitor symbolPassVisitor = new SymbolPassVisitor();
+            // symbolPassVisitor.Visit(context);
+
+            // SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(symbolPassVisitor);
+            // semanticPassVisitor.Visit(context);
+
+            // GlslPassVisitor glslPassVisitor = new GlslPassVisitor(semanticPassVisitor);
+            // string result = glslPassVisitor.Visit(context);
+
+            // string outFileName = file.Replace(".cst", ".glsl");
+            // if (output != null)
+            // {
+            //     outFileName = output + Path.GetFileName(file);
+            // }
+            // 
+            // File.WriteAllText(outFileName, result);
         } catch (CastException e)
         {
             Console.WriteLine($"Error: {e.Message}");
