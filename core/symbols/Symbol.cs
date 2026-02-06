@@ -10,4 +10,12 @@ public abstract class Symbol
     public IScope? Scope { get; set; }
     public StorageQualifier Qualifier { get; set; } = StorageQualifier.None;
     public override string ToString() => $"{Kind} {Name}";
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not Symbol symbol) return false;
+        if (Name !=  symbol.Name) return false;
+        if (Kind !=  symbol.Kind) return false;
+        return true;
+    }
 }

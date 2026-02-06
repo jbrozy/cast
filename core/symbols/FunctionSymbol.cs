@@ -1,8 +1,11 @@
-﻿namespace Cast.core.symbols;
+﻿using Cast.core.scope;
 
-public class FunctionSymbol : Symbol
+namespace Cast.core.symbols;
+
+public class FunctionSymbol : Symbol, IScope
 {
     public List<VariableSymbol> Parameters { get; set; } = [];
+    private Dictionary<string, Symbol> _symbols = new();
     
     #region flags
     public bool IsExternal { get; set; } = false;
@@ -16,7 +19,40 @@ public class FunctionSymbol : Symbol
 
     public string GetSignature()
     {
-        string paramTypes = string.Join("", Parameters.Select(c => c.Type.ToString()));
+        string paramTypes = string.Join(", ", Parameters.Select(c => c.TypeRef.Name));
+        if (Parameters.Count == 0)
+        {
+            throw new Exception($"{Name} has no symbols");
+        }
         return $"{Name}({paramTypes})";
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not FunctionSymbol other) return false;
+        return true;
+    }
+
+    public IScope? EnclosingScope { get; set; }
+    public string ScopeName { get; }
+    public void Define(Symbol symbol)
+    {
+        if (_symbols.ContainsKey(symbol.Name))
+        {
+            throw new Exception($"Variable {symbol.Name} is already defined");
+        }
+        _symbols.Add(symbol.Name, symbol);
+    }
+
+    public Symbol? Resolve(string name)
+    {
+        if (_symbols.TryGetValue(name, out Symbol? symbol)) return symbol;
+        
+        return EnclosingScope?.Resolve(name);
+    }
+
+    public List<Symbol> GetSymbols()
+    {
+        return _symbols.Values.ToList();
     }
 }

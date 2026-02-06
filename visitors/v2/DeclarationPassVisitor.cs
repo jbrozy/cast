@@ -1,4 +1,5 @@
-﻿using Antlr4.Runtime.Tree;
+﻿using System.Reflection;
+using Antlr4.Runtime.Tree;
 using Cast.core.scope;
 using Cast.core.symbols;
 
@@ -27,7 +28,7 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitChildren(IRuleNode node)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitTerminal(ITerminalNode node)
@@ -47,22 +48,7 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitStructDeclStmt(CastParser.StructDeclStmtContext context)
     {
-        string name = context.structDecl().name.Text;
-
-        StructSymbol structSymbol = new StructSymbol()
-        {
-            Name = name,
-            EnclosingScope = CurrentScope
-        };
-        
-        foreach (var typeDeclContext in context.structDecl()._members)
-        {
-            structSymbol.Fields.Add(typeDeclContext.variable.Text, Visit(typeDeclContext));
-        }
-        
-        CurrentScope.Define(structSymbol);
-
-        return null;
+        return Visit(context.structDecl());
     }
 
     public Symbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
@@ -77,33 +63,7 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
     {
-        string returnTypeText = context.typedFunctionDecl().returnType.Text;
-        
-        StructSymbol? parent = CurrentScope.Resolve(returnTypeText) as StructSymbol;
-
-        string? receiverTypeName = context.typedFunctionDecl()?.typeVarName.Text;
-
-        List<VariableSymbol> parameters = new List<VariableSymbol>();
-        
-        if (receiverTypeName != null)
-        {
-            VariableSymbol variableSymbol = new VariableSymbol()
-            {
-                Name = receiverTypeName,
-                Type = parent,
-            };
-            
-            parameters.Add(variableSymbol);
-        }
-
-        FunctionSymbol functionSymbol = new FunctionSymbol()
-        {
-            Name = returnTypeText,
-            Parameters = parameters,
-        };
-        
-        parent.Functions.Add(functionSymbol);
-        return null;
+        return Visit(context.typedFunctionDecl());
     }
 
     public Symbol VisitForDeclStmt(CastParser.ForDeclStmtContext context)
@@ -123,7 +83,7 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitInStmtWrapper(CastParser.InStmtWrapperContext context)
     {
-        throw new NotImplementedException();
+        return Visit(context.inStmt());
     }
 
     public Symbol VisitOutStmtWrapper(CastParser.OutStmtWrapperContext context)
@@ -417,17 +377,17 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitOutTypeDecl(CastParser.OutTypeDeclContext context)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitInTypeDecl(CastParser.InTypeDeclContext context)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitUniformTypeDecl(CastParser.UniformTypeDeclContext context)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitForStmt(CastParser.ForStmtContext context)
@@ -442,45 +402,58 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitStructDecl(CastParser.StructDeclContext context)
     {
-        throw new NotImplementedException();
+        string name = context.name.Text;
+
+        StructSymbol structSymbol = new StructSymbol()
+        {
+            Name = name,
+            EnclosingScope = CurrentScope
+        };
+
+        CurrentScope = structSymbol;
+        foreach (var typeDeclContext in context._members)
+        {
+            structSymbol.Fields.Add(typeDeclContext.variable.Text, Visit(typeDeclContext));
+        }
+        
+        // default constructor
+        FunctionSymbol functionSymbol = new FunctionSymbol()
+        {
+            Name = name,
+            EnclosingScope = CurrentScope,
+        };
+
+        CurrentScope = functionSymbol;
+        foreach (var typeDeclContext in context._members)
+        {
+            functionSymbol.Parameters.Add(Visit(typeDeclContext) as VariableSymbol);
+        }
+        CurrentScope = structSymbol.EnclosingScope;
+        structSymbol.Constructors.Add(functionSymbol);
+        CurrentScope.Define(structSymbol);
+
+        return null;
     }
 
     public Symbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
-        string name = context.functionIdentifier().GetText();
-
+        Console.WriteLine(context.GetText());
+        string name = context.functionIdentifier().functionName.Text;
         List<VariableSymbol> parameters = [];
-        
-        foreach (var @param in context.paramList().typeDecl())
-        {
-            VariableSymbol variable = new VariableSymbol()
-            {
-                Name = @param.variable.Text,
-            };
-
-            variable.TypeRef.Name = @param.type.Text;
-
-            if (param.typeSpace() != null)
-            {
-                variable.TypeRef.RawArgs.Add(param.typeSpace().spaceName.Text);
-            }
-            
-            if (param.typeSpaceConversion() != null)
-            {
-                variable.TypeRef.RawArgs.Add(param.typeSpaceConversion().From.Text);
-                variable.TypeRef.RawArgs.Add(param.typeSpaceConversion().To.Text);
-            }
-            
-            parameters.Add(variable);
-        }
-
         FunctionSymbol functionSymbol = new FunctionSymbol()
         {
             Name = name,
             Parameters = parameters,
             IsExternal = context.DECLARE() != null && context.DECLARE().GetText() == "DECLARE"
         };
-
+        
+        functionSymbol.EnclosingScope = CurrentScope;
+        CurrentScope = functionSymbol;
+        foreach (var @param in context.paramList().typeDecl())
+        {
+            Visit(@param);
+        }
+        CurrentScope = functionSymbol.EnclosingScope;
         functionSymbol.ReturnTypeRef.Name = context.returnType?.Text;
         CurrentScope.Define(functionSymbol);
         return null;
@@ -488,43 +461,77 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        throw new NotImplementedException();
+        string returnTypeText = context.returnType?.Text;
+        string type = context.typeFn.Text;
+        string functionName = context.functionIdentifier().functionName.Text;
+        if (string.IsNullOrEmpty(returnTypeText))
+        {
+            returnTypeText = "void";
+        }
+
+        if (functionName == "length")
+        {
+            Console.WriteLine("debug");
+        }
+        
+        StructSymbol? parent = CurrentScope.Resolve(type) as StructSymbol;
+        string? receiverTypeName = context.typeVarName?.Text;
+        List<VariableSymbol> parameters = new List<VariableSymbol>();
+        if (!string.IsNullOrEmpty(receiverTypeName))
+        {
+            VariableSymbol variableSymbol = new VariableSymbol()
+            {
+                Name = receiverTypeName,
+                TypeRef = new TypeReference()
+                {
+                    Name = parent.Name
+                }
+            };
+            parameters.Add(variableSymbol);
+        }
+
+        FunctionSymbol functionSymbol = new FunctionSymbol()
+        {
+            Name = functionName,
+            Parameters = parameters,
+            EnclosingScope = CurrentScope
+        };
+
+        CurrentScope = functionSymbol;
+        foreach (var param in context.paramList().typeDecl())
+        {
+            VariableSymbol p = Visit(param) as VariableSymbol;
+            CurrentScope.Define(p);
+            parameters.Add(p);
+        }
+        CurrentScope = functionSymbol.EnclosingScope;
+        parent.Functions.Add(functionSymbol);
+        return null;
     }
 
     public Symbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
         string typeName = context.typeFn.Text;
         StructSymbol? structSymbol = CurrentScope.Resolve(typeName) as StructSymbol;
-
-        List<VariableSymbol?> parameters = new List<VariableSymbol?>();
-
-        foreach (var paramTypeDecl in context.@params.typeDecl())
-        {
-            VariableSymbol symbol = new VariableSymbol()
-            {
-                Name = paramTypeDecl.variable.Text,
-            };
-            symbol.TypeRef.Name = paramTypeDecl.type.Text;
-            if (paramTypeDecl.typeSpace() != null)
-            {
-                symbol.TypeRef.RawArgs.Add(paramTypeDecl.typeSpace().spaceName.Text);
-            }
-            
-            if (paramTypeDecl.typeSpaceConversion() != null)
-            {
-                symbol.TypeRef.RawArgs.Add(paramTypeDecl.typeSpaceConversion().From.Text);
-                symbol.TypeRef.RawArgs.Add(paramTypeDecl.typeSpaceConversion().To.Text);
-            }
-            
-            parameters.Add(symbol);
-        }
-
         FunctionSymbol functionSymbol = new FunctionSymbol()
         {
             Name = typeName,
-            Parameters = parameters,
+            Parameters = new List<VariableSymbol>(),
+            EnclosingScope = CurrentScope
         };
+
+        CurrentScope = functionSymbol;
+        foreach (var typeDeclContext in context.paramList().typeDecl())
+        {
+            VariableSymbol s = Visit(typeDeclContext) as VariableSymbol;
+            functionSymbol.Parameters.Add(s);
+            functionSymbol.Define(s);
+        }
         
+        CurrentScope = structSymbol.EnclosingScope;
+        Console.WriteLine(context.GetText());
+
+        functionSymbol.ReturnTypeRef.Name = context.returnType.Text;
         structSymbol.Constructors.Add(functionSymbol);
 
         return null;
@@ -562,7 +569,24 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypeDecl(CastParser.TypeDeclContext context)
     {
-        return null;
+        VariableSymbol variable = new VariableSymbol()
+        {
+            Name = context.variable.Text,
+        };
+
+        if (context.typeSpace() != null)
+        {
+            variable.TypeRef.RawArgs.Add(context.typeSpace().spaceName.Text);
+        }
+        
+        if (context.typeSpaceConversion() != null)
+        {
+            variable.TypeRef.RawArgs.Add(context.typeSpaceConversion().From.Text);
+            variable.TypeRef.RawArgs.Add(context.typeSpaceConversion().To.Text);
+        }
+            
+        variable.TypeRef.Name = context.type.Text;
+        return variable;
     }
 
     public Symbol VisitSpaceDecl(CastParser.SpaceDeclContext context)

@@ -4,13 +4,12 @@ using Cast.core.symbols;
 
 namespace Cast.Visitors.v2;
 
-public class ResolutionPassVisitor : ICastVisitor<Symbol>
+public class SemPassVisitor : ICastVisitor<Symbol>
 {
-    public IScope CurrentScope;
-
-    public ResolutionPassVisitor(DeclarationPassVisitor declarationPassVisitor)
+    private IScope CurrentScope;
+    public SemPassVisitor(ResolutionPassVisitor resolutionPassVisitor)
     {
-        CurrentScope =  declarationPassVisitor.CurrentScope;
+        CurrentScope = resolutionPassVisitor.CurrentScope;
     }
     
     public Symbol Visit(IParseTree tree)
@@ -20,7 +19,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitChildren(IRuleNode node)
     {
-        return null;
+        return node.Accept(this);
     }
 
     public Symbol VisitTerminal(ITerminalNode node)
@@ -40,7 +39,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitStructDeclStmt(CastParser.StructDeclStmtContext context)
     {
-        return Visit(context.structDecl());
+        return null;
     }
 
     public Symbol VisitFnDeclStmt(CastParser.FnDeclStmtContext context)
@@ -50,7 +49,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitConstructorFnDeclStmt(CastParser.ConstructorFnDeclStmtContext context)
     {
-        return Visit(context.constructorFunctionDecl());
+        return null;
     }
 
     public Symbol VisitTypedFnDeclStmt(CastParser.TypedFnDeclStmtContext context)
@@ -65,7 +64,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitBlockStmt(CastParser.BlockStmtContext context)
     {
-        return Visit(context.block());
+        throw new NotImplementedException();
     }
 
     public Symbol VisitUniformStmtWrapper(CastParser.UniformStmtWrapperContext context)
@@ -90,7 +89,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitSpaceDeclStmt(CastParser.SpaceDeclStmtContext context)
     {
-        return Visit(context.spaceDecl());
+        return null;
     }
 
     public Symbol VisitContinueStmt(CastParser.ContinueStmtContext context)
@@ -123,74 +122,56 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         string name = context.typeDecl().variable.Text;
         VariableSymbol? variableSymbol = CurrentScope.Resolve(name) as VariableSymbol;
 
-        if (variableSymbol == null)
-        {
-            variableSymbol = new VariableSymbol()
-            {
-                Name = name,
-            };
-            CurrentScope.Define(variableSymbol);
-        }
+        Symbol type = CurrentScope.Resolve(variableSymbol.TypeRef.Name);
+        variableSymbol.TypeRef.ResolvedType = type;
 
-        if (context.typeDecl().type != null)
+        foreach (var rawArg in variableSymbol.TypeRef.RawArgs)
         {
-            variableSymbol.TypeRef.Name = context.typeDecl().type.Text;
+            Symbol? arg = CurrentScope.Resolve(rawArg);
 
-            if (context.typeDecl().typeSpace() != null)
-            {
-                variableSymbol.TypeRef.RawArgs.Add(context.typeDecl().typeSpace().spaceName.Text);
-            }
+            if (arg is not SpaceSymbol)
+                throw new Exception($"Invalid Type");
             
-            if (context.typeDecl().typeSpaceConversion() != null)
-            {
-                variableSymbol.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().From.Text);
-                variableSymbol.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().To.Text);
-            }
+            variableSymbol.TypeRef.ResolvedArgs.Add(arg);
         }
         return null;
     }
 
     public Symbol VisitVarDeclAssign(CastParser.VarDeclAssignContext context)
     {
-        string variableName = context.typeDecl().variable.Text;
-        VariableSymbol? variable = CurrentScope.Resolve(variableName) as VariableSymbol;
-        if (variable == null)
-        {
-            variable = new VariableSymbol()
-            {
-                Name = variableName
-            };
-        }
-        
-        // resolve type when explicitly set
-        if (context.typeDecl()?.type != null)
-        {
-            string typeName = context.typeDecl().type.Text;
-            variable.TypeRef.ResolvedType = CurrentScope.Resolve(typeName);
+        string name = context.typeDecl().variable.Text;
+        VariableSymbol? variableSymbol = CurrentScope.Resolve(name) as VariableSymbol;
+        Console.WriteLine(context.expression().GetText());
+        Symbol expression = Visit(context.value);
 
-            if (context.typeDecl()?.typeSpace() != null)
+        if (variableSymbol.TypeRef.ResolvedType is not null)
+        {
+            if (!variableSymbol.TypeRef.ResolvedType.Equals(expression))
             {
-                variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpace().spaceName.Text);
-            }
-            if (context.typeDecl()?.typeSpaceConversion() != null)
-            {
-                variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().From.Text);
-                variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().To.Text);
+                throw new Exception($"Incompatible types");
             }
         }
-        
-        CurrentScope.Define(variable);
+
+        if (expression is FunctionSymbol functionSymbol)
+        {
+            variableSymbol.TypeRef = functionSymbol.ReturnTypeRef;
+        }
+        else
+        {
+            variableSymbol.TypeRef.ResolvedType = expression;
+        }
         return null;
     }
 
     public Symbol VisitVarAssign(CastParser.VarAssignContext context)
     {
-        throw new NotImplementedException();
+        Symbol expression = Visit(context.value);
+        return null;
     }
 
     public Symbol VisitVarExprAssign(CastParser.VarExprAssignContext context)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitInBlockDecl(CastParser.InBlockDeclContext context)
@@ -199,7 +180,6 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         {
             Visit(inTypeDeclContext);
         }
-
         return null;
     }
 
@@ -275,9 +255,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitCallAtom(CastParser.CallAtomContext context)
     {
-        string functionCall = context.functionCall().name.Text;
-
-        return CurrentScope.Resolve(functionCall);
+        return Visit(context.functionCall());
     }
 
     public Symbol VisitVarAtom(CastParser.VarAtomContext context)
@@ -292,17 +270,16 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitProgram(CastParser.ProgramContext context)
     {
-        foreach (var stmt in context.statement())
+        foreach (var statementContext in context.statement())
         {
-            Visit(stmt);
+            Visit(statementContext);
         }
-
         return null;
     }
 
     public Symbol VisitStatement(CastParser.StatementContext context)
     {
-        return null;
+        throw new NotImplementedException();
     }
 
     public Symbol VisitInOut(CastParser.InOutContext context)
@@ -357,26 +334,17 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitInTypeDecl(CastParser.InTypeDeclContext context)
     {
-        string variableName = context.name.Text;
-        string typeName = context.name.Text;
+        string name = context.name.Text;
+        string type = context.type.Text;
+        VariableSymbol variableSymbol = CurrentScope.Resolve(name) as VariableSymbol;
 
-        VariableSymbol? variableSymbol = new VariableSymbol()
-        {
-            Name = variableName,
-            Qualifier = StorageQualifier.Input,
-            TypeRef = new TypeReference()
-            {
-                Name = typeName
-            }
-        };
-
-        if (context.typeSpace() != null)
-        {
-            string space = context.typeSpace().spaceName.Text;
-            variableSymbol.TypeRef.RawArgs.Add(space);
-        }
+        variableSymbol.TypeRef.ResolvedType = CurrentScope.Resolve(type);
         
-        CurrentScope.Define(variableSymbol);
+        // params
+        foreach (string arg in variableSymbol.TypeRef.RawArgs)
+        {
+            variableSymbol.TypeRef.ResolvedArgs.Add(CurrentScope.Resolve(arg) as Symbol);
+        }
         return null;
     }
 
@@ -402,76 +370,50 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitStructDecl(CastParser.StructDeclContext context)
     {
-        string name = context.name.Text;
-        StructSymbol? symbol = CurrentScope.Resolve(name) as StructSymbol;
-        symbol.Type = symbol as Symbol;
-        symbol.EnclosingScope = CurrentScope;
-
-        foreach (var member in symbol.Fields)
-        {
-            VariableSymbol? memberType = member.Value as VariableSymbol;
-            memberType.Type = CurrentScope.Resolve(memberType.TypeRef.Name);
-            memberType.TypeRef.Name = memberType.Type.Name;
-        }
-        return null;
+        throw new NotImplementedException();
     }
 
     public Symbol VisitFunctionDecl(CastParser.FunctionDeclContext context)
     {
         string functionName = context.functionIdentifier().functionName.Text;
-        FunctionSymbol? symbol = CurrentScope.Resolve(functionName) as FunctionSymbol;
-        symbol.EnclosingScope = CurrentScope;
-
-        CurrentScope = symbol.Scope;
+        FunctionSymbol? functionSymbol = CurrentScope.Resolve(functionName) as FunctionSymbol;
+        CurrentScope = functionSymbol;
         Visit(context.block());
-        CurrentScope = symbol.EnclosingScope;
-
+        CurrentScope = functionSymbol.EnclosingScope;
         return null;
     }
 
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        string typeFn = context.typeFn.Text;
-        StructSymbol? symbol = CurrentScope.Resolve(typeFn) as StructSymbol;
-        
+        StructSymbol type = CurrentScope.Resolve(context.typeFn.Text) as StructSymbol;
         string functionName = context.functionIdentifier().functionName.Text;
-        FunctionSymbol function = symbol.ResolveFunction(functionName);
+        List<Symbol> overloads = new List<Symbol>();
 
-        CurrentScope = function;
-        foreach (VariableSymbol parameter in function.Parameters)
+        string? receiverTypeName = context.typeVarName?.Text;
+        if (!string.IsNullOrEmpty(receiverTypeName))
         {
-            parameter.Type = CurrentScope.Resolve(parameter.TypeRef.Name);
+            overloads.Add(type);
         }
-
+        
+        foreach (var typeDeclContext in context.paramList().typeDecl())
+        {
+            overloads.Add(Visit(typeDeclContext));
+        }
+        
+        FunctionSymbol? function = type.ResolveFunctionOverload(functionName, overloads) as FunctionSymbol;
         if (context.block() != null)
         {
+            CurrentScope = function;
             Visit(context.block());
+            CurrentScope = function.EnclosingScope;
         }
-        CurrentScope = function.EnclosingScope;
+
         return null;
     }
 
     public Symbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
-        string typeFn = context.typeFn.Text;
-        
-        StructSymbol? symbol = CurrentScope.Resolve(typeFn) as StructSymbol;
-        var parameters = new List<Symbol>();
-        foreach (var typeDecl in context.@params.typeDecl())
-        {
-            Symbol param = CurrentScope.Resolve(typeDecl.type.Text);
-            parameters.Add(param);
-        }
-
-        FunctionSymbol constructor = symbol.ResolveConstructor(parameters) as FunctionSymbol;
-        CurrentScope = constructor;
-        if (context.block() != null)
-        {
-            Visit(context.block());
-        }
-        CurrentScope =  constructor.EnclosingScope;
-        constructor.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(constructor.ReturnTypeRef.Name); 
-        return null;
+        throw new NotImplementedException();
     }
 
     public Symbol VisitFunctionIdentifier(CastParser.FunctionIdentifierContext context)
@@ -481,7 +423,31 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitFunctionCall(CastParser.FunctionCallContext context)
     {
-        throw new NotImplementedException();
+        string functionName = context.name.Text;
+        Symbol? symbol = CurrentScope.Resolve(functionName);
+        
+        var argTypes = new List<Symbol>();
+        foreach (var expression in context.argList().expression())
+        {
+            Symbol sym = Visit(expression);
+            argTypes.Add(sym);
+        }
+
+        if (symbol is StructSymbol structSymbol)
+        {
+            if (functionName == structSymbol.Name)
+            {
+                return structSymbol.ResolveConstructor(argTypes);
+            }
+            return structSymbol.ResolveFunctionOverload(functionName, argTypes);
+        }
+        
+        if (symbol is FunctionSymbol functionSymbol)
+        {
+            return functionSymbol;
+        }
+
+        return null;
     }
 
     public Symbol VisitArgList(CastParser.ArgListContext context)
@@ -501,55 +467,33 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypeSpaceConversion(CastParser.TypeSpaceConversionContext context)
     {
-        return null;
+        throw new NotImplementedException();
     }
 
     public Symbol VisitTypeDecl(CastParser.TypeDeclContext context)
     {
-        string variableName = context.variable.Text;
-        VariableSymbol? reference = CurrentScope.Resolve(variableName) as VariableSymbol;
-        string typeName = context.type.Text;
-        
-        StructSymbol? returnType = CurrentScope.Resolve(typeName) as StructSymbol;
-        if (returnType == null)
-        {
-            throw new Exception($"The type {typeName} does not exist.");
-        }
-
-        // Verify args
-        foreach (var arg in reference.TypeRef.RawArgs)
-        {
-            var resolvedArg = CurrentScope.Resolve(arg);
-            if (resolvedArg == null)
-            {
-                throw new Exception($"The type {typeName} does not exist.");
-            }
-            
-            reference.TypeRef.ResolvedArgs.Add(resolvedArg);
-        }
-
-        reference.TypeRef.ResolvedType = returnType;
-
-        return reference;
+        string name = context.variable.Text;
+        string type = context.type.Text;
+        return CurrentScope.Resolve(type);
     }
 
     public Symbol VisitSpaceDecl(CastParser.SpaceDeclContext context)
     {
-        return null;
+        throw new NotImplementedException();
     }
 
     public Symbol VisitUnaryExpression(CastParser.UnaryExpressionContext context)
     {
-        throw new NotImplementedException();
+        return Visit(context.GetChild(0));
     }
 
     public Symbol VisitExpression(CastParser.ExpressionContext context)
     {
-        throw new NotImplementedException();
+        return Visit(context.GetChild(0));
     }
 
     public Symbol VisitAtom(CastParser.AtomContext context)
     {
-        throw new NotImplementedException();
+        return Visit(context.GetChild(0));
     }
 }

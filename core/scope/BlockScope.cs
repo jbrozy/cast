@@ -24,4 +24,9 @@ public class BlockScope : IScope
     {
         throw new NotImplementedException();
     }
+
+    public List<Symbol> GetSymbols()
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -12,18 +12,43 @@ class Program
 {
     static void Main(string[] args)
     {
-        var app = ConsoleApp.Create();
+        StringBuilder source = new StringBuilder();
+        source.Append(StdHelper.getStd());
+        source.Append("""
+                        fn (self: vec2) add(b: vec2<Model>) { }
+                        """);
+                       
+        AntlrInputStream  inputStream = new AntlrInputStream(source.ToString());
+        CastLexer  lexer = new CastLexer(inputStream);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        CastParser parser = new CastParser(tokens);
+        var tree = parser.program(); 
+        
+        DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor();
+        declarationPassVisitor.Visit(tree);
+        
+        ResolutionPassVisitor resolutionPassVisitor = new ResolutionPassVisitor(declarationPassVisitor);
+        resolutionPassVisitor.Visit(tree);
+        
+        SemPassVisitor semPassVisitor = new SemPassVisitor(resolutionPassVisitor);
+        semPassVisitor.Visit(tree);
 
-        app.Add("compile", (string path, string? output) => {
-            if (Directory.Exists(path)) CompileFolder(path, output);
-            if (File.Exists(path)) Compile(path, output);
-        });
-        
-        app.Add("repl", () => {
-            Repl();
-        });
-        
-        app.Run(args);
+        return;
+
+        // SemPassVisitor semPassVisitor = new SemPassVisitor(resolutionPassVisitor);
+        // semPassVisitor.Visit(tree);
+
+        // var app = ConsoleApp.Create();
+        // app.Add("compile", (string path, string? output) => {
+        //     if (Directory.Exists(path)) CompileFolder(path, output);
+        //     if (File.Exists(path)) Compile(path, output);
+        // });
+        // 
+        // app.Add("repl", () => {
+        //     Repl();
+        // });
+        // 
+        // app.Run(args);
     }
 
 static void Repl()

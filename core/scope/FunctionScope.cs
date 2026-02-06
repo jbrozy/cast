@@ -5,7 +5,6 @@ namespace Cast.core.scope;
 public class FunctionScope : IScope
 {
     private readonly Dictionary<string, Symbol> _symbols = new();
-    
     public IScope? EnclosingScope { get; set; }
     public string ScopeName { get; }
     
@@ -22,6 +21,13 @@ public class FunctionScope : IScope
 
     public Symbol? Resolve(string name)
     {
-        throw new NotImplementedException();
+        if (_symbols.ContainsKey(name)) return _symbols[name];
+        if (EnclosingScope != null) return EnclosingScope.Resolve(name);
+        return null;
+    }
+
+    public List<Symbol> GetSymbols()
+    {
+        return _symbols.Values.ToList();
     }
 }

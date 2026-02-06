@@ -24,4 +24,9 @@ public class StructScope : IScope
     {
         return _symbols.GetValueOrDefault(name);
     }
+
+    public List<Symbol> GetSymbols()
+    {
+        return _symbols.Values.ToList();
+    }
 }

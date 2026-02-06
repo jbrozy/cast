@@ -34,4 +34,9 @@ public class BaseScope(IScope? parent, string name) : IScope
         
         throw new Exception("Symbol not found: " + name);
     }
+
+    public List<Symbol> GetSymbols()
+    {
+        throw new NotImplementedException();
+    }
 }
