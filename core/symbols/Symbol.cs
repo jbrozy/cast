@@ -5,7 +5,7 @@ namespace Cast.core.symbols;
 public abstract class Symbol
 {
     public string Name { get; set; } = "";
-    public virtual Symbol? Type { get; set; }
+    public virtual TypeSymbol? Type { get; set; }
     public abstract SymbolKind Kind { get; }
     public IScope? Scope { get; set; }
     public StorageQualifier Qualifier { get; set; } = StorageQualifier.None;

@@ -1,20 +1,19 @@
 ﻿using Cast.core.scope;
 
-namespace Cast.core.symbols;
+namespace Cast.core.symbols.types;
 
-public class StructSymbol : Symbol, IScope
+public class StructTypeSymbol : TypeSymbol, IScope
 {
     public IScope? EnclosingScope { get; set; }
-    public override SymbolKind Kind => SymbolKind.Struct;
     public string ScopeName => $"struct {Name}";
     
     #region flags
     public bool AllowSwizzle { get; set; }= false;
     #endregion
+
+    public List<SpaceSymbol> SpaceSymbols { get; }= new();
     
     public Dictionary<string, Symbol> Fields { get; set; } = new();
-
-    public List<FunctionSymbol> Functions { get; set; } = new();
     public List<FunctionSymbol> Constructors { get; set; } = new();
 
     public Symbol? ResolveMember(string memberName)
@@ -61,7 +60,7 @@ public class StructSymbol : Symbol, IScope
         return Fields.Select(o => o.Value).ToList();
     }
 
-    public Symbol? ResolveFunctionOverload(string name, List<Symbol> overloads)
+    public FunctionSymbol? ResolveFunctionOverload(string name, List<Symbol> overloads)
     {
         if (overloads.Count == 0)
         {
@@ -72,6 +71,7 @@ public class StructSymbol : Symbol, IScope
         {
             Console.WriteLine("debug");
         }
+        
         string signature = overloads.Select(o => o.Name).Aggregate((a, b) => $"{a}, {b}");
         foreach (var function in Functions)
         {

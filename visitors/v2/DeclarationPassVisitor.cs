@@ -2,6 +2,7 @@
 using Antlr4.Runtime.Tree;
 using Cast.core.scope;
 using Cast.core.symbols;
+using Cast.core.symbols.types;
 
 namespace Cast.Visitors.v2;
 using Cast.core;
@@ -15,10 +16,10 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         CurrentScope = new BaseScope(null, "root");
         
         // primitive types
-        CurrentScope.Define(new StructSymbol(){Name = "float"});
-        CurrentScope.Define(new StructSymbol(){Name = "int"});
-        CurrentScope.Define(new StructSymbol(){Name = "bool"});
-        CurrentScope.Define(new StructSymbol(){Name = "void"});
+        CurrentScope.Define(new IntTypeSymbol());
+        CurrentScope.Define(new FloatTypeSymbol());
+        CurrentScope.Define(new BoolTypeSymbol());
+        CurrentScope.Define(new VoidTypeSymbol());
     }
     
     public Symbol Visit(IParseTree tree)
@@ -404,16 +405,16 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
     {
         string name = context.name.Text;
 
-        StructSymbol structSymbol = new StructSymbol()
+        StructTypeSymbol structTypeSymbol = new StructTypeSymbol()
         {
             Name = name,
             EnclosingScope = CurrentScope
         };
 
-        CurrentScope = structSymbol;
+        CurrentScope = structTypeSymbol;
         foreach (var typeDeclContext in context._members)
         {
-            structSymbol.Fields.Add(typeDeclContext.variable.Text, Visit(typeDeclContext));
+            structTypeSymbol.Fields.Add(typeDeclContext.variable.Text, Visit(typeDeclContext));
         }
         
         // default constructor
@@ -428,9 +429,9 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         {
             functionSymbol.Parameters.Add(Visit(typeDeclContext) as VariableSymbol);
         }
-        CurrentScope = structSymbol.EnclosingScope;
-        structSymbol.Constructors.Add(functionSymbol);
-        CurrentScope.Define(structSymbol);
+        CurrentScope = structTypeSymbol.EnclosingScope;
+        structTypeSymbol.Constructors.Add(functionSymbol);
+        CurrentScope.Define(structTypeSymbol);
 
         return null;
     }
@@ -473,8 +474,8 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         {
             Console.WriteLine("debug");
         }
-        
-        StructSymbol? parent = CurrentScope.Resolve(type) as StructSymbol;
+
+        TypeSymbol? parent = CurrentScope.Resolve(type) as TypeSymbol;
         string? receiverTypeName = context.typeVarName?.Text;
         List<VariableSymbol> parameters = new List<VariableSymbol>();
         if (!string.IsNullOrEmpty(receiverTypeName))
@@ -498,6 +499,34 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         };
 
         CurrentScope = functionSymbol;
+        if (string.IsNullOrEmpty(context.typeVarName?.Text) && !context.paramList().typeDecl().Any())
+        {
+            VariableSymbol variableSymbol = new VariableSymbol()
+            {
+                Name = "self",
+                TypeRef = new TypeReference()
+                {
+                    Name = parent.Name
+                }
+            };
+            CurrentScope.Define(variableSymbol);
+            parameters.Add(variableSymbol);
+        }
+
+        if (!string.IsNullOrEmpty(context.typeVarName?.Text))
+        {
+            VariableSymbol variableSymbol = new VariableSymbol()
+            {
+                Name = context.typeVarName?.Text,
+                TypeRef = new TypeReference()
+                {
+                    Name = parent.Name,
+                }
+            };
+            CurrentScope.Define(variableSymbol);
+            parameters.Add(variableSymbol);
+        }
+        
         foreach (var param in context.paramList().typeDecl())
         {
             VariableSymbol p = Visit(param) as VariableSymbol;
@@ -512,7 +541,7 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
     public Symbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
         string typeName = context.typeFn.Text;
-        StructSymbol? structSymbol = CurrentScope.Resolve(typeName) as StructSymbol;
+        StructTypeSymbol? structSymbol = CurrentScope.Resolve(typeName) as StructTypeSymbol;
         FunctionSymbol functionSymbol = new FunctionSymbol()
         {
             Name = typeName,

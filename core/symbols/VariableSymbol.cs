@@ -9,7 +9,7 @@ public class VariableSymbol : Symbol
     public int ArraySize { get; set; }
     public int Offset { get; set; }
 
-    public override Symbol? Type
+    public override TypeSymbol? Type
     {
         get => TypeRef.ResolvedType;
         set => TypeRef.ResolvedType = value;

@@ -1,6 +1,8 @@
-﻿using Antlr4.Runtime.Tree;
+﻿using System.Text;
+using Antlr4.Runtime.Tree;
 using Cast.core.scope;
 using Cast.core.symbols;
+using Cast.core.symbols.types;
 
 namespace Cast.Visitors.v2;
 
@@ -166,7 +168,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         if (context.typeDecl()?.type != null)
         {
             string typeName = context.typeDecl().type.Text;
-            variable.TypeRef.ResolvedType = CurrentScope.Resolve(typeName);
+            variable.TypeRef.ResolvedType = CurrentScope.Resolve(typeName).Type;
 
             if (context.typeDecl()?.typeSpace() != null)
             {
@@ -178,8 +180,11 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
                 variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().To.Text);
             }
         }
-        
-        CurrentScope.Define(variable);
+
+        if (CurrentScope.Resolve(variableName) == null)
+        {
+            CurrentScope.Define(variable);
+        }
         return null;
     }
 
@@ -403,14 +408,14 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
     public Symbol VisitStructDecl(CastParser.StructDeclContext context)
     {
         string name = context.name.Text;
-        StructSymbol? symbol = CurrentScope.Resolve(name) as StructSymbol;
-        symbol.Type = symbol as Symbol;
+        StructTypeSymbol? symbol = CurrentScope.Resolve(name) as StructTypeSymbol;
+        symbol.Type = CurrentScope.Resolve(symbol.Name).Type;
         symbol.EnclosingScope = CurrentScope;
 
         foreach (var member in symbol.Fields)
         {
             VariableSymbol? memberType = member.Value as VariableSymbol;
-            memberType.Type = CurrentScope.Resolve(memberType.TypeRef.Name);
+            memberType.Type = CurrentScope.Resolve(memberType.TypeRef.Name) as TypeSymbol;
             memberType.TypeRef.Name = memberType.Type.Name;
         }
         return null;
@@ -432,15 +437,47 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
         string typeFn = context.typeFn.Text;
-        StructSymbol? symbol = CurrentScope.Resolve(typeFn) as StructSymbol;
-        
         string functionName = context.functionIdentifier().functionName.Text;
-        FunctionSymbol function = symbol.ResolveFunction(functionName);
+        TypeSymbol? symbol = CurrentScope.Resolve(typeFn) as TypeSymbol;
+        
 
-        CurrentScope = function;
+        List<string> parameters = new List<string>();
+        if (context.@params.typeDecl().Any())
+        {
+            // for typed functions without parameters
+            if (!string.IsNullOrEmpty(context.typeVarName.Text))
+            {
+                parameters.Add(context.typeFn.Text);
+            }
+            foreach (var typeDeclContext in context.@params.typeDecl())
+            {
+                parameters.Add(typeDeclContext.type.Text);
+            }
+        }
+        else
+        {
+            // for typed functions without parameters
+            if (string.IsNullOrEmpty(context.typeVarName.Text))
+            {
+                parameters.Add(context.typeFn.Text);
+            }
+        }
+        
+        string paramSig = string.Join(", ", parameters);
+        string signature = functionName + "(" + paramSig + ")";
+        FunctionSymbol function = symbol.ResolveFunctionBySig(signature);
+        if (function == null)
+        {
+            foreach (var fn in symbol.Functions)
+            {
+                if (fn.Name == functionName)
+                    Console.WriteLine(fn.GetSignature());
+            }
+        }
+        
         foreach (VariableSymbol parameter in function.Parameters)
         {
-            parameter.Type = CurrentScope.Resolve(parameter.TypeRef.Name);
+            parameter.Type = CurrentScope.Resolve(parameter.TypeRef.Name) as TypeSymbol;
         }
 
         if (context.block() != null)
@@ -455,7 +492,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
     {
         string typeFn = context.typeFn.Text;
         
-        StructSymbol? symbol = CurrentScope.Resolve(typeFn) as StructSymbol;
+        StructTypeSymbol? symbol = CurrentScope.Resolve(typeFn) as StructTypeSymbol;
         var parameters = new List<Symbol>();
         foreach (var typeDecl in context.@params.typeDecl())
         {
@@ -470,7 +507,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
             Visit(context.block());
         }
         CurrentScope =  constructor.EnclosingScope;
-        constructor.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(constructor.ReturnTypeRef.Name); 
+        constructor.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(constructor.ReturnTypeRef.Name).Type; 
         return null;
     }
 
@@ -510,7 +547,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         VariableSymbol? reference = CurrentScope.Resolve(variableName) as VariableSymbol;
         string typeName = context.type.Text;
         
-        StructSymbol? returnType = CurrentScope.Resolve(typeName) as StructSymbol;
+        StructTypeSymbol? returnType = CurrentScope.Resolve(typeName) as StructTypeSymbol;
         if (returnType == null)
         {
             throw new Exception($"The type {typeName} does not exist.");

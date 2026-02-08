@@ -13,7 +13,7 @@ public class FunctionSymbol : Symbol, IScope
     #endregion
     
     #region type info
-    public override Symbol? Type => ReturnTypeRef?.ResolvedType;
+    public override TypeSymbol? Type => ReturnTypeRef?.ResolvedType;
     public TypeReference ReturnTypeRef { get; set; } = new ();
     #endregion
 

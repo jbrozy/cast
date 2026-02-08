@@ -1,6 +1,7 @@
 ﻿using Antlr4.Runtime.Tree;
 using Cast.core.scope;
 using Cast.core.symbols;
+using Cast.core.symbols.types;
 
 namespace Cast.Visitors.v2;
 
@@ -123,7 +124,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         VariableSymbol? variableSymbol = CurrentScope.Resolve(name) as VariableSymbol;
 
         Symbol type = CurrentScope.Resolve(variableSymbol.TypeRef.Name);
-        variableSymbol.TypeRef.ResolvedType = type;
+        variableSymbol.TypeRef.ResolvedType = type.Type;
 
         foreach (var rawArg in variableSymbol.TypeRef.RawArgs)
         {
@@ -158,7 +159,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         }
         else
         {
-            variableSymbol.TypeRef.ResolvedType = expression;
+            variableSymbol.TypeRef.ResolvedType = expression.Type;
         }
         return null;
     }
@@ -225,17 +226,51 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitMultDiv(CastParser.MultDivContext context)
     {
-        throw new NotImplementedException();
+        Symbol lhs = Visit(context.left);
+        Symbol rhs = Visit(context.right);
+        
+        string op = context.op.Text == "*" ? "__mul__" : "__div__";
+
+        StructTypeSymbol lhsType = lhs.Type as StructTypeSymbol;
+        StructTypeSymbol rhsType = rhs.Type as StructTypeSymbol;
+
+        var overloads = new List<Symbol>();
+        overloads.AddRange(lhsType, rhsType);
+
+        FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
+
+        if (function == null)
+            throw new Exception($"Unable to add/subtract");
+        
+        return null;
     }
 
     public Symbol VisitBooleanExpression(CastParser.BooleanExpressionContext context)
     {
+        Symbol lhs = Visit(context.left);
+        Symbol rhs = Visit(context.right);
         throw new NotImplementedException();
     }
 
     public Symbol VisitAddSub(CastParser.AddSubContext context)
     {
-        throw new NotImplementedException();
+        Symbol lhs = Visit(context.left);
+        Symbol rhs = Visit(context.right);
+        
+        string op = context.op.Text == "+" ? "__add__" : "__sub__";
+
+        StructTypeSymbol lhsType = lhs.Type as StructTypeSymbol;
+        StructTypeSymbol rhsType = rhs.Type as StructTypeSymbol;
+
+        var overloads = new List<Symbol>();
+        overloads.AddRange(lhsType, rhsType);
+
+        FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
+
+        if (function == null)
+            throw new Exception($"Unable to add/subtract");
+        
+        return null;
     }
 
     public Symbol VisitAtomExpr(CastParser.AtomExprContext context)
@@ -260,7 +295,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitVarAtom(CastParser.VarAtomContext context)
     {
-        throw new NotImplementedException();
+        return CurrentScope.Resolve(context.varRef.Text);
     }
 
     public Symbol VisitParenAtom(CastParser.ParenAtomContext context)
@@ -338,7 +373,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         string type = context.type.Text;
         VariableSymbol variableSymbol = CurrentScope.Resolve(name) as VariableSymbol;
 
-        variableSymbol.TypeRef.ResolvedType = CurrentScope.Resolve(type);
+        variableSymbol.TypeRef.ResolvedType = CurrentScope.Resolve(type).Type;
         
         // params
         foreach (string arg in variableSymbol.TypeRef.RawArgs)
@@ -385,7 +420,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        StructSymbol type = CurrentScope.Resolve(context.typeFn.Text) as StructSymbol;
+        StructTypeSymbol type = CurrentScope.Resolve(context.typeFn.Text) as StructTypeSymbol;
         string functionName = context.functionIdentifier().functionName.Text;
         List<Symbol> overloads = new List<Symbol>();
 
@@ -433,7 +468,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
             argTypes.Add(sym);
         }
 
-        if (symbol is StructSymbol structSymbol)
+        if (symbol is StructTypeSymbol structSymbol)
         {
             if (functionName == structSymbol.Name)
             {

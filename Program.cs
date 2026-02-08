@@ -15,7 +15,9 @@ class Program
         StringBuilder source = new StringBuilder();
         source.Append(StdHelper.getStd());
         source.Append("""
-                        fn (self: vec2) add(b: vec2<Model>) { }
+                        let a = 5;
+                        let b = 6;
+                        let c = a * b;
                         """);
                        
         AntlrInputStream  inputStream = new AntlrInputStream(source.ToString());
