@@ -135,6 +135,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
             
             variableSymbol.TypeRef.ResolvedArgs.Add(arg);
         }
+        
         return null;
     }
 
@@ -157,10 +158,15 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         {
             variableSymbol.TypeRef = functionSymbol.ReturnTypeRef;
         }
+        if (expression is TypeSymbol typeSymbol)
+        {
+            variableSymbol.TypeRef.ResolvedType = typeSymbol;
+        }
         else
         {
-            variableSymbol.TypeRef.ResolvedType = expression.Type;
+            variableSymbol.TypeRef.ResolvedType = expression as StructTypeSymbol;
         }
+        
         return null;
     }
 
@@ -231,17 +237,19 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         
         string op = context.op.Text == "*" ? "__mul__" : "__div__";
 
-        StructTypeSymbol lhsType = lhs.Type as StructTypeSymbol;
-        StructTypeSymbol rhsType = rhs.Type as StructTypeSymbol;
+        TypeSymbol lhsType = lhs.Type;
+        TypeSymbol rhsType = rhs.Type;
 
-        var overloads = new List<Symbol>();
+        var overloads = new List<TypeSymbol>();
         overloads.AddRange(lhsType, rhsType);
-
-        FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
-
-        if (function == null)
-            throw new Exception($"Unable to add/subtract");
         
+        FunctionSymbol? function = lhsType.ResolveFunction(op, overloads);
+
+        // FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
+
+        // if (function == null)
+        //     throw new Exception($"Unable to add/subtract");
+        // 
         return null;
     }
 
@@ -295,7 +303,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitVarAtom(CastParser.VarAtomContext context)
     {
-        return CurrentScope.Resolve(context.varRef.Text);
+        return CurrentScope.Resolve(context.varRef.Text) as VariableSymbol;
     }
 
     public Symbol VisitParenAtom(CastParser.ParenAtomContext context)
@@ -421,21 +429,41 @@ public class SemPassVisitor : ICastVisitor<Symbol>
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
         StructTypeSymbol type = CurrentScope.Resolve(context.typeFn.Text) as StructTypeSymbol;
+        if (type == null)
+        {
+            return null; 
+        }
+
         string functionName = context.functionIdentifier().functionName.Text;
         List<Symbol> overloads = new List<Symbol>();
 
-        string? receiverTypeName = context.typeVarName?.Text;
-        if (!string.IsNullOrEmpty(receiverTypeName))
+        if (!string.IsNullOrEmpty(context.typeVarName?.Text))
         {
             overloads.Add(type);
         }
-        
-        foreach (var typeDeclContext in context.paramList().typeDecl())
+    
+        var declaredParams = context.paramList()?.typeDecl() ?? Array.Empty<CastParser.TypeDeclContext>();
+        foreach (var typeDeclContext in declaredParams)
         {
-            overloads.Add(Visit(typeDeclContext));
+            Symbol paramSymbol = Visit(typeDeclContext);
+            if (paramSymbol != null)
+            {
+                overloads.Add(paramSymbol);
+            }
         }
-        
+
+        if (!overloads.Any())
+        {
+            overloads.Add(type);
+        }
+    
         FunctionSymbol? function = type.ResolveFunctionOverload(functionName, overloads) as FunctionSymbol;
+        if (function == null)
+        {
+            Console.WriteLine($"Semantic Error: Function overload '{functionName}' not found for type '{type.Name}'.");
+            return null;
+        }
+
         if (context.block() != null)
         {
             CurrentScope = function;
@@ -445,7 +473,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
         return null;
     }
-
+    
     public Symbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
         throw new NotImplementedException();
@@ -507,7 +535,6 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypeDecl(CastParser.TypeDeclContext context)
     {
-        string name = context.variable.Text;
         string type = context.type.Text;
         return CurrentScope.Resolve(type);
     }

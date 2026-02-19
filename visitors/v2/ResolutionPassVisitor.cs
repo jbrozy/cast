@@ -164,7 +164,6 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
             };
         }
         
-        // resolve type when explicitly set
         if (context.typeDecl()?.type != null)
         {
             string typeName = context.typeDecl().type.Text;
@@ -179,6 +178,10 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
                 variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().From.Text);
                 variable.TypeRef.RawArgs.Add(context.typeDecl().typeSpaceConversion().To.Text);
             }
+        }
+        else
+        {
+            variable.Type = Visit(context.value) as TypeSymbol;
         }
 
         if (CurrentScope.Resolve(variableName) == null)
@@ -250,6 +253,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitMultDiv(CastParser.MultDivContext context)
     {
+        return null;
         throw new NotImplementedException();
     }
 
@@ -440,27 +444,21 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         string functionName = context.functionIdentifier().functionName.Text;
         TypeSymbol? symbol = CurrentScope.Resolve(typeFn) as TypeSymbol;
         
-
         List<string> parameters = new List<string>();
-        if (context.@params.typeDecl().Any())
+        if (!string.IsNullOrEmpty(context.typeVarName?.Text))
         {
-            // for typed functions without parameters
-            if (!string.IsNullOrEmpty(context.typeVarName.Text))
-            {
-                parameters.Add(context.typeFn.Text);
-            }
-            foreach (var typeDeclContext in context.@params.typeDecl())
-            {
-                parameters.Add(typeDeclContext.type.Text);
-            }
+            parameters.Add(context.typeFn?.Text);
         }
-        else
+        
+        var declaredParams = context.paramList()?.typeDecl() ?? Array.Empty<CastParser.TypeDeclContext>();
+        foreach (var param in declaredParams)
         {
-            // for typed functions without parameters
-            if (string.IsNullOrEmpty(context.typeVarName.Text))
-            {
-                parameters.Add(context.typeFn.Text);
-            }
+            parameters.Add(param.type.Text);
+        }
+
+        if (!parameters.Any())
+        {
+            parameters.Add(context.typeFn.Text);
         }
         
         string paramSig = string.Join(", ", parameters);

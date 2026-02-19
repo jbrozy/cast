@@ -15,6 +15,7 @@ public class FunctionSymbol : Symbol, IScope
     #region type info
     public override TypeSymbol? Type => ReturnTypeRef?.ResolvedType;
     public TypeReference ReturnTypeRef { get; set; } = new ();
+    public string Signature => GetSignature();
     #endregion
 
     public string GetSignature()

@@ -155,9 +155,9 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
             Offset = 0,
             Qualifier = StorageQualifier.None,
             Scope = CurrentScope,
-            Initializer = context.expression()
+            Initializer = context.expression(),
         };
-        
+
         CurrentScope.Define(variableSymbol);
         return null;
     }
@@ -462,13 +462,9 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitTypedFunctionDecl(CastParser.TypedFunctionDeclContext context)
     {
-        string returnTypeText = context.returnType?.Text;
+        string returnTypeText = context.returnType?.Text ?? "void";
         string type = context.typeFn.Text;
         string functionName = context.functionIdentifier().functionName.Text;
-        if (string.IsNullOrEmpty(returnTypeText))
-        {
-            returnTypeText = "void";
-        }
 
         if (functionName == "length")
         {
@@ -476,20 +472,12 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         }
 
         TypeSymbol? parent = CurrentScope.Resolve(type) as TypeSymbol;
-        string? receiverTypeName = context.typeVarName?.Text;
-        List<VariableSymbol> parameters = new List<VariableSymbol>();
-        if (!string.IsNullOrEmpty(receiverTypeName))
+        if (parent == null)
         {
-            VariableSymbol variableSymbol = new VariableSymbol()
-            {
-                Name = receiverTypeName,
-                TypeRef = new TypeReference()
-                {
-                    Name = parent.Name
-                }
-            };
-            parameters.Add(variableSymbol);
+            return null; 
         }
+
+        List<VariableSymbol> parameters = new List<VariableSymbol>();
 
         FunctionSymbol functionSymbol = new FunctionSymbol()
         {
@@ -499,45 +487,45 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         };
 
         CurrentScope = functionSymbol;
-        if (string.IsNullOrEmpty(context.typeVarName?.Text) && !context.paramList().typeDecl().Any())
-        {
-            VariableSymbol variableSymbol = new VariableSymbol()
-            {
-                Name = "self",
-                TypeRef = new TypeReference()
-                {
-                    Name = parent.Name
-                }
-            };
-            CurrentScope.Define(variableSymbol);
-            parameters.Add(variableSymbol);
-        }
-
         if (!string.IsNullOrEmpty(context.typeVarName?.Text))
         {
-            VariableSymbol variableSymbol = new VariableSymbol()
+            VariableSymbol explicitReceiver = new VariableSymbol()
             {
-                Name = context.typeVarName?.Text,
-                TypeRef = new TypeReference()
-                {
-                    Name = parent.Name,
-                }
+                Name = context.typeVarName.Text,
+                TypeRef = new TypeReference() { Name = parent.Name }
             };
-            CurrentScope.Define(variableSymbol);
-            parameters.Add(variableSymbol);
+            CurrentScope.Define(explicitReceiver);
+            parameters.Add(explicitReceiver);
         }
-        
-        foreach (var param in context.paramList().typeDecl())
+
+        var declaredParams = context.paramList()?.typeDecl() ?? Array.Empty<CastParser.TypeDeclContext>();
+        foreach (var param in declaredParams)
         {
             VariableSymbol p = Visit(param) as VariableSymbol;
-            CurrentScope.Define(p);
-            parameters.Add(p);
+            if (p != null)
+            {
+                CurrentScope.Define(p);
+                parameters.Add(p);
+            }
         }
+
+        if (!parameters.Any())
+        {
+            VariableSymbol implicitSelf = new VariableSymbol()
+            {
+                Name = "self",
+                TypeRef = new TypeReference() { Name = parent.Name }
+            };
+            CurrentScope.Define(implicitSelf);
+            parameters.Add(implicitSelf);
+        }
+
         CurrentScope = functionSymbol.EnclosingScope;
         parent.Functions.Add(functionSymbol);
+    
         return null;
     }
-
+    
     public Symbol VisitConstructorFunctionDecl(CastParser.ConstructorFunctionDeclContext context)
     {
         string typeName = context.typeFn.Text;
