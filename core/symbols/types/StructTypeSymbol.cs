@@ -66,11 +66,6 @@ public class StructTypeSymbol : TypeSymbol, IScope
         {
             throw new NotImplementedException($"{Name} has no overloads");
         }
-
-        if (overloads.Any(o => o?.Name == null))
-        {
-            Console.WriteLine("debug");
-        }
         
         string signature = overloads.Select(o => o.Name).Aggregate((a, b) => $"{a}, {b}");
         foreach (var function in Functions)

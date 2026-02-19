@@ -181,13 +181,24 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         }
         else
         {
-            variable.Type = Visit(context.value) as TypeSymbol;
+            Symbol sym = Visit(context.value);
+            if (sym is StructTypeSymbol structTypeSymbol)
+            {
+                variable.TypeRef.ResolvedType = structTypeSymbol;
+                variable.Type = structTypeSymbol;
+            }
+            else
+            {
+                variable.TypeRef.ResolvedType = sym as TypeSymbol;
+                variable.Type = sym as TypeSymbol;
+            }
         }
 
         if (CurrentScope.Resolve(variableName) == null)
         {
             CurrentScope.Define(variable);
         }
+        
         return null;
     }
 
@@ -264,7 +275,7 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
 
     public Symbol VisitAddSub(CastParser.AddSubContext context)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public Symbol VisitAtomExpr(CastParser.AtomExprContext context)
@@ -483,6 +494,8 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
             Visit(context.block());
         }
         CurrentScope = function.EnclosingScope;
+        
+        function.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(function.ReturnTypeRef.Name) as TypeSymbol;
         return null;
     }
 
@@ -504,8 +517,8 @@ public class ResolutionPassVisitor : ICastVisitor<Symbol>
         {
             Visit(context.block());
         }
-        CurrentScope =  constructor.EnclosingScope;
-        constructor.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(constructor.ReturnTypeRef.Name).Type; 
+        CurrentScope = constructor.EnclosingScope;
+        constructor.ReturnTypeRef.ResolvedType = CurrentScope.Resolve(constructor.ReturnTypeRef.Name) as TypeSymbol;
         return null;
     }
 

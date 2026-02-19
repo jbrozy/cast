@@ -148,7 +148,14 @@ public class SemPassVisitor : ICastVisitor<Symbol>
 
         if (variableSymbol.TypeRef.ResolvedType is not null)
         {
-            if (!variableSymbol.TypeRef.ResolvedType.Equals(expression))
+            if (expression is FunctionSymbol funcSymbol)
+            {
+                if (!variableSymbol.TypeRef.ResolvedType.Equals(funcSymbol.ReturnTypeRef.ResolvedType))
+                {
+                    throw new Exception($"Incompatible types");
+                }
+            }
+            else if (!variableSymbol.Type.Equals(expression))
             {
                 throw new Exception($"Incompatible types");
             }
@@ -166,7 +173,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         {
             variableSymbol.TypeRef.ResolvedType = expression as StructTypeSymbol;
         }
-        
+
         return null;
     }
 
@@ -244,13 +251,17 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         overloads.AddRange(lhsType, rhsType);
         
         FunctionSymbol? function = lhsType.ResolveFunction(op, overloads);
+        if (function is null)
+        {
+            throw new Exception("Unable to mult/div");
+        }
 
-        // FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
-
-        // if (function == null)
-        //     throw new Exception($"Unable to add/subtract");
-        // 
-        return null;
+        if (rhs is StructTypeSymbol)
+        {
+            return rhs;
+        }
+        
+        return function.ReturnTypeRef.ResolvedType;
     }
 
     public Symbol VisitBooleanExpression(CastParser.BooleanExpressionContext context)
@@ -265,15 +276,25 @@ public class SemPassVisitor : ICastVisitor<Symbol>
         Symbol lhs = Visit(context.left);
         Symbol rhs = Visit(context.right);
         
+        if (lhs is FunctionSymbol lhsFunction)
+        {
+            lhs = CurrentScope.Resolve(lhsFunction.ReturnTypeRef.Name);
+        }
+
+        if (rhs is FunctionSymbol rhsFunction)
+        {
+            rhs = CurrentScope.Resolve(rhsFunction.ReturnTypeRef.Name);
+        }
+        
         string op = context.op.Text == "+" ? "__add__" : "__sub__";
 
-        StructTypeSymbol lhsType = lhs.Type as StructTypeSymbol;
-        StructTypeSymbol rhsType = rhs.Type as StructTypeSymbol;
+        TypeSymbol lhsType = lhs as TypeSymbol;
+        TypeSymbol rhsType = rhs as TypeSymbol;
 
-        var overloads = new List<Symbol>();
+        var overloads = new List<TypeSymbol>();
         overloads.AddRange(lhsType, rhsType);
 
-        FunctionSymbol? function = lhsType.ResolveFunctionOverload(op, overloads);
+        FunctionSymbol? function = lhsType.ResolveFunction(op, overloads);
 
         if (function == null)
             throw new Exception($"Unable to add/subtract");
@@ -502,6 +523,7 @@ public class SemPassVisitor : ICastVisitor<Symbol>
             {
                 return structSymbol.ResolveConstructor(argTypes);
             }
+            
             return structSymbol.ResolveFunctionOverload(functionName, argTypes);
         }
         

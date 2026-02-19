@@ -466,11 +466,6 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         string type = context.typeFn.Text;
         string functionName = context.functionIdentifier().functionName.Text;
 
-        if (functionName == "length")
-        {
-            Console.WriteLine("debug");
-        }
-
         TypeSymbol? parent = CurrentScope.Resolve(type) as TypeSymbol;
         if (parent == null)
         {
@@ -483,7 +478,11 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         {
             Name = functionName,
             Parameters = parameters,
-            EnclosingScope = CurrentScope
+            EnclosingScope = CurrentScope,
+            ReturnTypeRef = new TypeReference()
+            {
+                Name = returnTypeText
+            }
         };
 
         CurrentScope = functionSymbol;
@@ -534,7 +533,11 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
         {
             Name = typeName,
             Parameters = new List<VariableSymbol>(),
-            EnclosingScope = CurrentScope
+            EnclosingScope = CurrentScope,
+            ReturnTypeRef = new TypeReference()
+            {
+                Name = context.returnType?.Text,
+            }
         };
 
         CurrentScope = functionSymbol;
@@ -545,7 +548,6 @@ public class DeclarationPassVisitor : ICastVisitor<Symbol>
             functionSymbol.Define(s);
         }
         
-        CurrentScope = structSymbol.EnclosingScope;
         Console.WriteLine(context.GetText());
 
         functionSymbol.ReturnTypeRef.Name = context.returnType.Text;

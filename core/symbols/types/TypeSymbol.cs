@@ -17,11 +17,6 @@ public class TypeSymbol : Symbol
         {
             throw new NotImplementedException($"{Name} has no parameters");
         }
-
-        if (parameters.Any(o => o?.Name == null))
-        {
-            Console.WriteLine("debug");
-        }
         
         string signature = parameters.Select(o => o.Name).Aggregate((a, b) => $"{a}, {b}");
         foreach (var function in Functions)

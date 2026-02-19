@@ -1,12 +1,9 @@
-﻿using System.Reflection;
-using System.Text;
+﻿using System.Text;
 using Antlr4.Runtime;
 using Cast;
 using Cast.core.exceptions;
 using Cast.listeners;
-using Cast.Visitors;
 using Cast.Visitors.v2;
-using ConsoleAppFramework;
 
 class Program
 {
@@ -16,8 +13,8 @@ class Program
         source.Append(StdHelper.getStd());
         source.Append("""
                         let a = 5;
-                        let b = 6;
-                        let c = a * b;
+                        let b = vec3(1.0);
+                        let c = a * b + vec3(1.5);
                         """);
                        
         AntlrInputStream  inputStream = new AntlrInputStream(source.ToString());
