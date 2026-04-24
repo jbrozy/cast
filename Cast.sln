@@ -1,8 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cast", "Cast.csproj", "{A15CD959-51FA-4885-AEDD-9B877515D2BD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.api", "cast.api\cast.api.csproj", "{0B6E80FF-DD15-41F2-B139-8A92F8E40FA4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{8585C000-9DED-4C3D-8884-E87C6A91D17C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.cli", "cast.cli\cast.cli.csproj", "{60BAB154-F579-467E-AC0C-002F042E61EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.core", "cast.core\cast.core.csproj", "{3C692211-0E8D-470A-8B2A-5CA03AB775E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +20,17 @@ Global
 		{8585C000-9DED-4C3D-8884-E87C6A91D17C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8585C000-9DED-4C3D-8884-E87C6A91D17C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8585C000-9DED-4C3D-8884-E87C6A91D17C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B6E80FF-DD15-41F2-B139-8A92F8E40FA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B6E80FF-DD15-41F2-B139-8A92F8E40FA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B6E80FF-DD15-41F2-B139-8A92F8E40FA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B6E80FF-DD15-41F2-B139-8A92F8E40FA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60BAB154-F579-467E-AC0C-002F042E61EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60BAB154-F579-467E-AC0C-002F042E61EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60BAB154-F579-467E-AC0C-002F042E61EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60BAB154-F579-467E-AC0C-002F042E61EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

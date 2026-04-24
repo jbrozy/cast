@@ -1,5 +1,0 @@
-﻿fn main() {
-	let a = vec3<World>(1.0);
-	let b = vec3<World>(1.0);
-	let c = a * b;
-}

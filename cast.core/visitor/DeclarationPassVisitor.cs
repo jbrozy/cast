@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Antlr4.Runtime.Tree;
 using cast.core.models;
 
@@ -287,12 +288,33 @@ namespace cast.core.visitor
         public AbstractSymbol VisitFunction_prototype(CastParser.Function_prototypeContext context)
         {
             string functionName = context.IDENTIFIER().GetText();
-            string returnTypeName = context.fully_specified_type().type_specifier().GetText();
+            string returnTypeName = context.fully_specified_type().type_specifier().GetChild(0).GetText();
+
+            TypeSymbol? returnTypeSymbol = _scope[returnTypeName] as TypeSymbol;
+            if (returnTypeSymbol == null)
+            {
+                throw new Exception("Unknown Return Type: " + returnTypeName);
+            }
             
-            Console.WriteLine($"{functionName} {returnTypeName}()");
-            AbstractSymbol returnTypeSymbol = Visit(context.fully_specified_type());
-            // CastType t = new CastType(returnTypeSymbol, );
-            // FunctionSymbol function = new FunctionSymbol(functionName, t);
+            List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
+            if (returnTypeSymbol.HasSpaces())
+            {
+                if (context.fully_specified_type().type_specifier().space_specifier() != null)
+                {
+                    CastParser.Space_specifierContext spaceContext = context.fully_specified_type().type_specifier().space_specifier();
+                    
+                    foreach (ITerminalNode spaceSymbol in spaceContext.space_definition_parameters().IDENTIFIER())
+                    {
+                        // TODO: look up actual spaces
+                        spaceSymbols.Add(new SpaceSymbol(spaceSymbol.GetText()));
+                    }
+                }
+            }
+
+            CastType returnType = new CastType(returnTypeSymbol, spaceSymbols);
+            FunctionSymbol function = new FunctionSymbol(functionName, returnType);
+            
+            _scope.Add(function);
             return default;
         }
 
@@ -433,7 +455,17 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitStruct_specifier(CastParser.Struct_specifierContext context)
         {
-            throw new System.NotImplementedException();
+            string structName = context.IDENTIFIER().GetText();
+            StructSymbol structSymbol = new StructSymbol(structName);
+
+            if (context.struct_declaration_list() != null)
+            {
+                foreach (var structDeclaration in context.struct_declaration_list().struct_declaration())
+                {
+                    // structSymbol.AddField(structDeclaration., Visit(structDeclaration));
+                }
+            }
+            return structSymbol;
         }
 
         public AbstractSymbol VisitType_name(CastParser.Type_nameContext context)

@@ -1,6 +1,0 @@
-﻿declare space None;
-declare space Model;
-declare space World;
-declare space View;
-declare space Clip;
-declare space Screen;
