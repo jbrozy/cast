@@ -1,12 +1,16 @@
+using cast.core.models.symbols;
+
 namespace cast.core.models
 {
     public class VariableSymbol : AbstractSymbol
     {
-        private CastType Type { get; set; }
+        public CastType Type { get; }
+        private Modifier Modifier { get; set; }
         
-        public VariableSymbol(string name, CastType type) : base(name)
+        public VariableSymbol(string name, CastType type, Modifier modifier = Modifier.NONE) : base(name)
         {
             Type = type;
+            Modifier = modifier;
         }
     }
 }

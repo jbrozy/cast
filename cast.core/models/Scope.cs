@@ -5,11 +5,30 @@ namespace cast.core.models
 {
     public class Scope
     {
+        public Scope? Parent { get; }
+        
         private readonly HashSet<AbstractSymbol> _symbols = new HashSet<AbstractSymbol>();
 
-        public AbstractSymbol? this[string name] => _symbols.ToList().FirstOrDefault(x => x.Name == name);
+        public AbstractSymbol? this[string name]
+        {
+            get
+            {
+                if  (_symbols.Any(s => s.Name == name))
+                    return _symbols.FirstOrDefault(s => s.Name == name);
 
-        public bool Add(AbstractSymbol symbol)
+                if (Parent == null)
+                    return null;
+                
+                return Parent[name];
+            }
+        }
+
+        public Scope(Scope parent = null)
+        {
+            Parent = parent;
+        }
+
+        public bool Define(AbstractSymbol symbol)
         {
             return _symbols.Add(symbol);
         }

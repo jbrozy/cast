@@ -1,383 +1,609 @@
+using System;
+using System.Collections.Generic;
 using Antlr4.Runtime.Tree;
 using cast.core.models;
+using cast.core.models.symbols;
+using cast.core.registry;
 
 namespace cast.core.visitor
 {
-    public class SemanticPassVisitor : ICastParserVisitor<AbstractSymbol>
+    public class SemanticPassVisitor : ICastParserVisitor<CastType>
     {
-        private readonly Scope _scope;
+        private Scope _scope;
         
         public SemanticPassVisitor(Scope scope)
         {
             _scope = scope;
         }
 
-        public AbstractSymbol Visit(IParseTree tree)
+        public CastType Visit(IParseTree tree)
         {
-            throw new System.NotImplementedException();
+            return tree.Accept(this);
         }
 
-        public AbstractSymbol VisitChildren(IRuleNode node)
+        public CastType VisitChildren(IRuleNode node)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitTerminal(ITerminalNode node)
+        public CastType VisitTerminal(ITerminalNode node)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitErrorNode(IErrorNode node)
+        public CastType VisitErrorNode(IErrorNode node)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitTranslation_unit(CastParser.Translation_unitContext context)
+        public CastType VisitTranslation_unit(CastParser.Translation_unitContext context)
         {
-            throw new System.NotImplementedException();
+            foreach (var externalDeclaration in context.external_declaration())
+            {
+                Visit(externalDeclaration);
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitExternal_declaration(CastParser.External_declarationContext context)
+        public CastType VisitExternal_declaration(CastParser.External_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.function_definition() != null)
+            {
+                Visit(context.function_definition());
+            }
+            
+            if (context.declaration() != null)
+            {
+                Visit(context.declaration());
+            }
+            
+            return default;
         }
 
-        public AbstractSymbol VisitDeclaration_statement(CastParser.Declaration_statementContext context)
+        public CastType VisitDeclaration_statement(CastParser.Declaration_statementContext context)
         {
-            throw new System.NotImplementedException();
+            return Visit(context.declaration());
         }
 
-        public AbstractSymbol VisitExpression_statement(CastParser.Expression_statementContext context)
+        public CastType VisitExpression_statement(CastParser.Expression_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
+        public CastType VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSelection_statement(CastParser.Selection_statementContext context)
+        public CastType VisitSelection_statement(CastParser.Selection_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitCondition(CastParser.ConditionContext context)
+        public CastType VisitCondition(CastParser.ConditionContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSwitch_statement(CastParser.Switch_statementContext context)
+        public CastType VisitSwitch_statement(CastParser.Switch_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitCase_label(CastParser.Case_labelContext context)
+        public CastType VisitCase_label(CastParser.Case_labelContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitIteration_statement(CastParser.Iteration_statementContext context)
+        public CastType VisitIteration_statement(CastParser.Iteration_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFor_init_statement(CastParser.For_init_statementContext context)
+        public CastType VisitFor_init_statement(CastParser.For_init_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFor_rest_statement(CastParser.For_rest_statementContext context)
+        public CastType VisitFor_rest_statement(CastParser.For_rest_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitJump_statement(CastParser.Jump_statementContext context)
+        public CastType VisitJump_statement(CastParser.Jump_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSimple_statement(CastParser.Simple_statementContext context)
+        public CastType VisitSimple_statement(CastParser.Simple_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.declaration_statement() != null)
+            {
+                return Visit(context.declaration_statement());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
+        public CastType VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitCompound_statement(CastParser.Compound_statementContext context)
+        public CastType VisitCompound_statement(CastParser.Compound_statementContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
+        public CastType VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.statement_list() != null)
+            {
+                Visit(context.statement_list());
+            }
+            return default;
         }
 
-        public AbstractSymbol VisitStatement(CastParser.StatementContext context)
+        public CastType VisitStatement(CastParser.StatementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.compound_statement() != null)
+            {
+                Visit(context.compound_statement());
+            }
+
+            if (context.simple_statement() != null)
+            {
+                Visit(context.simple_statement());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitStatement_list(CastParser.Statement_listContext context)
+        public CastType VisitStatement_list(CastParser.Statement_listContext context)
         {
-            throw new System.NotImplementedException();
+            foreach (var statement in context.statement())
+            {
+                Visit(statement);
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitFunction_definition(CastParser.Function_definitionContext context)
+        public CastType VisitFunction_definition(CastParser.Function_definitionContext context)
         {
-            throw new System.NotImplementedException();
+            string functionName = context.function_prototype().IDENTIFIER().GetText();
+
+            FunctionSymbol? function = _scope[functionName] as FunctionSymbol;
+            if (function == null)
+            {
+                throw new Exception($"Function '{functionName}' not found.");
+            }
+            
+            Scope functionScope = new Scope(_scope);
+            function.SetScope(functionScope);
+
+            // set scope to that of the function
+            _scope = functionScope;
+            {
+                if (context.compound_statement_no_new_scope() != null)
+                {
+                    Visit(context.compound_statement_no_new_scope());
+                }
+            }
+            _scope = functionScope.Parent;
+
+            return default;
         }
 
-        public AbstractSymbol VisitVariable_identifier(CastParser.Variable_identifierContext context)
+        public CastType VisitVariable_identifier(CastParser.Variable_identifierContext context)
         {
-            throw new System.NotImplementedException();
+            string identifier = context.IDENTIFIER().GetText();
+
+            VariableSymbol variable = _scope[identifier] as VariableSymbol;
+            return variable.Type;
         }
 
-        public AbstractSymbol VisitFunction_call(CastParser.Function_callContext context)
+        public CastType VisitFunction_call(CastParser.Function_callContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitField_selection(CastParser.Field_selectionContext context)
+        public CastType VisitField_selection(CastParser.Field_selectionContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFunction_identifier(CastParser.Function_identifierContext context)
+        public CastType VisitFunction_identifier(CastParser.Function_identifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitDimension(CastParser.DimensionContext context)
+        public CastType VisitDimension(CastParser.DimensionContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitArray_specifier(CastParser.Array_specifierContext context)
+        public CastType VisitArray_specifier(CastParser.Array_specifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSpace_definition_parameters(CastParser.Space_definition_parametersContext context)
+        public CastType VisitSpace_definition_parameters(CastParser.Space_definition_parametersContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSpace_specifier(CastParser.Space_specifierContext context)
+        public CastType VisitSpace_specifier(CastParser.Space_specifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitType_specifier(CastParser.Type_specifierContext context)
+        public CastType VisitType_specifier(CastParser.Type_specifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitPrimary_expression(CastParser.Primary_expressionContext context)
+        public CastType VisitPrimary_expression(CastParser.Primary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.variable_identifier() != null)
+            {
+                return Visit(context.variable_identifier());
+            }
+
+            if (context.INTCONSTANT() != null)
+            {
+                TypeSymbol s = _scope["int"] as TypeSymbol;
+                return new CastType(s);
+            }
+            
+            if (context.FLOATCONSTANT() != null)
+            {
+                TypeSymbol s = _scope["float"] as TypeSymbol;
+                return new CastType(s);
+            }
+            
+            if (context.UINTCONSTANT() != null)
+            {
+                TypeSymbol s = _scope["uint"] as TypeSymbol;
+                return new CastType(s);
+            }
+
+            return null;
         }
 
-        public AbstractSymbol VisitPostfix_expression(CastParser.Postfix_expressionContext context)
+        public CastType VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.integer_expression() != null)
+            {
+                return Visit(context.integer_expression());
+            }
+
+            if (context.primary_expression() != null)
+            {
+                return Visit(context.primary_expression());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitInteger_expression(CastParser.Integer_expressionContext context)
+        public CastType VisitInteger_expression(CastParser.Integer_expressionContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
+        public CastType VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitExpression(CastParser.ExpressionContext context)
+        public CastType VisitExpression(CastParser.ExpressionContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitUnary_expression(CastParser.Unary_expressionContext context)
+        public CastType VisitUnary_expression(CastParser.Unary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.postfix_expression() != null)
+            {
+                return Visit(context.postfix_expression());
+            }
+
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitUnary_operator(CastParser.Unary_operatorContext context)
+        public CastType VisitUnary_operator(CastParser.Unary_operatorContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitConstant_expression(CastParser.Constant_expressionContext context)
+        public CastType VisitConstant_expression(CastParser.Constant_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+            
+            if (context.binary_expression() != null)
+            {
+                return Visit(context.binary_expression());
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitAssignment_expression(CastParser.Assignment_expressionContext context)
+        public CastType VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.unary_expression() != null)
+            {
+                Visit(context.unary_expression());
+                Console.WriteLine("context.unary_expression() != null");
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                Visit(context.assignment_expression());
+                Console.WriteLine("context.assignment_expression() != null");
+            }
+
+            if (context.constant_expression() != null)
+            {
+                return Visit(context.constant_expression());
+                Console.WriteLine("context.constant_expression() != null");
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitBinary_expression(CastParser.Binary_expressionContext context)
+        public CastType VisitBinary_expression(CastParser.Binary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.ChildCount == 3)
+            {
+                CastType? left = Visit(context.children[0]);
+                CastType? right = Visit(context.children[2]);
+                
+                string op = context.children[1].ToString();
+                CastType eval = Registry.Resolve(_scope, op, new List<CastType>(new[] { left, right }));
+                return eval;
+            }
+            
+            return Visit(context.children[0]);
         }
 
-        public AbstractSymbol VisitAssignment_operator(CastParser.Assignment_operatorContext context)
+        public CastType VisitAssignment_operator(CastParser.Assignment_operatorContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitDeclaration(CastParser.DeclarationContext context)
+        public CastType VisitDeclaration(CastParser.DeclarationContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.type_specifier() != null)
+            {
+                Console.WriteLine("context.type_specifier() != null");
+            }
+            if (context.identifier_list() != null)
+            {
+                Console.WriteLine("context.identifier_list() != null");
+            }
+            if (context.function_prototype() != null)
+            {
+                Console.WriteLine("context.function_prototype() != null");
+            }
+            if (context.init_declarator_list() != null)
+            {
+                Console.WriteLine("context.init_declarator_list() != null");
+                if (context.init_declarator_list().single_declaration() != null)
+                {
+                    Console.WriteLine("context.init_declarator_list().single_declaration() != null");
+                    return Visit(context.init_declarator_list().single_declaration());
+                }
+                if (context.init_declarator_list().typeless_declaration() != null)
+                {
+                    Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
+                    // foreach (var typelessDeclarationContext in context.init_declarator_list().typeless_declaration())
+                    // {
+                    //     Visit(typelessDeclarationContext);
+                    // }
+                }
+            }
+            return default;
         }
 
-        public AbstractSymbol VisitIdentifier_list(CastParser.Identifier_listContext context)
+        public CastType VisitIdentifier_list(CastParser.Identifier_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFunction_prototype(CastParser.Function_prototypeContext context)
+        public CastType VisitFunction_prototype(CastParser.Function_prototypeContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitFunction_parameters(CastParser.Function_parametersContext context)
+        public CastType VisitFunction_parameters(CastParser.Function_parametersContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitParameter_declarator(CastParser.Parameter_declaratorContext context)
+        public CastType VisitParameter_declarator(CastParser.Parameter_declaratorContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitParameter_declaration(CastParser.Parameter_declarationContext context)
+        public CastType VisitParameter_declaration(CastParser.Parameter_declarationContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitParameter_type_specifier(CastParser.Parameter_type_specifierContext context)
+        public CastType VisitParameter_type_specifier(CastParser.Parameter_type_specifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitType_qualifier(CastParser.Type_qualifierContext context)
+        public CastType VisitType_qualifier(CastParser.Type_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitInitializer_list(CastParser.Initializer_listContext context)
+        public CastType VisitInitializer_list(CastParser.Initializer_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitInitializer(CastParser.InitializerContext context)
+        public CastType VisitInitializer(CastParser.InitializerContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitInit_declarator_list(CastParser.Init_declarator_listContext context)
+        public CastType VisitInit_declarator_list(CastParser.Init_declarator_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSingle_declaration(CastParser.Single_declarationContext context)
+        public CastType VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            string typeName = context.fully_specified_type().type_specifier().type_specifier_nonarray().GetText();
+            string variableName = context.typeless_declaration().IDENTIFIER().GetText();
+
+            if (_scope[variableName] != null)
+            {
+                TypeSymbol a = _scope[variableName] as TypeSymbol;
+                return new CastType(a);
+            }
+
+            TypeSymbol? type = _scope[typeName] as TypeSymbol;
+            if (type == null)
+                throw new Exception($"Type '{typeName}' not found.");
+
+            List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+            if (context.fully_specified_type().type_specifier().space_specifier() != null)
+            {
+                foreach (ITerminalNode typeSpace in context.fully_specified_type().type_specifier()
+                             .space_specifier().space_definition_parameters().IDENTIFIER())
+                {
+                    string spaceName = typeSpace.GetText();
+                    SpaceSymbol? space = _scope[spaceName] as SpaceSymbol;
+                    spaces.Add(space);
+                }
+            }
+
+            CastType variableType = new CastType(type, spaces);
+            VariableSymbol variableSymbol = new VariableSymbol(variableName, variableType);
+            _scope.Define(variableSymbol);
+
+            if (context.typeless_declaration() != null)
+            {
+                return Visit(context.typeless_declaration());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
+        public CastType VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.initializer() != null)
+            {
+                return Visit(context.initializer());
+            }
+
+            return default;
         }
 
-        public AbstractSymbol VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
+        public CastType VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitSingle_type_qualifier(CastParser.Single_type_qualifierContext context)
+        public CastType VisitSingle_type_qualifier(CastParser.Single_type_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitPrecise_qualifier(CastParser.Precise_qualifierContext context)
+        public CastType VisitPrecise_qualifier(CastParser.Precise_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitPrecision_qualifier(CastParser.Precision_qualifierContext context)
+        public CastType VisitPrecision_qualifier(CastParser.Precision_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStorage_qualifier(CastParser.Storage_qualifierContext context)
+        public CastType VisitStorage_qualifier(CastParser.Storage_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitInvariant_qualifier(CastParser.Invariant_qualifierContext context)
+        public CastType VisitInvariant_qualifier(CastParser.Invariant_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitInterpolation_qualifier(CastParser.Interpolation_qualifierContext context)
+        public CastType VisitInterpolation_qualifier(CastParser.Interpolation_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitLayout_qualifier_id_list(CastParser.Layout_qualifier_id_listContext context)
+        public CastType VisitLayout_qualifier_id_list(CastParser.Layout_qualifier_id_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitLayout_qualifier_id(CastParser.Layout_qualifier_idContext context)
+        public CastType VisitLayout_qualifier_id(CastParser.Layout_qualifier_idContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitLayout_qualifier(CastParser.Layout_qualifierContext context)
+        public CastType VisitLayout_qualifier(CastParser.Layout_qualifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_declaration(CastParser.Struct_declarationContext context)
+        public CastType VisitStruct_declaration(CastParser.Struct_declarationContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
+        public CastType VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_declarator_list(CastParser.Struct_declarator_listContext context)
+        public CastType VisitStruct_declarator_list(CastParser.Struct_declarator_listContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_declarator(CastParser.Struct_declaratorContext context)
+        public CastType VisitStruct_declarator(CastParser.Struct_declaratorContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_specifier(CastParser.Struct_specifierContext context)
+        public CastType VisitStruct_specifier(CastParser.Struct_specifierContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitType_name(CastParser.Type_nameContext context)
+        public CastType VisitType_name(CastParser.Type_nameContext context)
         {
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
+        public CastType VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
         {
             throw new System.NotImplementedException();
         }

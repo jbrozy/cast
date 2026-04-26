@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using cast.core.models.symbols;
 
 namespace cast.core.models
 {
     public class CastType
     {
+        public static CastType None() { return default(CastType); }
+        
         public TypeSymbol Type { get; set; }
         public List<SpaceSymbol> Spaces { get; }
 

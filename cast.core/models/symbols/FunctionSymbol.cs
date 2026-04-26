@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace cast.core.models
+namespace cast.core.models.symbols
 {
     public class FunctionSymbol : AbstractSymbol
     {
@@ -10,10 +10,17 @@ namespace cast.core.models
         private readonly List<AbstractSymbol> _parameters;
         private readonly CastType _returnType;
         
+        private Scope _scope { get; set; }
+        
         public FunctionSymbol(string name, CastType returnType, List<AbstractSymbol>? parameters = null) : base(name)
         {
             _parameters = parameters ?? new List<AbstractSymbol>();
             _returnType = returnType;
+        }
+
+        public void SetScope(Scope scope)
+        {
+            _scope = scope;
         }
 
         public override string ToString()

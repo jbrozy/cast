@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using cast.core.models.symbols;
 
 namespace cast.core.models
 {

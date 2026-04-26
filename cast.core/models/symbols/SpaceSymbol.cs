@@ -5,5 +5,10 @@ namespace cast.core.models
         public SpaceSymbol(string name) : base(name)
         {
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 }
