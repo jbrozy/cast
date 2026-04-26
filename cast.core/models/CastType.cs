@@ -7,7 +7,7 @@ namespace cast.core.models
 {
     public class CastType
     {
-        public static CastType None() { return default(CastType); }
+        public static readonly CastType ErrorType = new CastType(new TypeSymbol("ERROR_TYPE", 0, false));
         
         public TypeSymbol Type { get; set; }
         public List<SpaceSymbol> Spaces { get; }

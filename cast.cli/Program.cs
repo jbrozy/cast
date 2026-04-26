@@ -1,27 +1,16 @@
 ﻿using Antlr4.Runtime;
 using cast.core;
+using cast.core.logging;
 using cast.core.models;
 using cast.core.models.symbols;
 using cast.core.registry;
 using cast.core.visitor;
 
 string input = """
-               uniform mat4<Model, World> u_model;
-               uniform mat4<World, View>  u_view;
-               
-               vec4<Model> a_position;
-               vec4<Model> a_normal;
-               vec4<World> a_color;
-               
-               float a() {
-                    return 1.0;
-               }
-               
                void main() {
-                   vec4<World> worldPos = u_model * a_position;
-                   vec4<View> viewPos = u_view * worldPos;
-                   vec4<World> blended = worldPos + a_color;
-                   vec4<World> scaled = worldPos * 2.0;
+                    vec4<Model> a;
+                    vec4<View> b;
+                    vec4<Model> c = a * b;
                }
                
                """;
@@ -70,10 +59,15 @@ scope.Define(new TypeSymbol("float", 0, false));
 
 var translationUnit = parser.translation_unit();
 
-DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(scope);
+ErrorLogger logger = new ErrorLogger();
+
+DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(scope, logger);
 declarationPassVisitor.Visit(translationUnit);
 
-SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(scope);
+SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(scope, logger);
 semanticPassVisitor.Visit(translationUnit);
 
-Console.WriteLine("debug");
+if (logger.HasErrors)
+{
+    logger.Print();
+}

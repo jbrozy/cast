@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Antlr4.Runtime.Tree;
+using cast.core.logging;
 using cast.core.models;
 using cast.core.models.symbols;
 using cast.core.registry;
@@ -10,10 +11,12 @@ namespace cast.core.visitor
     public class SemanticPassVisitor : ICastParserVisitor<CastType>
     {
         private Scope _scope;
+        private readonly ErrorLogger _logger;
         
-        public SemanticPassVisitor(Scope scope)
+        public SemanticPassVisitor(Scope scope, ErrorLogger logger)
         {
             _scope = scope;
+            _logger = logger;
         }
 
         public CastType Visit(IParseTree tree)
@@ -193,7 +196,9 @@ namespace cast.core.visitor
             FunctionSymbol? function = _scope[functionName] as FunctionSymbol;
             if (function == null)
             {
-                throw new Exception($"Function '{functionName}' not found.");
+                string message = $"Function '{functionName}' not found.";
+                _logger.Log(context.Start, message);
+                return CastType.ErrorType;
             }
             
             Scope functionScope = new Scope(_scope);
@@ -212,7 +217,8 @@ namespace cast.core.visitor
                         {
                             if (!type.Equals(function.ReturnType()))
                             {
-                                throw new Exception($"Invalid return type '{type}', must be '{function.ReturnType()}'");
+                                string message = $"Invalid return type '{type}', must be '{function.ReturnType()}'";
+                                _logger.Log(context.Start, message);
                             }
                         }
                     }
@@ -384,18 +390,15 @@ namespace cast.core.visitor
             if (context.unary_expression() != null)
             {
                 Visit(context.unary_expression());
-                Console.WriteLine("context.unary_expression() != null");
             }
 
             if (context.assignment_expression() != null)
             {
                 Visit(context.assignment_expression());
-                Console.WriteLine("context.assignment_expression() != null");
             }
 
             if (context.constant_expression() != null)
             {
-                Console.WriteLine("context.constant_expression() != null");
                 return Visit(context.constant_expression());
             }
 
@@ -410,7 +413,7 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.children[2]);
                 
                 string op = context.children[1].ToString();
-                CastType? eval = Registry.Resolve(_scope, op, new List<CastType>(new[] { left, right }));
+                CastType? eval = Registry.Resolve(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 return eval!;
             }
             
@@ -426,27 +429,27 @@ namespace cast.core.visitor
         {
             if (context.type_specifier() != null)
             {
-                Console.WriteLine("context.type_specifier() != null");
+                // Console.WriteLine("context.type_specifier() != null");
             }
             if (context.identifier_list() != null)
             {
-                Console.WriteLine("context.identifier_list() != null");
+                // Console.WriteLine("context.identifier_list() != null");
             }
             if (context.function_prototype() != null)
             {
-                Console.WriteLine("context.function_prototype() != null");
+                // Console.WriteLine("context.function_prototype() != null");
             }
             if (context.init_declarator_list() != null)
             {
-                Console.WriteLine("context.init_declarator_list() != null");
+                // Console.WriteLine("context.init_declarator_list() != null");
                 if (context.init_declarator_list().single_declaration() != null)
                 {
-                    Console.WriteLine("context.init_declarator_list().single_declaration() != null");
+                    // Console.WriteLine("context.init_declarator_list().single_declaration() != null");
                     return Visit(context.init_declarator_list().single_declaration());
                 }
                 if (context.init_declarator_list().typeless_declaration() != null)
                 {
-                    Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
+                    // Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
                     // foreach (var typelessDeclarationContext in context.init_declarator_list().typeless_declaration())
                     // {
                     //     Visit(typelessDeclarationContext);
@@ -524,7 +527,9 @@ namespace cast.core.visitor
 
             TypeSymbol? type = _scope[typeName] as TypeSymbol;
             if (type == null)
-                throw new Exception($"Type '{typeName}' not found.");
+            {
+                _logger.Log(context.Start, $"Type '{typeName}' not found.");
+            }
 
             List<SpaceSymbol> spaces = new List<SpaceSymbol>();
             if (context.fully_specified_type().type_specifier().space_specifier() != null)
@@ -544,10 +549,11 @@ namespace cast.core.visitor
 
             if (context.typeless_declaration() != null)
             {
-                CastType eval = Visit(context.typeless_declaration());
-                if (eval != null)
+                CastType? eval = Visit(context.typeless_declaration());
+                if (eval != null && !eval.Equals(variableType))
                 {
-                    if (!eval.Equals(variableType)) throw new Exception("Incorrect type");
+                    string message = $"Unable to assign type '{eval.Type}' to '{context.fully_specified_type().GetText()}'";
+                    _logger.Log(context.Start, message);
                 }
             }
 

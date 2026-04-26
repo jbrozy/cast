@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Antlr4.Runtime.Tree;
+using cast.core.logging;
 using cast.core.models;
 using cast.core.models.symbols;
 
@@ -11,10 +12,12 @@ namespace cast.core.visitor
     public class DeclarationPassVisitor : ICastParserVisitor<AbstractSymbol>
     {
         private readonly Scope _scope;
+        private readonly ErrorLogger _logger;
         
-        public DeclarationPassVisitor(Scope scope)
+        public DeclarationPassVisitor(Scope scope, ErrorLogger logger)
         {
             _scope = scope;
+            _logger = logger;
         }
         
         public AbstractSymbol Visit(IParseTree tree)
@@ -321,7 +324,9 @@ namespace cast.core.visitor
             TypeSymbol? returnTypeSymbol = _scope[returnTypeName] as TypeSymbol;
             if (returnTypeSymbol == null)
             {
-                throw new Exception("Unknown Return Type: " + returnTypeName);
+                string message = "Unknown Return Type: " + returnTypeName;
+                _logger.Log(context.Start, message);
+                return CastType.ErrorType.Type;
             }
             
             List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();

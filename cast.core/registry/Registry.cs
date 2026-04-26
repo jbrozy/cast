@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Antlr4.Runtime;
+using cast.core.logging;
 using cast.core.models;
 using cast.core.models.symbols;
 
@@ -109,7 +111,7 @@ namespace cast.core.registry
             return (lhsType, lhsSpaces);
         }
             
-        private static CastType t(Scope scope, string left, string right, string op)
+        private static CastType t(IToken token,Scope scope, ErrorLogger logger, string left, string right, string op)
         {
             // mat4<T, U> * vec4<T> -> vec4<U>
             (string lhsType, string[] lhsParams) = ParseType(left);
@@ -121,6 +123,8 @@ namespace cast.core.registry
             
             foreach ((string[] parameters, string returnType) in candidates)
             {
+                s.Clear();
+                
                 (string fnLhs, string[] fnLhsParams) = ParseType(parameters[0]);
                 (string fnRhs, string[] fnRhsParams) = ParseType(parameters[1]);
                 (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);
@@ -148,22 +152,21 @@ namespace cast.core.registry
                 {
                     if (!s.ContainsKey(returnTypeParams[i])) valid = false;
                 }
-                
-                if (valid)
-                {
-                    // TODO: validation
-                    TypeSymbol? type = scope[returnTypeType] as TypeSymbol;
-                    List<SpaceSymbol> typeSpaces = returnTypeParams.Select(c => scope[s[c]] as SpaceSymbol).ToList();
-                    return new CastType(type, typeSpaces);
-                }
-                
-                s.Clear();
+
+                if (!valid) continue;
+                TypeSymbol? type = scope[returnTypeType] as TypeSymbol;
+                List<SpaceSymbol> typeSpaces = returnTypeParams.Select(c => scope[s[c]] as SpaceSymbol).ToList();
+                return new CastType(type, typeSpaces);
             }
 
-            return null;
+            string functionCandidates = string.Join("\n", candidates.Select(c => $"     ({string.Join(", ", c.Params)}) -> {c.returnType}"));
+            string message = $"Unable to find function '{op}' with params ['{left}', '{right}'], \n candidates are: \n{functionCandidates}";
+            logger.Log(token, message);
+            
+            return CastType.ErrorType;
         }
 
-        public static CastType? Resolve(Scope scope, string op, List<CastType> parameters)
+        public static CastType? Resolve(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)
         {
             // List<string> stringParams = parameters.Select(c=> c.ToString()).ToList();
             // List<(string[] Params, string returnType)> functionCandidates = functions[op];
@@ -191,7 +194,7 @@ namespace cast.core.registry
             //     }
             // }
 
-            return t(scope, parameters[0].ToString(), parameters[1].ToString(), op);
+            return t(token, scope, logger, parameters[0].ToString(), parameters[1].ToString(), op);
         }
     }
 }
