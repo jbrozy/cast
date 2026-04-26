@@ -23,6 +23,11 @@ namespace cast.core.models.symbols
             _scope = scope;
         }
 
+        public Scope GetFunctionScope()
+        {
+            return _scope;
+        }
+
         public override string ToString()
         {
             StringBuilder functionSignature = new StringBuilder();

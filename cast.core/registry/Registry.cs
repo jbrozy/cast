@@ -124,7 +124,6 @@ namespace cast.core.registry
             foreach ((string[] parameters, string returnType) in candidates)
             {
                 s.Clear();
-                
                 (string fnLhs, string[] fnLhsParams) = ParseType(parameters[0]);
                 (string fnRhs, string[] fnRhsParams) = ParseType(parameters[1]);
                 (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);

@@ -9,10 +9,9 @@ using cast.core.visitor;
 string input = """
                void main() {
                     vec4<Model> a;
-                    vec4<View> b;
+                    vec4<Model> b;
                     vec4<Model> c = a * b;
                }
-               
                """;
 
 Registry.Setup();
@@ -71,3 +70,6 @@ if (logger.HasErrors)
 {
     logger.Print();
 }
+
+GlslPassVisitor glslPassVisitor = new GlslPassVisitor(scope);
+Console.WriteLine(glslPassVisitor.Visit(translationUnit));

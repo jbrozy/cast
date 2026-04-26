@@ -1,0 +1,490 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Antlr4.Runtime.Tree;
+using cast.core.models;
+using cast.core.models.symbols;
+
+namespace cast.core.visitor
+{
+    public class GlslPassVisitor : ICastParserVisitor<string>
+    {
+        private readonly Scope _scope;
+        public GlslPassVisitor(Scope scope)
+        {
+            _scope = scope;
+        }
+        
+        public string Visit(IParseTree tree)
+        {
+            return tree.Accept(this);
+        }
+
+        public string VisitChildren(IRuleNode node)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitTerminal(ITerminalNode node)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitErrorNode(IErrorNode node)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitTranslation_unit(CastParser.Translation_unitContext context)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            foreach (var externalDeclarationContext in context.external_declaration())
+            {
+                builder.AppendLine(Visit(externalDeclarationContext));
+            }
+            
+            return builder.ToString();
+        }
+
+        public string VisitExternal_declaration(CastParser.External_declarationContext context)
+        {
+            if (context.declaration() != null)
+            {
+                return Visit(context.declaration());
+            }
+            
+            if (context.function_definition() != null)
+            {
+                return Visit(context.function_definition());
+            }
+
+            return String.Empty;
+        }
+
+        public string VisitDeclaration_statement(CastParser.Declaration_statementContext context)
+        {
+            return Visit(context.declaration());
+        }
+
+        public string VisitExpression_statement(CastParser.Expression_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSelection_statement(CastParser.Selection_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitCondition(CastParser.ConditionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSwitch_statement(CastParser.Switch_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitCase_label(CastParser.Case_labelContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitIteration_statement(CastParser.Iteration_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFor_init_statement(CastParser.For_init_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFor_rest_statement(CastParser.For_rest_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitJump_statement(CastParser.Jump_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSimple_statement(CastParser.Simple_statementContext context)
+        {
+            if (context.declaration_statement() != null)
+            {
+                return Visit(context.declaration_statement());
+            }
+
+            if (context.jump_statement() != null)
+            {
+                return Visit(context.jump_statement());
+            }
+
+            return default;
+        }
+
+        public string VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitCompound_statement(CastParser.Compound_statementContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("{");
+            foreach (var statementContext in context.statement_list().statement())
+            {
+                builder.Append(Visit(statementContext));
+            }
+            builder.Append("}");
+            return builder.ToString();
+        }
+
+        public string VisitStatement(CastParser.StatementContext context)
+        {
+            if (context.simple_statement() != null)
+            {
+                return  Visit(context.simple_statement());
+            }
+            if (context.compound_statement() != null)
+            {
+                return  Visit(context.compound_statement());
+            }
+
+            return string.Empty;
+        }
+
+        public string VisitStatement_list(CastParser.Statement_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_definition(CastParser.Function_definitionContext context)
+        {
+            string functionName = context.function_prototype().IDENTIFIER().GetText();
+            string type = context.function_prototype().fully_specified_type().type_specifier().type_specifier_nonarray()
+                .GetText();
+            
+            FunctionSymbol? function = _scope[functionName] as FunctionSymbol;
+            StringBuilder builder = new StringBuilder();
+            string parameters = string.Empty;
+            if (context.function_prototype().function_parameters() != null)
+            {
+                parameters = Visit(context.function_prototype());
+            }
+            
+            builder.Append($"{type} {functionName}({parameters})");
+            if (context.compound_statement_no_new_scope() != null)
+            {
+                builder.Append(Visit(context.compound_statement_no_new_scope()));
+            }
+            else
+            {
+                builder.Append(";");
+            }
+            
+            return builder.ToString();
+        }
+
+        public string VisitVariable_identifier(CastParser.Variable_identifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_call(CastParser.Function_callContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitField_selection(CastParser.Field_selectionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_identifier(CastParser.Function_identifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitDimension(CastParser.DimensionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitArray_specifier(CastParser.Array_specifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSpace_definition_parameters(CastParser.Space_definition_parametersContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSpace_specifier(CastParser.Space_specifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitType_specifier(CastParser.Type_specifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitPrimary_expression(CastParser.Primary_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitPostfix_expression(CastParser.Postfix_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInteger_expression(CastParser.Integer_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitExpression(CastParser.ExpressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitUnary_expression(CastParser.Unary_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitUnary_operator(CastParser.Unary_operatorContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitConstant_expression(CastParser.Constant_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitAssignment_expression(CastParser.Assignment_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitBinary_expression(CastParser.Binary_expressionContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitAssignment_operator(CastParser.Assignment_operatorContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitDeclaration(CastParser.DeclarationContext context)
+        {
+            if (context.type_specifier() != null)
+            {
+                // Console.WriteLine("context.type_specifier() != null");
+            }
+            if (context.identifier_list() != null)
+            {
+                // Console.WriteLine("context.identifier_list() != null");
+            }
+            if (context.function_prototype() != null)
+            {
+                // Console.WriteLine("context.function_prototype() != null");
+            }
+            if (context.init_declarator_list() != null)
+            {
+                // Console.WriteLine("context.init_declarator_list() != null");
+                if (context.init_declarator_list().single_declaration() != null)
+                {
+                    // Console.WriteLine("context.init_declarator_list().single_declaration() != null");
+                    return Visit(context.init_declarator_list().single_declaration());
+                }
+                if (context.init_declarator_list().typeless_declaration() != null)
+                {
+                    // Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
+                    // foreach (var typelessDeclarationContext in context.init_declarator_list().typeless_declaration())
+                    // {
+                    //     Visit(typelessDeclarationContext);
+                    // }
+                }
+            }
+            return default;
+        }
+
+        public string VisitIdentifier_list(CastParser.Identifier_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_prototype(CastParser.Function_prototypeContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFunction_parameters(CastParser.Function_parametersContext context)
+        {
+            List<string> parameters = new List<string>();
+            foreach (var declarationContext in context.parameter_declaration())
+            {
+                parameters.Add(Visit(declarationContext));
+            }
+
+            return string.Join(", ", parameters);
+        }
+
+        public string VisitParameter_declarator(CastParser.Parameter_declaratorContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitParameter_declaration(CastParser.Parameter_declarationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitParameter_type_specifier(CastParser.Parameter_type_specifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitType_qualifier(CastParser.Type_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInitializer_list(CastParser.Initializer_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInitializer(CastParser.InitializerContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInit_declarator_list(CastParser.Init_declarator_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSingle_declaration(CastParser.Single_declarationContext context)
+        {
+            // TODO: implement
+            return "";
+        }
+
+        public string VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitSingle_type_qualifier(CastParser.Single_type_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitPrecise_qualifier(CastParser.Precise_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitPrecision_qualifier(CastParser.Precision_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStorage_qualifier(CastParser.Storage_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInvariant_qualifier(CastParser.Invariant_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitInterpolation_qualifier(CastParser.Interpolation_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitLayout_qualifier_id_list(CastParser.Layout_qualifier_id_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitLayout_qualifier_id(CastParser.Layout_qualifier_idContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitLayout_qualifier(CastParser.Layout_qualifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStruct_declaration(CastParser.Struct_declarationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStruct_declarator_list(CastParser.Struct_declarator_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStruct_declarator(CastParser.Struct_declaratorContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitStruct_specifier(CastParser.Struct_specifierContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitType_name(CastParser.Type_nameContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public string VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}
