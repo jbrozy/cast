@@ -22,14 +22,86 @@ namespace cast.core.registry
 
         public static void Setup()
         {
-            RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
             RegisterFunction("*", "float", "float", "float");
+            RegisterFunction("*", "int", "int", "int");
+            RegisterFunction("*", "uint", "uint", "uint");
+
+            RegisterFunction("*", "vec2<T>", "vec2<T>", "float");
+            RegisterFunction("*", "vec3<T>", "vec3<T>", "float");
+            RegisterFunction("*", "vec4<T>", "vec4<T>", "float");
+            
+            RegisterFunction("*", "vec2<T>", "float", "vec2<T>");
+            RegisterFunction("*", "vec3<T>", "float", "vec3<T>");
+            RegisterFunction("*", "vec4<T>", "float", "vec4<T>");
+
+            RegisterFunction("*", "vec2<T>", "vec2<T>", "vec2<T>");
+            RegisterFunction("*", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("*", "vec2<U>", "mat2<T, U>", "vec2<T>");
+            RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
+            RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
+
+            RegisterFunction("+", "float", "float", "float");
             RegisterFunction("+", "int", "int", "int");
-            RegisterFunction("+", "float", "float", "int");
+
+            RegisterFunction("+", "vec2<T>", "vec2<T>", "vec2<T>");
+            RegisterFunction("+", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("+", "vec4<T>", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("+", "vec2<T>", "vec2<T>", "float");
+            RegisterFunction("+", "vec3<T>", "vec3<T>", "float");
+            RegisterFunction("+", "vec4<T>", "vec4<T>", "float");
+            RegisterFunction("+", "vec2<T>", "float", "vec2<T>");
+            RegisterFunction("+", "vec3<T>", "float", "vec3<T>");
+            RegisterFunction("+", "vec4<T>", "float", "vec4<T>");
+
+            RegisterFunction("-", "float", "float", "float");
+            RegisterFunction("-", "int", "int", "int");
+
+            RegisterFunction("-", "vec2<T>", "vec2<T>", "vec2<T>");
+            RegisterFunction("-", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("-", "vec4<T>", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("/", "float", "float", "float");
+            RegisterFunction("/", "int", "int", "int");
+
+            RegisterFunction("/", "vec2<T>", "vec2<T>", "float");
+            RegisterFunction("/", "vec3<T>", "vec3<T>", "float");
+            RegisterFunction("/", "vec4<T>", "vec4<T>", "float");
+
+            RegisterFunction("/", "vec2<T>", "vec2<T>", "vec2<T>");
+            RegisterFunction("/", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("/", "vec4<T>", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("%", "int", "int", "int");
+            RegisterFunction("%", "uint", "uint", "uint");
+
+            RegisterFunction("==", "bool", "float", "float");
+            RegisterFunction("==", "bool", "int", "int");
+            RegisterFunction("==", "bool", "bool", "bool");
+            RegisterFunction("==", "bool", "vec2<T>", "vec2<T>");
+            RegisterFunction("==", "bool", "vec3<T>", "vec3<T>");
+            RegisterFunction("==", "bool", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("!=", "bool", "float", "float");
+            RegisterFunction("!=", "bool", "int", "int");
+            RegisterFunction("!=", "bool", "vec3<T>", "vec3<T>");
+
+            RegisterFunction("<", "bool", "float", "float");
+            RegisterFunction(">", "bool", "float", "float");
+            RegisterFunction("<=", "bool", "float", "float");
+            RegisterFunction(">=", "bool", "float", "float");
+            RegisterFunction("<", "bool", "int", "int");
+            RegisterFunction(">", "bool", "int", "int");
+
+            RegisterFunction("&&", "bool", "bool", "bool");
+            RegisterFunction("||", "bool", "bool", "bool");            
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
         {
+            if (!type.Contains("<")) return (type, new  string[] { });
             string[] lhs = type.Replace(" ", "").Replace(">", "").Split("<");
             string lhsType = lhs[0];
             string[] lhsSpaces = lhs[1].Split(",");
@@ -55,6 +127,9 @@ namespace cast.core.registry
 
                 if (lhsType != fnLhs) continue;
                 if (rhsType != fnRhs) continue;
+                
+                if (lhsParams.Length != fnLhsParams.Length) continue;
+                if (rhsParams.Length != fnRhsParams.Length) continue;
 
                 // add left spaces
                 for (int i = 0; i < lhsParams.Length; ++i)
@@ -76,8 +151,9 @@ namespace cast.core.registry
                 
                 if (valid)
                 {
+                    // TODO: validation
                     TypeSymbol? type = scope[returnTypeType] as TypeSymbol;
-                    var typeSpaces = returnTypeParams.Select(c => scope[s[c]] as SpaceSymbol).ToList();
+                    List<SpaceSymbol> typeSpaces = returnTypeParams.Select(c => scope[s[c]] as SpaceSymbol).ToList();
                     return new CastType(type, typeSpaces);
                 }
                 

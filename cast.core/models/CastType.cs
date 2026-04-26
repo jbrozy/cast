@@ -12,6 +12,8 @@ namespace cast.core.models
         public TypeSymbol Type { get; set; }
         public List<SpaceSymbol> Spaces { get; }
 
+        public bool IsReturn { get; set; } = false;
+
         public CastType(TypeSymbol type, List<SpaceSymbol>? spaces = null)
         {
             Type = type;

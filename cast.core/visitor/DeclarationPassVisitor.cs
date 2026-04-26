@@ -114,6 +114,11 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitJump_statement(CastParser.Jump_statementContext context)
         {
+            if (context.RETURN() != null)
+            {
+                return Visit(context.expression());
+            }
+
             return default;
         }
 
@@ -122,6 +127,11 @@ namespace cast.core.visitor
             if (context.declaration_statement() != null) 
             {
                 Visit(context.declaration_statement());
+            }
+
+            if (context.expression_statement() != null)
+            {
+                Visit(context.expression_statement());
             }
 
             return default;
@@ -430,7 +440,7 @@ namespace cast.core.visitor
                 }
             }
 
-            string qualifier = context.fully_specified_type().type_qualifier().single_type_qualifier(0).GetText();
+            string qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
             Modifier modifier = Modifier.NONE;
             if (!string.IsNullOrEmpty(qualifier))
             {
@@ -439,10 +449,10 @@ namespace cast.core.visitor
                     throw new Exception($"Qualifier '{qualifier}' is invalid.");
                 }
             }
-            
+        
             CastType type = new CastType(typeSymbol, spaceSymbols);
             VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
-            
+        
             _scope.Define(variableSymbol);
 
             return null;

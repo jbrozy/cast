@@ -113,7 +113,14 @@ namespace cast.core.visitor
 
         public CastType VisitJump_statement(CastParser.Jump_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.RETURN() != null)
+            {
+                CastType returnValue = Visit(context.expression());
+                returnValue.IsReturn = true;
+                return returnValue;
+            }
+
+            return default;
         }
 
         public CastType VisitSimple_statement(CastParser.Simple_statementContext context)
@@ -121,6 +128,11 @@ namespace cast.core.visitor
             if (context.declaration_statement() != null)
             {
                 return Visit(context.declaration_statement());
+            }
+
+            if (context.jump_statement() != null)
+            {
+                return Visit(context.jump_statement());
             }
 
             return default;
@@ -154,7 +166,7 @@ namespace cast.core.visitor
 
             if (context.simple_statement() != null)
             {
-                Visit(context.simple_statement());
+                return Visit(context.simple_statement());
             }
 
             return default;
@@ -164,9 +176,13 @@ namespace cast.core.visitor
         {
             foreach (var statement in context.statement())
             {
-                Visit(statement);
+                CastType? result = Visit(statement);
+                if (result?.IsReturn == true)
+                {
+                    return result;
+                }
             }
-
+            
             return default;
         }
 
@@ -188,7 +204,18 @@ namespace cast.core.visitor
             {
                 if (context.compound_statement_no_new_scope() != null)
                 {
-                    Visit(context.compound_statement_no_new_scope());
+                    CastParser.Statement_listContext statementList = context.compound_statement_no_new_scope().statement_list();
+                    foreach (var statementContext in statementList.statement())
+                    {
+                        CastType? type = Visit(statementContext);
+                        if (type != null && type.IsReturn)
+                        {
+                            if (!type.Equals(function.ReturnType()))
+                            {
+                                throw new Exception($"Invalid return type '{type}', must be '{function.ReturnType()}'");
+                            }
+                        }
+                    }
                 }
             }
             _scope = functionScope.Parent;
@@ -299,7 +326,17 @@ namespace cast.core.visitor
 
         public CastType VisitExpression(CastParser.ExpressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            return default;
         }
 
         public CastType VisitUnary_expression(CastParser.Unary_expressionContext context)
@@ -358,8 +395,8 @@ namespace cast.core.visitor
 
             if (context.constant_expression() != null)
             {
-                return Visit(context.constant_expression());
                 Console.WriteLine("context.constant_expression() != null");
+                return Visit(context.constant_expression());
             }
 
             return default;
@@ -373,8 +410,8 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.children[2]);
                 
                 string op = context.children[1].ToString();
-                CastType eval = Registry.Resolve(_scope, op, new List<CastType>(new[] { left, right }));
-                return eval;
+                CastType? eval = Registry.Resolve(_scope, op, new List<CastType>(new[] { left, right }));
+                return eval!;
             }
             
             return Visit(context.children[0]);
@@ -481,8 +518,8 @@ namespace cast.core.visitor
 
             if (_scope[variableName] != null)
             {
-                TypeSymbol a = _scope[variableName] as TypeSymbol;
-                return new CastType(a);
+                VariableSymbol a = _scope[variableName] as VariableSymbol;
+                return a.Type;
             }
 
             TypeSymbol? type = _scope[typeName] as TypeSymbol;
@@ -507,7 +544,11 @@ namespace cast.core.visitor
 
             if (context.typeless_declaration() != null)
             {
-                return Visit(context.typeless_declaration());
+                CastType eval = Visit(context.typeless_declaration());
+                if (eval != null)
+                {
+                    if (!eval.Equals(variableType)) throw new Exception("Incorrect type");
+                }
             }
 
             return default;

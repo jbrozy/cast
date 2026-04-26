@@ -31,5 +31,10 @@ namespace cast.core.models.symbols
             functionSignature.Append($" ({functionParameters})");
             return functionSignature.ToString();
         }
+
+        public CastType ReturnType()
+        {
+            return _returnType;
+        }
     }
 }

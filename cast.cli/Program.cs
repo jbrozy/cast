@@ -6,11 +6,24 @@ using cast.core.registry;
 using cast.core.visitor;
 
 string input = """
-               void main() {
-                    mat4<Model, View> a;
-                    vec4<Model> b;
-                    vec4 c = a * b;
+               uniform mat4<Model, World> u_model;
+               uniform mat4<World, View>  u_view;
+               
+               vec4<Model> a_position;
+               vec4<Model> a_normal;
+               vec4<World> a_color;
+               
+               float a() {
+                    return 1.0;
                }
+               
+               void main() {
+                   vec4<World> worldPos = u_model * a_position;
+                   vec4<View> viewPos = u_view * worldPos;
+                   vec4<World> blended = worldPos + a_color;
+                   vec4<World> scaled = worldPos * 2.0;
+               }
+               
                """;
 
 Registry.Setup();
