@@ -99,6 +99,9 @@ namespace cast.core.registry
 
             RegisterFunction("&&", "bool", "bool", "bool");
             RegisterFunction("||", "bool", "bool", "bool");            
+            
+            RegisterFunction("<<", "int", "int", "int");            
+            RegisterFunction(">>", "int", "int", "int");            
         }
 
         private static (string type, string[] genericParams) ParseType(string type)

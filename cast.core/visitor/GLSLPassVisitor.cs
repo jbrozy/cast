@@ -28,7 +28,7 @@ namespace cast.core.visitor
 
         public string VisitTerminal(ITerminalNode node)
         {
-            throw new System.NotImplementedException();
+            return node.GetText();
         }
 
         public string VisitErrorNode(IErrorNode node)
@@ -130,7 +130,7 @@ namespace cast.core.visitor
                 return Visit(context.jump_statement());
             }
 
-            return default;
+            return string.Empty;
         }
 
         public string VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
@@ -146,7 +146,7 @@ namespace cast.core.visitor
         public string VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("{");
+            builder.AppendLine(" {");
             foreach (var statementContext in context.statement_list().statement())
             {
                 builder.Append(Visit(statementContext));
@@ -203,7 +203,7 @@ namespace cast.core.visitor
 
         public string VisitVariable_identifier(CastParser.Variable_identifierContext context)
         {
-            throw new System.NotImplementedException();
+            return context.IDENTIFIER().GetText();
         }
 
         public string VisitFunction_call(CastParser.Function_callContext context)
@@ -248,12 +248,45 @@ namespace cast.core.visitor
 
         public string VisitPrimary_expression(CastParser.Primary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.INTCONSTANT() != null)
+            {
+                return Visit(context.INTCONSTANT());
+            }
+
+            if (context.FLOATCONSTANT() != null)
+            {
+                return Visit(context.FLOATCONSTANT());
+            }
+            
+            if (context.expression() != null)
+            {
+                return Visit(context);
+            }
+
+            if (context.variable_identifier() != null)
+            {
+                return Visit(context.variable_identifier());
+            }
+
+            return string.Empty;
         }
 
         public string VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.primary_expression() != null)
+            {
+                return Visit(context.primary_expression());
+            }
+            if (context.integer_expression() != null)
+            {
+                return Visit(context.integer_expression());
+            }
+            if (context.postfix_expression() != null)
+            {
+                return Visit(context.postfix_expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitInteger_expression(CastParser.Integer_expressionContext context)
@@ -273,7 +306,17 @@ namespace cast.core.visitor
 
         public string VisitUnary_expression(CastParser.Unary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
+            }
+            
+            if (context.postfix_expression() != null)
+            {
+                return Visit(context.postfix_expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitUnary_operator(CastParser.Unary_operatorContext context)
@@ -283,17 +326,60 @@ namespace cast.core.visitor
 
         public string VisitConstant_expression(CastParser.Constant_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.binary_expression() != null)
+            {
+                return Visit(context.binary_expression());
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+            if (context.constant_expression() != null)
+            {
+                return Visit(context.constant_expression());
+            }
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
+            }
+            
+            return string.Empty;
         }
 
         public string VisitBinary_expression(CastParser.Binary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.binary_expression() != null && context.binary_expression().Length > 0)
+            {
+                string left = Visit(context.binary_expression()[0]);
+                string right = Visit(context.binary_expression()[1]);
+
+                string op = context.children[1].GetText();
+
+                return $"{left} {op} {right}";
+            }
+
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitAssignment_operator(CastParser.Assignment_operatorContext context)
@@ -303,36 +389,7 @@ namespace cast.core.visitor
 
         public string VisitDeclaration(CastParser.DeclarationContext context)
         {
-            if (context.type_specifier() != null)
-            {
-                // Console.WriteLine("context.type_specifier() != null");
-            }
-            if (context.identifier_list() != null)
-            {
-                // Console.WriteLine("context.identifier_list() != null");
-            }
-            if (context.function_prototype() != null)
-            {
-                // Console.WriteLine("context.function_prototype() != null");
-            }
-            if (context.init_declarator_list() != null)
-            {
-                // Console.WriteLine("context.init_declarator_list() != null");
-                if (context.init_declarator_list().single_declaration() != null)
-                {
-                    // Console.WriteLine("context.init_declarator_list().single_declaration() != null");
-                    return Visit(context.init_declarator_list().single_declaration());
-                }
-                if (context.init_declarator_list().typeless_declaration() != null)
-                {
-                    // Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
-                    // foreach (var typelessDeclarationContext in context.init_declarator_list().typeless_declaration())
-                    // {
-                    //     Visit(typelessDeclarationContext);
-                    // }
-                }
-            }
-            return default;
+            return Visit(context.init_declarator_list());
         }
 
         public string VisitIdentifier_list(CastParser.Identifier_listContext context)
@@ -383,23 +440,56 @@ namespace cast.core.visitor
 
         public string VisitInitializer(CastParser.InitializerContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.initializer_list() != null)
+            {
+                return Visit(context.initializer_list());
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitInit_declarator_list(CastParser.Init_declarator_listContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.single_declaration() != null)
+            {
+                return Visit(context.single_declaration());
+            }
+            
+            return string.Empty;
         }
 
         public string VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
-            // TODO: implement
-            return "";
+            StringBuilder builder = new StringBuilder();
+
+            string variableName = context.typeless_declaration().IDENTIFIER().GetText();
+            string variableType = context.fully_specified_type().type_specifier().type_specifier_nonarray().GetChild(0).GetText();
+            builder.Append($"{variableType} {variableName}");
+
+            if (context.typeless_declaration().initializer() != null)
+            {
+                builder.Append($" = {Visit(context.typeless_declaration().initializer())}");
+            }
+            
+            return builder + ";\n";
         }
 
         public string VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            return string.Empty;
+            // StringBuilder builder = new StringBuilder();
+            // if (context.initializer() != null)
+            // {
+            //     builder.Append("=");
+            //     builder.Append(Visit(context.initializer()));
+            // }
+            // Console.WriteLine(builder.ToString());
+            // return builder.ToString();
         }
 
         public string VisitFully_specified_type(CastParser.Fully_specified_typeContext context)

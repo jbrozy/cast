@@ -10,7 +10,8 @@ string input = """
                void main() {
                     vec4<Model> a;
                     vec4<Model> b;
-                    vec4<Model> c = a * b;
+                    vec4<Model> c = a / b;
+                    int q = 1 << 3;
                }
                """;
 
