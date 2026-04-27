@@ -115,7 +115,17 @@ namespace cast.core.visitor
 
         public string VisitJump_statement(CastParser.Jump_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.RETURN() != null)
+            {
+                if (context.expression() != null)
+                {
+                    return $"return {Visit(context.expression())};";
+                }
+
+                return "return;";
+            }
+
+            return string.Empty;
         }
 
         public string VisitSimple_statement(CastParser.Simple_statementContext context)
@@ -146,12 +156,19 @@ namespace cast.core.visitor
         public string VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine(" {");
-            foreach (var statementContext in context.statement_list().statement())
+            if (context.statement_list() != null && context.statement_list().statement() != null)
             {
-                builder.Append(Visit(statementContext));
+                builder.AppendLine(" {");
+                foreach (var statementContext in context.statement_list().statement())
+                {
+                    builder.Append(Visit(statementContext));
+                }
+                builder.Append("\n}");
             }
-            builder.Append("}");
+            else
+            {
+                builder.Append("{}");
+            }
             return builder.ToString();
         }
 
@@ -185,7 +202,7 @@ namespace cast.core.visitor
             string parameters = string.Empty;
             if (context.function_prototype().function_parameters() != null)
             {
-                parameters = Visit(context.function_prototype());
+                parameters = Visit(context.function_prototype().function_parameters());
             }
             
             builder.Append($"{type} {functionName}({parameters})");
@@ -301,7 +318,17 @@ namespace cast.core.visitor
 
         public string VisitExpression(CastParser.ExpressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
+            if (context.assignment_expression() != null)
+            {
+                return Visit(context.assignment_expression());
+            }
+
+            return string.Empty;
         }
 
         public string VisitUnary_expression(CastParser.Unary_expressionContext context)
@@ -399,7 +426,11 @@ namespace cast.core.visitor
 
         public string VisitFunction_prototype(CastParser.Function_prototypeContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            builder.Append(context.fully_specified_type().type_specifier().type_specifier_nonarray());
+            builder.Append($" {context.IDENTIFIER()}");
+            builder.Append($"({Visit(context.function_parameters())})");
+            return builder.ToString();
         }
 
         public string VisitFunction_parameters(CastParser.Function_parametersContext context)
@@ -420,7 +451,10 @@ namespace cast.core.visitor
 
         public string VisitParameter_declaration(CastParser.Parameter_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            string type = context.parameter_declarator().type_specifier().type_specifier_nonarray().GetText();
+            string name = context.parameter_declarator().IDENTIFIER().GetText();
+            
+            return $"{type} {name}";
         }
 
         public string VisitParameter_type_specifier(CastParser.Parameter_type_specifierContext context)

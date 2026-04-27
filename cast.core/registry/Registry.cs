@@ -24,6 +24,115 @@ namespace cast.core.registry
 
         public static void Setup()
         {
+            string[] vectors = { "vec2", "vec3", "vec4" };
+            foreach(string vector in vectors)
+            {
+                RegisterFunction("length", "float", $"{vector}<T>");
+                RegisterFunction("distance", "float", $"{vector}<T>",  $"{vector}<T>");
+                RegisterFunction("dot", "float", $"{vector}<T>",  $"{vector}<T>");
+                RegisterFunction("normalize", $"{vector}<T>", $"{vector}<T>");
+            }
+            
+            RegisterFunction("cross", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("reflect", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("refract", "vec3<T>", "vec3<T>", "vec3<T>", "float");
+            
+            string[] floatTypes = { "float", "vec2<T>", "vec3<T>", "vec4<T>" };
+            foreach (string t in floatTypes)
+            {
+                RegisterFunction("abs", t, t);
+                RegisterFunction("sign", t, t);
+                RegisterFunction("floor", t, t);
+                RegisterFunction("ceil", t, t);
+                RegisterFunction("round", t, t);
+                RegisterFunction("fract", t, t);
+
+                // min / max / mod (Between two identical types)
+                RegisterFunction("min", t, t, t);
+                RegisterFunction("max", t, t, t);
+                RegisterFunction("mod", t, t, t);
+                RegisterFunction("step", t, t, t);
+
+                // clamp: clamp(x, minVal, maxVal)
+                RegisterFunction("clamp", t, t, t, t);
+        
+                // mix: mix(x, y, a) -> Linear interpolation
+                RegisterFunction("mix", t, t, t, t);
+        
+                // smoothstep: smoothstep(edge0, edge1, x)
+                RegisterFunction("smoothstep", t, t, t, t); 
+            }
+            
+            foreach (string v in vectors)
+            {
+                string vt = $"{v}<T>";
+                RegisterFunction("min", vt, vt, "float");
+                RegisterFunction("max", vt, vt, "float");
+                RegisterFunction("mod", vt, vt, "float");
+                RegisterFunction("mix", vt, vt, vt, "float");
+                RegisterFunction("clamp", vt, vt, "float", "float");
+                RegisterFunction("smoothstep", vt, "float", "float", vt);
+            }
+            
+            foreach (string t in floatTypes)
+            {
+                // Exponential
+                RegisterFunction("pow", t, t, t);
+                RegisterFunction("exp", t, t);
+                RegisterFunction("log", t, t);
+                RegisterFunction("exp2", t, t);
+                RegisterFunction("log2", t, t);
+                RegisterFunction("sqrt", t, t);
+                RegisterFunction("inversesqrt", t, t);
+
+                // Trigonometry
+                RegisterFunction("radians", t, t);
+                RegisterFunction("degrees", t, t);
+                RegisterFunction("sin", t, t);
+                RegisterFunction("cos", t, t);
+                RegisterFunction("tan", t, t);
+                RegisterFunction("asin", t, t);
+                RegisterFunction("acos", t, t);
+                RegisterFunction("atan", t, t);     // atan(y_over_x)
+                RegisterFunction("atan", t, t, t);  // atan(y, x)
+            }
+            
+            RegisterFunction("inverse", "mat2<U, T>", "mat2<T, U>");
+            RegisterFunction("inverse", "mat3<U, T>", "mat3<T, U>");
+            RegisterFunction("inverse", "mat4<U, T>", "mat4<T, U>");
+            
+            RegisterFunction("transpose", "mat2<U, T>", "mat2<T, U>");
+            RegisterFunction("transpose", "mat3<U, T>", "mat3<T, U>");
+            RegisterFunction("transpose", "mat4<U, T>", "mat4<T, U>");
+            
+            RegisterFunction("determinant", "float", "mat2<T, U>");
+            RegisterFunction("determinant", "float", "mat3<T, U>");
+            RegisterFunction("determinant", "float", "mat4<T, U>");
+            
+            RegisterFunction("lessThan", "bvec2", "vec2<T>", "vec2<T>");
+            RegisterFunction("lessThan", "bvec3", "vec3<T>", "vec3<T>");
+            RegisterFunction("lessThan", "bvec4", "vec4<T>", "vec4<T>");
+            
+            RegisterFunction("lessThanEqual", "bvec2", "vec2<T>", "vec2<T>");
+            RegisterFunction("lessThanEqual", "bvec3", "vec3<T>", "vec3<T>");
+            RegisterFunction("lessThanEqual", "bvec4", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("greaterThan", "bvec2", "vec2<T>", "vec2<T>");
+            RegisterFunction("greaterThan", "bvec3", "vec3<T>", "vec3<T>");
+            RegisterFunction("greaterThan", "bvec4", "vec4<T>", "vec4<T>");
+
+            RegisterFunction("greaterThanEqual", "bvec2", "vec2<T>", "vec2<T>");
+            RegisterFunction("greaterThanEqual", "bvec3", "vec3<T>", "vec3<T>");
+            RegisterFunction("greaterThanEqual", "bvec4", "vec4<T>", "vec4<T>");
+            
+            RegisterFunction("any", "bool", "bvec2");
+            RegisterFunction("any", "bool", "bvec3");
+            RegisterFunction("any", "bool", "bvec4");
+
+            RegisterFunction("all", "bool", "bvec2");
+            RegisterFunction("all", "bool", "bvec3");
+            RegisterFunction("all", "bool", "bvec4");
+            
             RegisterFunction("*", "float", "float", "float");
             RegisterFunction("*", "int", "int", "int");
             RegisterFunction("*", "uint", "uint", "uint");
@@ -98,10 +207,10 @@ namespace cast.core.registry
             RegisterFunction(">", "bool", "int", "int");
 
             RegisterFunction("&&", "bool", "bool", "bool");
-            RegisterFunction("||", "bool", "bool", "bool");            
+            RegisterFunction("||", "bool", "bool", "bool");
             
-            RegisterFunction("<<", "int", "int", "int");            
-            RegisterFunction(">>", "int", "int", "int");            
+            RegisterFunction("<<", "int", "int", "int");
+            RegisterFunction(">>", "int", "int", "int");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -168,7 +277,7 @@ namespace cast.core.registry
             return CastType.ErrorType;
         }
 
-        public static CastType? Resolve(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)
+        public static CastType? ResolveOperator(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)
         {
             // List<string> stringParams = parameters.Select(c=> c.ToString()).ToList();
             // List<(string[] Params, string returnType)> functionCandidates = functions[op];

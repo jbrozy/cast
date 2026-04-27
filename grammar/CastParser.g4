@@ -244,21 +244,23 @@ identifier_list
 	;
 
 function_prototype
-	: fully_specified_type IDENTIFIER LEFT_PAREN function_parameters? RIGHT_PAREN
-	;
+    : fully_specified_type IDENTIFIER LEFT_PAREN function_parameters? RIGHT_PAREN
+    ;
 
 function_parameters
-	: parameter_declaration (COMMA parameter_declaration)*
-	;
-
+    : parameter_declaration (COMMA parameter_declaration)*
+    ;
+	
 parameter_declarator
-	: type_specifier IDENTIFIER array_specifier?
-	;
-
+    : type_specifier IDENTIFIER array_specifier?
+    ;
+	
 parameter_declaration
-	: type_qualifier (parameter_declarator | parameter_type_specifier)
-	;
-
+    : type_qualifier (parameter_declarator | parameter_type_specifier)
+    | parameter_declarator
+    | parameter_type_specifier
+    ;
+	
 parameter_type_specifier
 	: type_specifier
 	;

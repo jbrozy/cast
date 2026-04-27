@@ -6,15 +6,14 @@ namespace cast.core.models.symbols
 {
     public class FunctionSymbol : AbstractSymbol
     {
-        // Todo: maybe scope inside here?
-        private readonly List<AbstractSymbol> _parameters;
+        private readonly Dictionary<string, CastType> _parameters;
         private readonly CastType _returnType;
         
         private Scope _scope { get; set; }
         
-        public FunctionSymbol(string name, CastType returnType, List<AbstractSymbol>? parameters = null) : base(name)
+        public FunctionSymbol(string name, CastType returnType, Dictionary<string, CastType>? parameters = null) : base(name)
         {
-            _parameters = parameters ?? new List<AbstractSymbol>();
+            _parameters = parameters ?? new Dictionary<string, CastType>();
             _returnType = returnType;
         }
 

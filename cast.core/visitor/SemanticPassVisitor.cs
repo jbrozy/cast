@@ -207,24 +207,39 @@ namespace cast.core.visitor
             // set scope to that of the function
             _scope = functionScope;
             {
+                if (context.function_prototype().function_parameters() != null)
+                {
+                    foreach (var parameterDeclarationContext in context.function_prototype()
+                                 .function_parameters()
+                                 .parameter_declaration())
+                    {
+                        string name = parameterDeclarationContext.parameter_declarator().IDENTIFIER().GetText();
+                        // _scope.Define(new TypeSymbol(name))
+                    }
+                }
+                
                 if (context.compound_statement_no_new_scope() != null)
                 {
                     CastParser.Statement_listContext statementList = context.compound_statement_no_new_scope().statement_list();
-                    foreach (var statementContext in statementList.statement())
+                    if (statementList != null)
                     {
-                        CastType? type = Visit(statementContext);
-                        if (type != null && type.IsReturn)
+                        foreach (var statementContext in statementList.statement())
                         {
-                            if (!type.Equals(function.ReturnType()))
+                            CastType? type = Visit(statementContext);
+                            if (type != null && type.IsReturn)
                             {
-                                string message = $"Invalid return type '{type}', must be '{function.ReturnType()}'";
-                                _logger.Log(context.Start, message);
+                                if (!type.Equals(function.ReturnType()))
+                                {
+                                    string message = $"Invalid return type '{type}', must be '{function.ReturnType()}'";
+                                    _logger.Log(context.Start, message);
+                                }
                             }
                         }
                     }
                 }
             }
             _scope = functionScope.Parent;
+            
 
             return default;
         }
@@ -413,8 +428,9 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.children[2]);
                 
                 string op = context.children[1].ToString();
-                CastType? eval = Registry.Resolve(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
-                return eval!;
+                CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
+                if (eval == null) return CastType.ErrorType;
+                return eval;
             }
             
             return Visit(context.children[0]);

@@ -7,11 +7,11 @@ using cast.core.registry;
 using cast.core.visitor;
 
 string input = """
+               float a(vec3<Model> a) {
+                    return 1.0;
+               }
+               
                void main() {
-                    vec4<Model> a;
-                    vec4<Model> b;
-                    vec4<Model> c = a / b;
-                    int q = 1 << 3;
                }
                """;
 
