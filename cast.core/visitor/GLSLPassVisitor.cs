@@ -159,10 +159,12 @@ namespace cast.core.visitor
             if (context.statement_list() != null && context.statement_list().statement() != null)
             {
                 builder.AppendLine(" {");
+                List<string> statements = new List<string>();
                 foreach (var statementContext in context.statement_list().statement())
                 {
-                    builder.Append(Visit(statementContext));
+                    statements.Add(Visit(statementContext));
                 }
+                builder.Append(string.Join("\n", statements));
                 builder.Append("\n}");
             }
             else
@@ -290,9 +292,10 @@ namespace cast.core.visitor
 
         public string VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
+            StringBuilder builder = new StringBuilder();
             if (context.primary_expression() != null)
             {
-                return Visit(context.primary_expression());
+                builder.Append(Visit(context.primary_expression()));
             }
             if (context.integer_expression() != null)
             {
@@ -300,10 +303,26 @@ namespace cast.core.visitor
             }
             if (context.postfix_expression() != null)
             {
-                return Visit(context.postfix_expression());
+                builder.Append(Visit(context.postfix_expression()));
+                // indicates that this is a function call
+                // so we append the paremeters and the parenthesis
+                if (context.LEFT_PAREN() != null && context.RIGHT_PAREN() != null)
+                {
+                    List<string> parameterList = new List<string>();
+                    if (context.function_call_parameters()?.assignment_expression() != null)
+                    {
+                        foreach (var param in context.function_call_parameters().assignment_expression())
+                        {
+                            parameterList.Add(Visit(param));
+                        }
+                    }
+                    
+                    string parameters = string.Join(", ", parameterList.ToArray());
+                    builder.Append($"({parameters})");
+                }
             }
 
-            return string.Empty;
+            return builder.ToString();
         }
 
         public string VisitInteger_expression(CastParser.Integer_expressionContext context)
@@ -510,7 +529,7 @@ namespace cast.core.visitor
                 builder.Append($" = {Visit(context.typeless_declaration().initializer())}");
             }
             
-            return builder + ";\n";
+            return builder + ";";
         }
 
         public string VisitTypeless_declaration(CastParser.Typeless_declarationContext context)

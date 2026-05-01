@@ -247,9 +247,12 @@ namespace cast.core.visitor
         public CastType VisitVariable_identifier(CastParser.Variable_identifierContext context)
         {
             string identifier = context.IDENTIFIER().GetText();
+            AbstractSymbol symbol = _scope[identifier];
 
-            VariableSymbol variable = _scope[identifier] as VariableSymbol;
-            return variable.Type;
+            if (symbol is VariableSymbol variable) return variable.Type;
+            if (symbol is FunctionSymbol function) return function.ReturnType();
+
+            return CastType.ErrorType;
         }
 
         public CastType VisitFunction_call(CastParser.Function_callContext context)
@@ -296,7 +299,9 @@ namespace cast.core.visitor
         {
             if (context.variable_identifier() != null)
             {
-                return Visit(context.variable_identifier());
+                CastType id = Visit(context.variable_identifier());
+                Console.WriteLine($"debug: {context.GetText()}");
+                return id;
             }
 
             if (context.INTCONSTANT() != null)
@@ -322,22 +327,62 @@ namespace cast.core.visitor
 
         public CastType VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
+            if (context.primary_expression() != null)
+            {
+                return Visit(context.primary_expression());
+            }
+
+            // integer_expression
+            if (context.postfix_expression() != null && context.LEFT_BRACKET() != null &&
+                context.RIGHT_BRACKET() != null)
+            {
+            }
+            
+            // function calls
+            if (context.LEFT_PAREN() != null && context.RIGHT_PAREN() != null)
+            {
+                if (context.postfix_expression() != null)
+                {
+                    string functionName = context.postfix_expression().GetText();
+                    List<CastType> parameters = new List<CastType>();
+
+                    if (context.function_call_parameters()?.assignment_expression() != null)
+                    {
+                        foreach (var param in context.function_call_parameters().assignment_expression())
+                        {
+                            CastType paramType = Visit(param);
+                            parameters.Add(paramType);
+                        }
+                    }
+
+                    CastType registryLookup = Registry.ResolveFunction(functionName, parameters, _logger, _scope); 
+                    if (Equals(registryLookup, CastType.ErrorType))
+                    {
+                        FunctionSymbol? userDefinedFunction = _scope[functionName] as FunctionSymbol;
+                        registryLookup = userDefinedFunction.ReturnType();
+                    }
+
+                    return registryLookup;
+                }
+            }
+            
             if (context.integer_expression() != null)
             {
                 return Visit(context.integer_expression());
             }
 
-            if (context.primary_expression() != null)
-            {
-                return Visit(context.primary_expression());
-            }
 
             return default;
         }
 
         public CastType VisitInteger_expression(CastParser.Integer_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
+            return CastType.ErrorType;
         }
 
         public CastType VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
@@ -568,8 +613,11 @@ namespace cast.core.visitor
                 CastType? eval = Visit(context.typeless_declaration());
                 if (eval != null && !eval.Equals(variableType))
                 {
-                    string message = $"Unable to assign type '{eval.Type}' to '{context.fully_specified_type().GetText()}'";
-                    _logger.Log(context.Start, message);
+                    if (!eval.IsAssignable(variableType))
+                    {
+                        string message = $"Unable to assign type '{eval.Type}' to '{context.fully_specified_type().GetText()}'";
+                        _logger.Log(context.Start, message);
+                    }
                 }
             }
 

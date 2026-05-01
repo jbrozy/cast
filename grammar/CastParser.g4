@@ -156,12 +156,15 @@ primary_expression
 	;
 
 postfix_expression
-	: primary_expression
-	| postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET
-	| postfix_expression LEFT_PAREN integer_expression RIGHT_PAREN
-	| type_specifier LEFT_PAREN function_call_parameters? RIGHT_PAREN
-	;
-
+    : primary_expression
+    | postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET
+    | postfix_expression LEFT_PAREN function_call_parameters? RIGHT_PAREN
+    | type_specifier LEFT_PAREN function_call_parameters? RIGHT_PAREN
+    | postfix_expression DOT field_selection
+    | postfix_expression INC_OP
+    | postfix_expression DEC_OP
+    ;
+    
 integer_expression
 	: expression
 	;

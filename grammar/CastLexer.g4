@@ -1,10 +1,37 @@
+/*
+MIT License
+
+Copyright (c) 2022 Mustafa Said Ağca
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+// $antlr-format alignTrailingComments true, columnLimit 150, maxEmptyLinesToKeep 1, reflowComments false, useTab false
+// $antlr-format allowShortRulesOnASingleLine true, allowShortBlocksOnASingleLine true, minEmptyLines 0, alignSemicolons ownLine
+// $antlr-format alignColons trailing, singleLineOverrulesHangingColon true, alignLexerCommands true, alignLabels true, alignTrailers true
+
 lexer grammar CastLexer;
 channels {
     COMMENTS,
     DIRECTIVES
 }
 
-SPACE				   : 'space';
 ATOMIC_UINT            : 'atomic_uint';
 ATTRIBUTE              : 'attribute';
 BOOL                   : 'bool';
@@ -209,52 +236,52 @@ VOLATILE               : 'volatile';
 WHILE                  : 'while';
 WRITEONLY              : 'writeonly';
 
-LEFT_PAREN			: '(';
-RIGHT_PAREN			: ')';
-LEFT_BRACKET  		: '[';
-RIGHT_BRACKET  		: ']';
-DOT					: '.';
-COMMA				: ',';
-RIGHT_BRACE   		: '}';
-LEFT_BRACE   		: '{';
-
-EQUAL				: '=';
-QUESTION			: '?';
-COLON				: ':';
-SEMICOLON			: ';';
-STAR				: '*';
-SLASH				: '/';
-PERCENT				: '%';
-PLUS				: '+';
-DASH				: '-';
-BANG				: '!';
-TILDE				: '~';
-LEFT_OP       		: '<<';
-RIGHT_OP       		: '>>';
-LEFT_ANGLE       	: '<';
-RIGHT_ANGLE       	: '>';
-EQ_OP				: '==';
-NE_OP				: '!=';
-AMPERSAND			: '&';
-CARET				: '^';
-VERTICAL_BAR		: '|';
-AND_OP				: '&&';
-XOR_OP				: '^^';
-OR_OP				: '||';
-
-INC_OP				: '++';
-DEC_OP				: '--';
-
-MUL_ASSIGN			: '*=';
-DIV_ASSIGN			: '/=';
-ADD_ASSIGN			: '+=';
-SUB_ASSIGN			: '-=';
-LEFT_ASSIGN			: '<<=';
-RIGHT_ASSIGN		: '>>=';
-AND_ASSIGN			: '&=';
-XOR_ASSIGN			: '^=';
-OR_ASSIGN			: '|=';
-MOD_ASSIGN			: '%=';
+ADD_ASSIGN    : '+=';
+AMPERSAND     : '&';
+AND_ASSIGN    : '&=';
+AND_OP        : '&&';
+BANG          : '!';
+CARET         : '^';
+COLON         : ':';
+COMMA         : ',';
+DASH          : '-';
+DEC_OP        : '--';
+DIV_ASSIGN    : '/=';
+DOT           : '.';
+EQ_OP         : '==';
+EQUAL         : '=';
+GE_OP         : '>=';
+INC_OP        : '++';
+LE_OP         : '<=';
+LEFT_ANGLE    : '<';
+LEFT_ASSIGN   : '<<=';
+LEFT_BRACE    : '{';
+LEFT_BRACKET  : '[';
+LEFT_OP       : '<<';
+LEFT_PAREN    : '(';
+MOD_ASSIGN    : '%=';
+MUL_ASSIGN    : '*=';
+NE_OP         : '!=';
+NUMBER_SIGN   : '#' -> channel (DIRECTIVES), pushMode (DIRECTIVE_MODE);
+OR_ASSIGN     : '|=';
+OR_OP         : '||';
+PERCENT       : '%';
+PLUS          : '+';
+QUESTION      : '?';
+RIGHT_ANGLE   : '>';
+RIGHT_ASSIGN  : '>>=';
+RIGHT_BRACE   : '}';
+RIGHT_BRACKET : ']';
+RIGHT_OP      : '>>';
+RIGHT_PAREN   : ')';
+SEMICOLON     : ';';
+SLASH         : '/';
+STAR          : '*';
+SUB_ASSIGN    : '-=';
+TILDE         : '~';
+VERTICAL_BAR  : '|';
+XOR_ASSIGN    : '^=';
+XOR_OP        : '^^';
 
 DOUBLECONSTANT:
     FRACTIONAL_CONSTANT EXPONENT_PART? DOUBLE_SUFFIX
@@ -266,6 +293,100 @@ FLOATCONSTANT:
 ;
 INTCONSTANT       : DECIMAL_CONSTANT | HEX_CONSTANT | OCTAL_CONSTANT;
 UINTCONSTANT      : INTCONSTANT INTEGER_SUFFIX;
+BLOCK_COMMENT     : '/*' .*? '*/'                           -> channel (COMMENTS);
+LINE_COMMENT      : '//' (~ [\r\n\\] | '\\' (NEWLINE | .))* -> channel (COMMENTS);
+LINE_CONTINUATION : '\\' NEWLINE                            -> channel (HIDDEN);
+IDENTIFIER        : [a-zA-Z_] [a-zA-Z0-9_]*;
+WHITE_SPACE       : [ \t\r\n]+ -> channel (HIDDEN);
+
+mode DIRECTIVE_MODE;
+DEFINE_DIRECTIVE    : 'define'    -> channel (DIRECTIVES), mode (DEFINE_DIRECTIVE_MODE);
+ELIF_DIRECTIVE      : 'elif'      -> channel (DIRECTIVES), popMode, mode (ELIF_DIRECTIVE_MODE);
+ELSE_DIRECTIVE      : 'else'      -> channel (DIRECTIVES), popMode, mode (PROGRAM_TEXT_MODE);
+ENDIF_DIRECTIVE     : 'endif'     -> channel (DIRECTIVES), popMode, popMode, popMode;
+ERROR_DIRECTIVE     : 'error'     -> channel (DIRECTIVES), mode (ERROR_DIRECTIVE_MODE);
+EXTENSION_DIRECTIVE : 'extension' -> channel (DIRECTIVES), mode (EXTENSION_DIRECTIVE_MODE);
+IF_DIRECTIVE        : 'if'        -> channel (DIRECTIVES), mode (IF_DIRECTIVE_MODE);
+IFDEF_DIRECTIVE     : 'ifdef'     -> channel (DIRECTIVES), mode (IFDEF_DIRECTIVE_MODE);
+IFNDEF_DIRECTIVE    : 'ifndef'    -> channel (DIRECTIVES), mode (IFDEF_DIRECTIVE_MODE);
+LINE_DIRECTIVE      : 'line'      -> channel (DIRECTIVES), mode (LINE_DIRECTIVE_MODE);
+PRAGMA_DIRECTIVE    : 'pragma'    -> channel (DIRECTIVES), mode (PRAGMA_DIRECTIVE_MODE);
+UNDEF_DIRECTIVE     : 'undef'     -> channel (DIRECTIVES), mode (UNDEF_DIRECTIVE_MODE);
+VERSION_DIRECTIVE   : 'version'   -> channel (DIRECTIVES), mode (VERSION_DIRECTIVE_MODE);
+SPACE_TAB_0         : SPACE_TAB   -> skip;
+NEWLINE_0           : NEWLINE     -> skip, popMode;
+
+mode DEFINE_DIRECTIVE_MODE;
+MACRO_NAME  : IDENTIFIER MACRO_ARGS? -> channel (DIRECTIVES), mode (MACRO_TEXT_MODE);
+NEWLINE_1   : NEWLINE                -> skip, popMode;
+SPACE_TAB_1 : SPACE_TAB              -> skip;
+
+mode ELIF_DIRECTIVE_MODE;
+CONSTANT_EXPRESSION : ~ [\r\n]+ -> channel (DIRECTIVES);
+NEWLINE_2           : NEWLINE   -> skip, mode (PROGRAM_TEXT_MODE);
+
+mode ERROR_DIRECTIVE_MODE;
+ERROR_MESSAGE : ~ [\r\n]+ -> channel (DIRECTIVES);
+NEWLINE_3     : NEWLINE   -> skip, popMode;
+
+mode EXTENSION_DIRECTIVE_MODE;
+BEHAVIOR       : ('require' | 'enable' | 'warn' | 'disable') -> channel (DIRECTIVES);
+COLON_0        : COLON                                       -> channel (DIRECTIVES), type (COLON);
+EXTENSION_NAME : IDENTIFIER                                  -> channel (DIRECTIVES);
+NEWLINE_4      : NEWLINE                                     -> skip, popMode;
+SPACE_TAB_2    : SPACE_TAB                                   -> skip;
+
+mode IF_DIRECTIVE_MODE;
+CONSTANT_EXPRESSION_0 : CONSTANT_EXPRESSION -> channel (DIRECTIVES), type (CONSTANT_EXPRESSION);
+NEWLINE_5             : NEWLINE             -> skip, pushMode (PROGRAM_TEXT_MODE);
+
+mode IFDEF_DIRECTIVE_MODE;
+MACRO_IDENTIFIER : IDENTIFIER -> channel (DIRECTIVES);
+NEWLINE_6        : NEWLINE    -> skip, pushMode (PROGRAM_TEXT_MODE);
+SPACE_TAB_3      : SPACE_TAB  -> skip;
+
+mode LINE_DIRECTIVE_MODE;
+LINE_EXPRESSION : ~ [\r\n]+ -> channel (DIRECTIVES);
+NEWLINE_7       : NEWLINE   -> skip, mode (PROGRAM_TEXT_MODE);
+
+mode MACRO_TEXT_MODE;
+BLOCK_COMMENT_0    : BLOCK_COMMENT -> channel (COMMENTS), type(BLOCK_COMMENT);
+MACRO_ESC_NEWLINE  : '\\' NEWLINE  -> channel(DIRECTIVES);
+MACRO_ESC_SEQUENCE : '\\' .        -> channel(DIRECTIVES), type (MACRO_TEXT);
+MACRO_TEXT         : ~ [/\r\n\\]+  -> channel (DIRECTIVES);
+NEWLINE_8          : NEWLINE       -> skip, popMode;
+SLASH_0            : SLASH         -> more;
+
+mode PRAGMA_DIRECTIVE_MODE;
+DEBUG         : 'debug'     -> channel (DIRECTIVES);
+LEFT_PAREN_0  : LEFT_PAREN  -> channel (DIRECTIVES), type (LEFT_PAREN);
+NEWLINE_9     : NEWLINE     -> skip, popMode;
+OFF           : 'off'       -> channel (DIRECTIVES);
+ON            : 'on'        -> channel (DIRECTIVES);
+OPTIMIZE      : 'optimize'  -> channel (DIRECTIVES);
+RIGHT_PAREN_0 : RIGHT_PAREN -> channel (DIRECTIVES), type (RIGHT_PAREN);
+SPACE_TAB_5   : SPACE_TAB   -> skip;
+STDGL         : 'STDGL'     -> channel (DIRECTIVES);
+
+mode PROGRAM_TEXT_MODE;
+BLOCK_COMMENT_1 : BLOCK_COMMENT -> channel (COMMENTS), type (BLOCK_COMMENT);
+LINE_COMMENT_0  : LINE_COMMENT  -> channel (COMMENTS), type (LINE_COMMENT);
+NUMBER_SIGN_0:
+    NUMBER_SIGN -> channel (DIRECTIVES), type (NUMBER_SIGN), pushMode (DIRECTIVE_MODE)
+;
+PROGRAM_TEXT : ~ [#/]+ -> channel (DIRECTIVES);
+SLASH_1      : SLASH   -> more;
+
+mode UNDEF_DIRECTIVE_MODE;
+MACRO_IDENTIFIER_0 : MACRO_IDENTIFIER -> channel (DIRECTIVES), type (MACRO_IDENTIFIER);
+NEWLINE_10         : NEWLINE          -> skip, popMode;
+SPACE_TAB_6        : SPACE_TAB        -> skip;
+
+mode VERSION_DIRECTIVE_MODE;
+NEWLINE_11  : NEWLINE                           -> skip, popMode;
+NUMBER      : [0-9]+                            -> channel (DIRECTIVES);
+PROFILE     : ('core' | 'compatibility' | 'es') -> channel (DIRECTIVES);
+SPACE_TAB_7 : SPACE_TAB                         -> skip;
 
 fragment DECIMAL_CONSTANT    : [1-9] [0-9]*;
 fragment DIGIT_SEQUENCE      : [0-9]+;
@@ -279,6 +400,3 @@ fragment MACRO_ARGS          : '(' (MACRO_ARGS | ~ [()])* ')';
 fragment NEWLINE             : '\r'? '\n';
 fragment OCTAL_CONSTANT      : '0' [0-7]*;
 fragment SPACE_TAB           : [ \t]+;
-
-IDENTIFIER        : [a-zA-Z_] [a-zA-Z0-9_]*;
-WHITE_SPACE       : [ \t\r\n]+ -> channel (HIDDEN);

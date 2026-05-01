@@ -33,17 +33,44 @@ namespace cast.core.models
 
         public override bool Equals(object obj)
         {
-            if (obj is CastType objType)
+            if (obj is CastType other)
             {
-                string given = objType.ToString();
-                string expected = this.ToString();
-                
-                // Todo: actual validation of parameters
-                
-                return given == expected;
+                if (this.Type.Name != other.Type.Name) return false;
+                if (this.Spaces.Count != other.Spaces.Count) return false;
+
+                for (int i = 0; i < this.Spaces.Count; i++)
+                {
+                    if (this.Spaces[i] != other.Spaces[i]) return false;
+                }
+                return true;
             }
-            
             return false;
+        }
+        
+        public override int GetHashCode()
+        {
+            return Type.Name.GetHashCode();
+        }
+
+        public bool IsAssignable(CastType rhs)
+        {
+            // 1. Der Basis-Typ muss IMMER stimmen (vec4 kann nicht vec3 werden)
+            if (this.Type.Name != rhs.Type.Name) return false;
+
+            // vec4<World> = vec4(...) -- upcast allowed
+            // vec4 = vec4<World>(...) -- downcast is allowed
+            if (this.Spaces.Count == 0 || rhs.Spaces.Count == 0) 
+            {
+                return true;
+            }
+
+            if (this.Spaces.Count != rhs.Spaces.Count) return false;
+            for (int i = 0; i < this.Spaces.Count; i++)
+            {
+                if (this.Spaces[i] != rhs.Spaces[i]) return false;
+            }
+
+            return true;
         }
     }
 }

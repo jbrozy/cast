@@ -32,7 +32,7 @@ options {
 }
 
 translation_unit
-    : compiler_directive*
+    : (compiler_directive | program_text)* EOF
     ;
 
 compiler_directive

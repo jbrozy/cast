@@ -211,6 +211,10 @@ namespace cast.core.registry
             
             RegisterFunction("<<", "int", "int", "int");
             RegisterFunction(">>", "int", "int", "int");
+            
+            RegisterFunction("texture", "vec4", "sampler2D", "vec2");
+            RegisterFunction("texture", "vec4", "sampler3D", "vec3");
+            RegisterFunction("texture", "vec4", "samplerCube", "vec3");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -273,6 +277,30 @@ namespace cast.core.registry
             string functionCandidates = string.Join("\n", candidates.Select(c => $"     ({string.Join(", ", c.Params)}) -> {c.returnType}"));
             string message = $"Unable to find function '{op}' with params ['{left}', '{right}'], \n candidates are: \n{functionCandidates}";
             logger.Log(token, message);
+            
+            return CastType.ErrorType;
+        }
+
+        public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope)
+        {
+            // TODO: handle geometric generics
+            if (!functions.ContainsKey(name)) return CastType.ErrorType;
+            List<(string[] Params, string returnType)> candidates = functions[name];
+
+            foreach ((string[] fnParams, string returnType) in candidates)
+            {
+                bool valid = fnParams.Length == parameters.Count;
+                for (int i = 0; i < fnParams.Length; ++i)
+                {
+                    if (fnParams[i] != parameters[i].Type.Name) valid = false;
+                }
+
+                if (valid)
+                {
+                    TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
+                    return new CastType(returnTypeSymbol);
+                }
+            }
             
             return CastType.ErrorType;
         }

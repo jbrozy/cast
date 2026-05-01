@@ -1,4 +1,5 @@
-﻿using Antlr4.Runtime;
+﻿using System.Text.RegularExpressions;
+using Antlr4.Runtime;
 using cast.core;
 using cast.core.logging;
 using cast.core.models;
@@ -7,20 +8,36 @@ using cast.core.registry;
 using cast.core.visitor;
 
 string input = """
-               float a(vec3<Model> a) {
-                    return 1.0;
-               }
+               #version 330 core
+               #define PI 3.1415
                
                void main() {
+                   float a = PI;
                }
                """;
 
+ICharStream rawStream = CharStreams.fromString(input);
+CastLexer lexer = new CastLexer(rawStream);
+CommonTokenStream commonTokenStream = new CommonTokenStream(lexer, CastLexer.DIRECTIVES);
+CastPreParser castPreParser = new CastPreParser(commonTokenStream);
+MacroPreProcessor macroPreProcessor = new MacroPreProcessor(commonTokenStream);
+macroPreProcessor.Visit(castPreParser.translation_unit());
+
+input = macroPreProcessor.GetText();
+
+foreach (var macro in macroPreProcessor.Macros)
+{
+    string pattern = $@"\b{Regex.Escape(macro.Key)}\b";
+    input = Regex.Replace(input, pattern, macro.Value);
+}
+
+ICharStream mainStream = CharStreams.fromString(input);
+CastLexer mainLexer = new CastLexer(mainStream);
+CommonTokenStream mainTokens = new CommonTokenStream(mainLexer);
+
 Registry.Setup();
 
-AntlrInputStream inputStream = new AntlrInputStream(input);
-CastLexer lexer = new CastLexer(inputStream);
-CommonTokenStream commonTokenStream = new CommonTokenStream(lexer);
-CastParser parser = new CastParser(commonTokenStream);
+CastParser mainParser = new CastParser(mainTokens);
 
 // 'sampler';
 // 'sampler1D';
@@ -47,6 +64,7 @@ Scope scope = new Scope();
 scope.Define(new SpaceSymbol("Model"));
 scope.Define(new SpaceSymbol("View"));
 scope.Define(new SpaceSymbol("World"));
+scope.Define(new SpaceSymbol("Color"));
 
 scope.Define(new TypeSymbol("vec4", 1, true));
 scope.Define(new TypeSymbol("vec3", 1, true));
@@ -56,8 +74,9 @@ scope.Define(new TypeSymbol("void", 0, false));
 scope.Define(new TypeSymbol("int", 0, false));
 scope.Define(new TypeSymbol("uint", 0, false));
 scope.Define(new TypeSymbol("float", 0, false));
+scope.Define(new TypeSymbol("sampler2D", 0, false));
 
-var translationUnit = parser.translation_unit();
+var translationUnit = mainParser.translation_unit();
 
 ErrorLogger logger = new ErrorLogger();
 
