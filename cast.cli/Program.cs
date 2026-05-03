@@ -9,10 +9,22 @@ using cast.core.visitor;
 
 string input = """
                #version 330 core
+               
                #define PI 3.1415
+               #define SIX 6
                
                void main() {
                    float a = PI;
+                   int b = SIX;
+                   if (1 < 2) {
+                        int q = 6;
+                        if (5 > 6) {
+                            if (1 << 2 < 2) {
+                                int l = 5 + 5;
+                            }
+                            float k = 1.0;
+                        }
+                   }
                }
                """;
 
@@ -36,9 +48,7 @@ CastLexer mainLexer = new CastLexer(mainStream);
 CommonTokenStream mainTokens = new CommonTokenStream(mainLexer);
 
 Registry.Setup();
-
 CastParser mainParser = new CastParser(mainTokens);
-
 // 'sampler';
 // 'sampler1D';
 // 'sampler1DArray';

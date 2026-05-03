@@ -1,4 +1,4 @@
-namespace cast.core.models
+namespace cast.core.models.symbols
 {
     public abstract class AbstractSymbol
     {

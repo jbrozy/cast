@@ -1,3 +1,5 @@
+using cast.core.models.symbols;
+
 namespace cast.core.models
 {
     public class SpaceSymbol : AbstractSymbol

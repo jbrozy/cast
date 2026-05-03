@@ -76,12 +76,24 @@ namespace cast.core.visitor
 
         public CastType VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
         {
-            throw new System.NotImplementedException();
+            foreach (var statementContext in context.statement())
+            {
+                Visit(statementContext);
+            }
+
+            return default;
         }
 
         public CastType VisitSelection_statement(CastParser.Selection_statementContext context)
         {
-            throw new System.NotImplementedException();
+            Visit(context.expression());
+            
+            if (context.selection_rest_statement() != null)
+            {
+                Visit(context.selection_rest_statement());
+            }
+
+            return default;
         }
 
         public CastType VisitCondition(CastParser.ConditionContext context)
@@ -138,6 +150,11 @@ namespace cast.core.visitor
                 return Visit(context.jump_statement());
             }
 
+            if (context.selection_statement() != null)
+            {
+                return Visit(context.selection_statement());
+            }
+
             return default;
         }
 
@@ -148,7 +165,15 @@ namespace cast.core.visitor
 
         public CastType VisitCompound_statement(CastParser.Compound_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.statement_list() != null)
+            {
+                foreach (var statementContext in context.statement_list().statement())
+                {
+                    Visit(statementContext);
+                }
+            }
+
+            return default;
         }
 
         public CastType VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)

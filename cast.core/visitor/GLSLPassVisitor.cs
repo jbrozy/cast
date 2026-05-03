@@ -10,10 +10,23 @@ namespace cast.core.visitor
 {
     public class GlslPassVisitor : ICastParserVisitor<string>
     {
+        private int _indent = 0;
         private readonly Scope _scope;
         public GlslPassVisitor(Scope scope)
         {
             _scope = scope;
+        }
+
+        private string GetIndentedText(string text)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < _indent; i++)
+            {
+                builder.Append("  ");
+            }
+
+            builder.Append(text);
+            return builder.ToString();
         }
         
         public string Visit(IParseTree tree)
@@ -75,12 +88,25 @@ namespace cast.core.visitor
 
         public string VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            foreach (var statementContext in context.statement())
+            {
+                builder.Append(Visit(statementContext));
+            }
+            return builder.ToString();
         }
 
         public string VisitSelection_statement(CastParser.Selection_statementContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            Console.WriteLine($"Indent Level: {_indent}");
+            builder.Append($"if ({Visit(context.expression())})");
+            _indent++;
+            builder.Append(" {\n");
+            builder.Append(Visit(context.selection_rest_statement()));
+            _indent--;
+            builder.Append(GetIndentedText("}"));
+            return builder.ToString();
         }
 
         public string VisitCondition(CastParser.ConditionContext context)
@@ -139,6 +165,11 @@ namespace cast.core.visitor
             {
                 return Visit(context.jump_statement());
             }
+            
+            if (context.selection_statement() != null)
+            {
+                return Visit(context.selection_statement());
+            }
 
             return string.Empty;
         }
@@ -150,7 +181,18 @@ namespace cast.core.visitor
 
         public string VisitCompound_statement(CastParser.Compound_statementContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            if (context.statement_list() != null)
+            {
+                _indent++;
+                foreach (var statementContext in context.statement_list().statement())
+                {
+                    builder.Append(GetIndentedText($"{Visit(statementContext)}\n"));
+                } 
+                _indent--;
+            }
+
+            return builder.ToString();
         }
 
         public string VisitCompound_statement_no_new_scope(CastParser.Compound_statement_no_new_scopeContext context)
@@ -160,12 +202,14 @@ namespace cast.core.visitor
             {
                 builder.AppendLine(" {");
                 List<string> statements = new List<string>();
+                _indent++;
                 foreach (var statementContext in context.statement_list().statement())
                 {
-                    statements.Add(Visit(statementContext));
+                    statements.Add(GetIndentedText(Visit(statementContext)));
                 }
                 builder.Append(string.Join("\n", statements));
-                builder.Append("\n}");
+                builder.Append(GetIndentedText("\n}"));
+                _indent--;
             }
             else
             {
@@ -178,11 +222,11 @@ namespace cast.core.visitor
         {
             if (context.simple_statement() != null)
             {
-                return  Visit(context.simple_statement());
+                return Visit(context.simple_statement());
             }
             if (context.compound_statement() != null)
             {
-                return  Visit(context.compound_statement());
+                return Visit(context.compound_statement());
             }
 
             return string.Empty;
