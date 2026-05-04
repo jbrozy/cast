@@ -10,22 +10,13 @@ using cast.core.visitor;
 string input = """
                #version 330 core
                
-               #define PI 3.1415
-               #define SIX 6
+               in vec3 a;
+               out vec3 b;
                
                void main() {
-                   float a = PI;
-                   int b = SIX;
-                   if (1 < 2) {
-                        int q = 6;
-                        if (5 > 6) {
-                            if (1 << 2 < 2) {
-                                int l = 5 + 5;
-                            }
-                            float k = 1.0;
-                        }
-                   }
+                    a = 6;
                }
+               
                """;
 
 ICharStream rawStream = CharStreams.fromString(input);

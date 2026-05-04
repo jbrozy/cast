@@ -71,7 +71,12 @@ namespace cast.core.visitor
 
         public CastType VisitExpression_statement(CastParser.Expression_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
+            return default;
         }
 
         public CastType VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
@@ -153,6 +158,11 @@ namespace cast.core.visitor
             if (context.selection_statement() != null)
             {
                 return Visit(context.selection_statement());
+            }
+
+            if (context.expression_statement() != null)
+            {
+                return Visit(context.expression_statement());
             }
 
             return default;
@@ -442,6 +452,11 @@ namespace cast.core.visitor
                 return Visit(context.unary_expression());
             }
 
+            if (context.unary_operator() != null)
+            {
+                return Visit(context.unary_operator());
+            }
+
             return default;
         }
 
@@ -498,6 +513,7 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.children[2]);
                 
                 string op = context.children[1].ToString();
+                Console.WriteLine($"left: {context.children[0].GetText()}, right: {context.children[2].GetText()}, op: {op}");
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (eval == null) return CastType.ErrorType;
                 return eval;

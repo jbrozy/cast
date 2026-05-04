@@ -83,7 +83,7 @@ namespace cast.core.visitor
 
         public string VisitExpression_statement(CastParser.Expression_statementContext context)
         {
-            throw new System.NotImplementedException();
+            return Visit(context.expression());
         }
 
         public string VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
@@ -156,6 +156,11 @@ namespace cast.core.visitor
 
         public string VisitSimple_statement(CastParser.Simple_statementContext context)
         {
+            if (context.expression_statement() != null)
+            {
+                return Visit(context.expression_statement());
+            }
+            
             if (context.declaration_statement() != null)
             {
                 return Visit(context.declaration_statement());
@@ -388,7 +393,10 @@ namespace cast.core.visitor
 
             if (context.assignment_expression() != null)
             {
-                return Visit(context.assignment_expression());
+                string left = Visit(context.assignment_expression().unary_expression());
+                string right = Visit(context.assignment_expression().assignment_expression());
+                string op = context.assignment_expression().assignment_operator().GetText();
+                return $"{left} {op} {right};";
             }
 
             return string.Empty;
@@ -438,7 +446,9 @@ namespace cast.core.visitor
         {
             if (context.assignment_expression() != null)
             {
-                return Visit(context.assignment_expression());
+                string left = context.children[0].GetText();
+                string right = context.children[2].GetText();
+                return $"{left} = {right};";
             }
             if (context.constant_expression() != null)
             {
@@ -448,7 +458,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.unary_expression());
             }
-            
+
             return string.Empty;
         }
 
@@ -566,6 +576,8 @@ namespace cast.core.visitor
 
             string variableName = context.typeless_declaration().IDENTIFIER().GetText();
             string variableType = context.fully_specified_type().type_specifier().type_specifier_nonarray().GetChild(0).GetText();
+            string? qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
+            if (qualifier != null) builder.Append($"{qualifier} ");
             builder.Append($"{variableType} {variableName}");
 
             if (context.typeless_declaration().initializer() != null)

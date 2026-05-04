@@ -24,7 +24,7 @@ namespace cast.core.models
         {
             // return base type if no spaces are set
             if (Spaces.Count == 0)
-                return Type.Name;
+                return Type?.Name ?? "ErrorType";
             
             // otherwise return base type and spaces
             string spaceNames = string.Join(", ", Spaces.Select(s => s.ToString()));
