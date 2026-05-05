@@ -11,4 +11,9 @@
       <ProjectReference Include="..\cast.core\cast.core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Spectre.Console" Version="0.55.3-alpha.0.9" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.55.1-alpha.0.4" />
+    </ItemGroup>
+
 </Project>

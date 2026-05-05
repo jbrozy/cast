@@ -13,5 +13,10 @@ namespace cast.core.visitor.configuration
         public List<CastType> Inputs { get; set; }
         public List<CastType> Outputs { get; set; }
         public List<CastType> Textures { get; set; }
+        
+        public string GetVersion()
+        {
+            return Version.ToString();
+        }
     }
 }

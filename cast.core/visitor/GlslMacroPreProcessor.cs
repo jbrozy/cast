@@ -4,13 +4,15 @@ using Antlr4.Runtime.Tree;
 
 namespace cast.core.visitor
 {
-    public class MacroPreProcessor : ICastPreParserVisitor<object>
+    public class GlslMacroPreProcessor : ICastPreParserVisitor<object>
     {
-        private string _version = string.Empty;
+        public string Version = string.Empty;
+        public string Profile = string.Empty;
+        
         public Dictionary<string, string> Macros = new Dictionary<string, string>();
         private readonly TokenStreamRewriter _rewriter;
 
-        public MacroPreProcessor(CommonTokenStream tokenStream)
+        public GlslMacroPreProcessor(CommonTokenStream tokenStream)
         {
             _rewriter = new TokenStreamRewriter(tokenStream);
         }
@@ -234,11 +236,12 @@ namespace cast.core.visitor
         {
             if (context.profile() != null)
             {
-                _version = $"{context.number().GetText()} {context.profile().GetText()}";
+                Version = context.number().GetText();
+                Profile = context.profile().GetText();
             }
             else
             {
-                _version = $"{context.number().GetText()}";
+                Version = $"{context.number().GetText()}";
             }
             
             return default;

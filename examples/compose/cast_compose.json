@@ -1,0 +1,22 @@
+{
+  "name": "cast compose example",
+  "stages": [
+    { 
+      "id": "gbuffer", 
+      "type": "geometry", 
+      "entry": "shaders/geometry" 
+    },
+    { 
+      "id": "lighting", 
+      "type": "fullscreen", 
+      "entry": "shaders/lighting", 
+      "depends_on": ["gbuffer"] 
+    },
+    { 
+      "id": "post", 
+      "type": "post_process", 
+      "entry": "shaders/post", 
+      "depends_on": ["lighting"] 
+    }
+  ]
+}

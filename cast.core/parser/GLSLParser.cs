@@ -1,0 +1,93 @@
+﻿using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
+using Antlr4.Runtime;
+using cast.core.logging;
+using cast.core.models;
+using cast.core.models.symbols;
+using cast.core.parser.programs;
+using cast.core.registry;
+using cast.core.visitor;
+using cast.core.visitor.configuration;
+
+namespace cast.core.parser
+{
+    public class GLSLParser
+    {
+        private readonly ErrorLogger _logger;
+        private readonly Scope _scope;
+
+        public GLSLParser()
+        {
+            _scope = new Scope();
+            _scope.Define(new SpaceSymbol("Model"));
+            _scope.Define(new SpaceSymbol("View"));
+            _scope.Define(new SpaceSymbol("World"));
+            _scope.Define(new SpaceSymbol("Color"));
+            
+            _scope.Define(new TypeSymbol("vec4", 1, true));
+            _scope.Define(new TypeSymbol("vec3", 1, true));
+            _scope.Define(new TypeSymbol("vec2", 1, true));
+            _scope.Define(new TypeSymbol("mat4", 2, true));
+            _scope.Define(new TypeSymbol("void", 0, false));
+            _scope.Define(new TypeSymbol("int", 0, false));
+            _scope.Define(new TypeSymbol("uint", 0, false));
+            _scope.Define(new TypeSymbol("float", 0, false));
+            _scope.Define(new TypeSymbol("sampler2D", 0, false));
+            
+            _logger = new ErrorLogger();
+        }
+
+        /// <summary>
+        /// Reads Cast Input Source and transpiles to GLSL
+        /// </summary>
+        /// <returns></returns>
+        public GLSLShaderProgram Parse(string castInput)
+        {
+            ICharStream rawStream = CharStreams.fromString(castInput);
+            CastLexer lexer = new CastLexer(rawStream);
+            CommonTokenStream commonTokenStream = new CommonTokenStream(lexer, CastLexer.DIRECTIVES);
+            CastPreParser castPreParser = new CastPreParser(commonTokenStream);
+            GlslMacroPreProcessor glslMacroPreProcessor = new GlslMacroPreProcessor(commonTokenStream);
+            glslMacroPreProcessor.Visit(castPreParser.translation_unit());
+            
+            castInput = glslMacroPreProcessor.GetText();
+
+            foreach (var macro in glslMacroPreProcessor.Macros)
+            {
+                string pattern = $@"\b{Regex.Escape(macro.Key)}\b";
+                castInput = Regex.Replace(castInput, pattern, macro.Value);
+            }
+            
+            ICharStream mainStream = CharStreams.fromString(castInput);
+            CastLexer mainLexer = new CastLexer(mainStream);
+            CommonTokenStream mainTokens = new CommonTokenStream(mainLexer);
+
+            CastParser mainParser = new CastParser(mainTokens);
+            var translationUnit = mainParser.translation_unit();
+
+            ErrorLogger logger = new ErrorLogger();
+
+            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, logger);
+            declarationPassVisitor.Visit(translationUnit);
+
+            SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(_scope, logger);
+            semanticPassVisitor.Visit(translationUnit);
+
+            if (logger.HasErrors)
+            {
+                logger.Print();
+            }
+
+            GLSLShaderConfiguration configuration = new GLSLShaderConfiguration();
+            configuration.Version = int.Parse(glslMacroPreProcessor.Version);
+            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope);
+
+            return new GLSLShaderProgram()
+            {
+                Configuration = configuration,
+                Shader = glslPassVisitor.Visit(translationUnit),
+            };
+        }
+    }
+}
