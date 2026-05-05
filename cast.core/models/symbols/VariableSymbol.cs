@@ -1,6 +1,4 @@
-using cast.core.models.symbols;
-
-namespace cast.core.models
+namespace cast.core.models.symbols
 {
     public class VariableSymbol : AbstractSymbol
     {

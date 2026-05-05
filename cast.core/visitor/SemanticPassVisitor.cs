@@ -11,6 +11,7 @@ namespace cast.core.visitor
     public class SemanticPassVisitor : ICastParserVisitor<CastType>
     {
         private Scope _scope;
+        
         private readonly ErrorLogger _logger;
         
         public SemanticPassVisitor(Scope scope, ErrorLogger logger)
@@ -327,7 +328,18 @@ namespace cast.core.visitor
 
         public CastType VisitType_specifier(CastParser.Type_specifierContext context)
         {
-            throw new System.NotImplementedException();
+            List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+            string typeName = context.type_specifier_nonarray().GetText();
+            TypeSymbol type = _scope[typeName] as TypeSymbol;
+            if (context.space_specifier() != null)
+            {
+                foreach (var space in context.space_specifier().space_definition_parameters().children)
+                {
+                    spaces.Add(_scope[space.GetText()] as SpaceSymbol);
+                }
+            }
+
+            return new CastType(type, spaces);
         }
 
         public CastType VisitPrimary_expression(CastParser.Primary_expressionContext context)
@@ -367,47 +379,12 @@ namespace cast.core.visitor
                 return Visit(context.primary_expression());
             }
 
-            // integer_expression
-            if (context.postfix_expression() != null && context.LEFT_BRACKET() != null &&
-                context.RIGHT_BRACKET() != null)
+            if (context.type_specifier() != null)
             {
+                CastType specifier = Visit(context.type_specifier());
             }
             
-            // function calls
-            if (context.LEFT_PAREN() != null && context.RIGHT_PAREN() != null)
-            {
-                if (context.postfix_expression() != null)
-                {
-                    string functionName = context.postfix_expression().GetText();
-                    List<CastType> parameters = new List<CastType>();
-
-                    if (context.function_call_parameters()?.assignment_expression() != null)
-                    {
-                        foreach (var param in context.function_call_parameters().assignment_expression())
-                        {
-                            CastType paramType = Visit(param);
-                            parameters.Add(paramType);
-                        }
-                    }
-
-                    CastType registryLookup = Registry.ResolveFunction(functionName, parameters, _logger, _scope); 
-                    if (Equals(registryLookup, CastType.ErrorType))
-                    {
-                        FunctionSymbol? userDefinedFunction = _scope[functionName] as FunctionSymbol;
-                        registryLookup = userDefinedFunction.ReturnType();
-                    }
-
-                    return registryLookup;
-                }
-            }
-            
-            if (context.integer_expression() != null)
-            {
-                return Visit(context.integer_expression());
-            }
-
-
-            return default;
+            return CastType.ErrorType;
         }
 
         public CastType VisitInteger_expression(CastParser.Integer_expressionContext context)
@@ -474,6 +451,11 @@ namespace cast.core.visitor
             
             if (context.binary_expression() != null)
             {
+                if (context.binary_expression().binary_expression() != null &&  context.binary_expression().binary_expression().Length == 2)
+                {
+                    var left = Visit(context.binary_expression().binary_expression(0));
+                    var right = Visit(context.binary_expression().binary_expression(1));
+                }
                 return Visit(context.binary_expression());
             }
 
@@ -593,7 +575,8 @@ namespace cast.core.visitor
 
         public CastType VisitType_qualifier(CastParser.Type_qualifierContext context)
         {
-            throw new System.NotImplementedException();
+            Console.WriteLine(context.GetText());
+            return default;
         }
 
         public CastType VisitInitializer_list(CastParser.Initializer_listContext context)
@@ -607,7 +590,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.assignment_expression());
             }
-
+            
             return default;
         }
 
@@ -671,7 +654,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.initializer());
             }
-
+            
             return default;
         }
 

@@ -14,6 +14,10 @@ namespace cast.core.visitor
         private readonly Scope _scope;
         private readonly ErrorLogger _logger;
         
+        public List<VariableSymbol> Inputs = new List<VariableSymbol>();
+        public List<VariableSymbol> Outputs = new List<VariableSymbol>();
+        public List<VariableSymbol> Uniforms = new List<VariableSymbol>();
+        
         public DeclarationPassVisitor(Scope scope, ErrorLogger logger)
         {
             _scope = scope;
@@ -454,9 +458,14 @@ namespace cast.core.visitor
                     throw new Exception($"Qualifier '{qualifier}' is invalid.");
                 }
             }
+
         
             CastType type = new CastType(typeSymbol, spaceSymbols);
             VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
+            
+            if (modifier == Modifier.IN) Inputs.Add(variableSymbol);
+            if (modifier == Modifier.OUT) Outputs.Add(variableSymbol);
+            if (modifier == Modifier.UNIFORM) Uniforms.Add(variableSymbol);
         
             _scope.Define(variableSymbol);
 

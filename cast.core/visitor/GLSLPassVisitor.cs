@@ -12,6 +12,7 @@ namespace cast.core.visitor
     {
         private int _indent = 0;
         private readonly Scope _scope;
+        
         public GlslPassVisitor(Scope scope)
         {
             _scope = scope;

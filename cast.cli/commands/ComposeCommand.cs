@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using cast.cli.models;
+using cast.cli.builder;
+using cast.core.models;
 using cast.core.parser;
 using cast.core.parser.programs;
 using cast.core.visitor.configuration;
@@ -24,6 +25,7 @@ public class ComposeCommand : Command<ComposeSettings>
 
         var args= context.Arguments;
         DirectoryInfo? composePath = new FileInfo(args[1]).Directory;
+        List<Node> nodes = new List<Node>();
         foreach (Stage stage in pipelineManifest.Stages)
         {
             string fragment = stage.Entry + ".fsh";
@@ -34,10 +36,16 @@ public class ComposeCommand : Command<ComposeSettings>
             string fragmentShader = File.ReadAllText($"{composePath}/shaders/{fragmentInfo.Name}");
             string vertexShader = File.ReadAllText($"{composePath}/shaders/{vertexInfo.Name}");
             
-            GLSLParser parser = new GLSLParser();
-            GLSLShaderProgram vertexShaderProgram = parser.Parse(vertexShader);
-            parser = new GLSLParser();
-            GLSLShaderProgram fragmentShaderProgram = parser.Parse(fragmentShader);
+            GlslParser parser = new GlslParser();
+            GlslShaderProgram vertexShaderProgram = parser.Parse(vertexShader);
+            Node vertexNode = new Node(stage.Id, vertexInfo.Name, stage.DependsOn, stage.Type);
+            vertexNode.Inputs = vertexShaderProgram.Inputs;
+            vertexNode.Outputs = vertexShaderProgram.Outputs;
+            parser = new GlslParser();
+            GlslShaderProgram fragmentShaderProgram = parser.Parse(fragmentShader);
+            Node fragmentNode = new Node(stage.Id, fragmentInfo.Name, stage.DependsOn, stage.Type);
+            fragmentNode.Inputs = fragmentShaderProgram.Inputs;
+            fragmentNode.Outputs = fragmentShaderProgram.Outputs;
             
             Console.WriteLine(vertexShaderProgram.GetShaderCode());
             Console.WriteLine(fragmentShaderProgram.GetShaderCode());
@@ -47,6 +55,15 @@ public class ComposeCommand : Command<ComposeSettings>
             
             File.WriteAllText(output + vertexInfo.Name, vertexShaderProgram.GetShaderCode());
             File.WriteAllText(output + fragmentInfo.Name, fragmentShaderProgram.GetShaderCode());
+            
+            nodes.Add(vertexNode);
+            nodes.Add(fragmentNode);
+        }
+
+        if (settings.VerifyGraph)
+        {
+            GraphBuilder.Wire(nodes);
+            Console.WriteLine(GraphBuilder.AsMermaidGraph(nodes));
         }
         
         return 0;

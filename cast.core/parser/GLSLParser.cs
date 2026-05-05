@@ -12,12 +12,12 @@ using cast.core.visitor.configuration;
 
 namespace cast.core.parser
 {
-    public class GLSLParser
+    public class GlslParser
     {
         private readonly ErrorLogger _logger;
         private readonly Scope _scope;
 
-        public GLSLParser()
+        public GlslParser()
         {
             _scope = new Scope();
             _scope.Define(new SpaceSymbol("Model"));
@@ -42,7 +42,7 @@ namespace cast.core.parser
         /// Reads Cast Input Source and transpiles to GLSL
         /// </summary>
         /// <returns></returns>
-        public GLSLShaderProgram Parse(string castInput)
+        public GlslShaderProgram Parse(string castInput)
         {
             ICharStream rawStream = CharStreams.fromString(castInput);
             CastLexer lexer = new CastLexer(rawStream);
@@ -79,14 +79,19 @@ namespace cast.core.parser
                 logger.Print();
             }
 
-            GLSLShaderConfiguration configuration = new GLSLShaderConfiguration();
-            configuration.Version = int.Parse(glslMacroPreProcessor.Version);
+            GLSLShaderConfiguration configuration = new GLSLShaderConfiguration
+            {
+                Version = int.Parse(glslMacroPreProcessor.Version)
+            };
+            
             GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope);
-
-            return new GLSLShaderProgram()
+            return new GlslShaderProgram()
             {
                 Configuration = configuration,
                 Shader = glslPassVisitor.Visit(translationUnit),
+                Inputs = declarationPassVisitor.Inputs,
+                Outputs = declarationPassVisitor.Outputs,
+                Uniforms = declarationPassVisitor.Uniforms,
             };
         }
     }

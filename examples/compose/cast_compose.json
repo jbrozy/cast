@@ -9,14 +9,8 @@
     { 
       "id": "lighting", 
       "type": "fullscreen", 
-      "entry": "shaders/lighting", 
-      "depends_on": ["gbuffer"] 
-    },
-    { 
-      "id": "post", 
-      "type": "post_process", 
-      "entry": "shaders/post", 
-      "depends_on": ["lighting"] 
+      "entry": "shaders/lighting",
+	  "depends_on": ["gbuffer"]
     }
   ]
 }

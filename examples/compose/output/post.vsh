@@ -1,4 +1,4 @@
 #version 330
 
-in vec3 vPos;
+in vec3 a;
 void main(){}

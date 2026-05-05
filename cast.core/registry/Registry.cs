@@ -22,6 +22,15 @@ namespace cast.core.registry
             functions[name].Add((parameters, returnType));
         }
 
+        private static void Constructors()
+        {
+            RegisterFunction("vec2", "vec2", "float");
+            RegisterFunction("vec2", "vec2<T>", "float");
+            
+            RegisterFunction("vec2", "vec2", "float", "float");
+            RegisterFunction("vec2<T>", "vec2<T>", "float", "float");
+        }
+
         public static void Setup()
         {
             string[] vectors = { "vec2", "vec3", "vec4" };
@@ -227,7 +236,7 @@ namespace cast.core.registry
             return (lhsType, lhsSpaces);
         }
             
-        private static CastType t(IToken token,Scope scope, ErrorLogger logger, string left, string right, string op)
+        private static CastType t(IToken token, Scope scope, ErrorLogger logger, string left, string right, string op)
         {
             // mat4<T, U> * vec4<T> -> vec4<U>
             (string lhsType, string[] lhsParams) = ParseType(left);
