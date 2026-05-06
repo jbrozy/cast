@@ -495,7 +495,7 @@ namespace cast.core.visitor
                 }
             }
 
-            return builder.ToString() + ";";
+            return builder + ";";
         }
 
         public string VisitIdentifier_list(CastParser.Identifier_listContext context)
