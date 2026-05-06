@@ -225,8 +225,27 @@ namespace cast.core.registry
             RegisterFunction("texture", "vec4", "sampler3D", "vec3");
             RegisterFunction("texture", "vec4", "samplerCube", "vec3");
             
+            RegisterFunction("vec2", "vec2", "float");
+            RegisterFunction("vec2", "vec2", "float", "float");
+            RegisterFunction("vec2", "vec2", "vec3");
+            RegisterFunction("vec2", "vec2", "vec4");
             RegisterFunction("vec3", "vec3", "float");
+            RegisterFunction("vec3", "vec3", "float", "float", "float");
+            RegisterFunction("vec3", "vec3", "vec2", "float");
+            RegisterFunction("vec3", "vec3", "float", "vec2");
+            RegisterFunction("vec3", "vec3", "vec4");
+            RegisterFunction("vec4", "vec4", "float");
+
+            RegisterFunction("vec4", "vec4", "float", "float", "float", "float");
+
             RegisterFunction("vec4", "vec4", "vec3", "float");
+            RegisterFunction("vec4", "vec4", "float", "vec3");
+
+            RegisterFunction("vec4", "vec4", "vec2", "vec2");
+
+            RegisterFunction("vec4", "vec4", "vec2", "float", "float");
+            RegisterFunction("vec4", "vec4", "float", "vec2", "float");
+            RegisterFunction("vec4", "vec4", "float", "float", "vec2");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -301,6 +320,8 @@ namespace cast.core.registry
             foreach ((string[] fnParams, string returnType) in candidates)
             {
                 bool valid = fnParams.Length == parameters.Count;
+                if (fnParams.Length != parameters.Count) continue;
+                
                 for (int i = 0; i < fnParams.Length; ++i)
                 {
                     if (fnParams[i] != parameters[i].Type.Name) valid = false;

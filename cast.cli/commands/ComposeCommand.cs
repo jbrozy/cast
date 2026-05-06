@@ -35,29 +35,37 @@ public class ComposeCommand : Command<ComposeSettings>
 
             string fragmentShader = File.ReadAllText($"{composePath}/shaders/{fragmentInfo.Name}");
             string vertexShader = File.ReadAllText($"{composePath}/shaders/{vertexInfo.Name}");
-            
-            GlslParser parser = new GlslParser();
-            GlslShaderProgram vertexShaderProgram = parser.Parse(vertexShader);
-            Node vertexNode = new Node(stage.Id, vertexInfo.Name, stage.DependsOn, stage.Type);
-            vertexNode.Inputs = vertexShaderProgram.Inputs;
-            vertexNode.Outputs = vertexShaderProgram.Outputs;
-            parser = new GlslParser();
-            GlslShaderProgram fragmentShaderProgram = parser.Parse(fragmentShader);
-            Node fragmentNode = new Node(stage.Id, fragmentInfo.Name, stage.DependsOn, stage.Type);
-            fragmentNode.Inputs = fragmentShaderProgram.Inputs;
-            fragmentNode.Outputs = fragmentShaderProgram.Outputs;
-            
-            Console.WriteLine(vertexShaderProgram.GetShaderCode());
-            Console.WriteLine(fragmentShaderProgram.GetShaderCode());
 
-            string output = $"{composePath}/output/";
-            if (!Directory.Exists(output)) Directory.CreateDirectory(output);
+            try
+            {
+                
+                GlslParser parser = new GlslParser();
+                GlslShaderProgram vertexShaderProgram = parser.Parse(vertexShader);
+                Node vertexNode = new Node(stage.Id, vertexInfo.Name, stage.DependsOn, stage.Type);
+                vertexNode.Inputs = vertexShaderProgram.Inputs;
+                vertexNode.Outputs = vertexShaderProgram.Outputs;
+                parser = new GlslParser();
+                GlslShaderProgram fragmentShaderProgram = parser.Parse(fragmentShader);
+                Node fragmentNode = new Node(stage.Id, fragmentInfo.Name, stage.DependsOn, stage.Type);
+                fragmentNode.Inputs = fragmentShaderProgram.Inputs;
+                fragmentNode.Outputs = fragmentShaderProgram.Outputs;
             
-            File.WriteAllText(output + vertexInfo.Name, vertexShaderProgram.GetShaderCode());
-            File.WriteAllText(output + fragmentInfo.Name, fragmentShaderProgram.GetShaderCode());
+                Console.WriteLine(vertexShaderProgram.GetShaderCode());
+                Console.WriteLine(fragmentShaderProgram.GetShaderCode());
+
+                string output = $"{composePath}/output/";
+                if (!Directory.Exists(output)) Directory.CreateDirectory(output);
             
-            nodes.Add(vertexNode);
-            nodes.Add(fragmentNode);
+                File.WriteAllText(output + vertexInfo.Name, vertexShaderProgram.GetShaderCode());
+                File.WriteAllText(output + fragmentInfo.Name, fragmentShaderProgram.GetShaderCode());
+            
+                nodes.Add(vertexNode);
+                nodes.Add(fragmentNode);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         if (settings.VerifyGraph)
