@@ -345,31 +345,18 @@ namespace cast.core.visitor
             StringBuilder builder = new StringBuilder();
             if (context.primary_expression() != null)
             {
-                builder.Append(Visit(context.primary_expression()));
+                return Visit(context.primary_expression());
             }
-            if (context.integer_expression() != null)
+
+            if (context.function_call_parameters() != null)
             {
-                return Visit(context.integer_expression());
-            }
-            if (context.postfix_expression() != null)
-            {
-                builder.Append(Visit(context.postfix_expression()));
-                // indicates that this is a function call
-                // so we append the paremeters and the parenthesis
-                if (context.LEFT_PAREN() != null && context.RIGHT_PAREN() != null)
+                string functionName = context.type_specifier().type_specifier_nonarray().GetText();
+                List<string> parameters = new List<string>();
+                foreach (var parameterContext in context.function_call_parameters().assignment_expression())
                 {
-                    List<string> parameterList = new List<string>();
-                    if (context.function_call_parameters()?.assignment_expression() != null)
-                    {
-                        foreach (var param in context.function_call_parameters().assignment_expression())
-                        {
-                            parameterList.Add(Visit(param));
-                        }
-                    }
-                    
-                    string parameters = string.Join(", ", parameterList.ToArray());
-                    builder.Append($"({parameters})");
+                    parameters.Add(Visit(parameterContext));
                 }
+                builder.Append($"{functionName}({string.Join(", ", parameters)})");
             }
 
             return builder.ToString();
@@ -455,6 +442,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.constant_expression());
             }
+            
             if (context.unary_expression() != null)
             {
                 return Visit(context.unary_expression());
@@ -490,7 +478,24 @@ namespace cast.core.visitor
 
         public string VisitDeclaration(CastParser.DeclarationContext context)
         {
-            return Visit(context.init_declarator_list());
+            StringBuilder builder = new StringBuilder();
+            if (context.init_declarator_list() != null)
+            {
+                CastParser.Single_declarationContext declarationContext =
+                    context.init_declarator_list().single_declaration();
+                
+                string identifier = Visit(declarationContext.typeless_declaration());
+                
+                string type = Visit(declarationContext.fully_specified_type());
+                builder.Append($"{type} {identifier}");
+                if (declarationContext.typeless_declaration().initializer() != null)
+                {
+                    string initializer = Visit(declarationContext.typeless_declaration().initializer());
+                    builder.Append($" = {initializer}");
+                }
+            }
+
+            return builder.ToString() + ";";
         }
 
         public string VisitIdentifier_list(CastParser.Identifier_listContext context)
@@ -538,7 +543,13 @@ namespace cast.core.visitor
 
         public string VisitType_qualifier(CastParser.Type_qualifierContext context)
         {
-            throw new System.NotImplementedException();
+            List<string> qualifiers = new List<string>();
+            foreach (var qualifier in context.single_type_qualifier())
+            {
+                qualifiers.Add(qualifier.GetText());
+            }
+
+            return string.Join(" ", qualifiers);
         }
 
         public string VisitInitializer_list(CastParser.Initializer_listContext context)
@@ -591,20 +602,28 @@ namespace cast.core.visitor
 
         public string VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
         {
-            return string.Empty;
-            // StringBuilder builder = new StringBuilder();
-            // if (context.initializer() != null)
-            // {
-            //     builder.Append("=");
-            //     builder.Append(Visit(context.initializer()));
-            // }
-            // Console.WriteLine(builder.ToString());
-            // return builder.ToString();
+            StringBuilder builder = new StringBuilder();
+            builder.Append(context.IDENTIFIER().GetText());
+
+            if (context.array_specifier() != null)
+            {
+                builder.Append("[]");
+            }
+
+            return builder.ToString();
         }
 
         public string VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            if (context.type_qualifier() != null)
+            {
+                builder.Append($"{Visit(context.type_qualifier())} ");
+            }
+            
+            string type = context.type_specifier().type_specifier_nonarray().GetText();
+            builder.Append($"{type}");
+            return builder.ToString();
         }
 
         public string VisitSingle_type_qualifier(CastParser.Single_type_qualifierContext context)

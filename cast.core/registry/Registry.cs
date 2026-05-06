@@ -320,8 +320,7 @@ namespace cast.core.registry
             foreach ((string[] fnParams, string returnType) in candidates)
             {
                 bool valid = fnParams.Length == parameters.Count;
-                if (fnParams.Length != parameters.Count) continue;
-                
+                if (!valid) continue;
                 for (int i = 0; i < fnParams.Length; ++i)
                 {
                     if (fnParams[i] != parameters[i].Type.Name) valid = false;
