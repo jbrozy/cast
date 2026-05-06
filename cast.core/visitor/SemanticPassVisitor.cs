@@ -346,9 +346,7 @@ namespace cast.core.visitor
         {
             if (context.variable_identifier() != null)
             {
-                CastType id = Visit(context.variable_identifier());
-                Console.WriteLine($"debug: {context.GetText()}");
-                return id;
+                return Visit(context.variable_identifier());
             }
 
             if (context.INTCONSTANT() != null)
@@ -381,7 +379,18 @@ namespace cast.core.visitor
 
             if (context.type_specifier() != null)
             {
-                CastType specifier = Visit(context.type_specifier());
+            }
+
+            if (context.function_call_parameters() != null)
+            {
+                string functionName = context.type_specifier().type_specifier_nonarray().GetText();
+                List<CastType> parameters = new List<CastType>();
+                foreach (var parameterContext in context.function_call_parameters().assignment_expression())
+                {
+                    parameters.Add(Visit(parameterContext));
+                }
+                
+                return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
             }
             
             return CastType.ErrorType;
@@ -451,11 +460,6 @@ namespace cast.core.visitor
             
             if (context.binary_expression() != null)
             {
-                if (context.binary_expression().binary_expression() != null &&  context.binary_expression().binary_expression().Length == 2)
-                {
-                    var left = Visit(context.binary_expression().binary_expression(0));
-                    var right = Visit(context.binary_expression().binary_expression(1));
-                }
                 return Visit(context.binary_expression());
             }
 
@@ -463,20 +467,23 @@ namespace cast.core.visitor
             {
                 return Visit(context.assignment_expression());
             }
-
+            
             return default;
         }
 
         public CastType VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
-            if (context.unary_expression() != null)
-            {
-                Visit(context.unary_expression());
-            }
-
             if (context.assignment_expression() != null)
             {
-                Visit(context.assignment_expression());
+                CastType left = Visit(context.children[0]);
+                CastType right = Visit(context.children[2]);
+
+                return CastType.ErrorType;
+            }
+            
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
             }
 
             if (context.constant_expression() != null)
@@ -495,10 +502,14 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.children[2]);
                 
                 string op = context.children[1].ToString();
-                Console.WriteLine($"left: {context.children[0].GetText()}, right: {context.children[2].GetText()}, op: {op}");
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (eval == null) return CastType.ErrorType;
                 return eval;
+            }
+
+            if (context.unary_expression() != null)
+            {
+                return Visit(context.unary_expression());
             }
             
             return Visit(context.children[0]);
@@ -511,35 +522,25 @@ namespace cast.core.visitor
 
         public CastType VisitDeclaration(CastParser.DeclarationContext context)
         {
-            if (context.type_specifier() != null)
-            {
-                // Console.WriteLine("context.type_specifier() != null");
-            }
-            if (context.identifier_list() != null)
-            {
-                // Console.WriteLine("context.identifier_list() != null");
-            }
-            if (context.function_prototype() != null)
-            {
-                // Console.WriteLine("context.function_prototype() != null");
-            }
             if (context.init_declarator_list() != null)
             {
-                // Console.WriteLine("context.init_declarator_list() != null");
-                if (context.init_declarator_list().single_declaration() != null)
+                CastParser.Single_declarationContext declaration = context.init_declarator_list().single_declaration();
+                CastType type = Visit(declaration.fully_specified_type());
+
+                string left = declaration.typeless_declaration().IDENTIFIER().GetText();
+                if (declaration.typeless_declaration().initializer() != null)
                 {
-                    // Console.WriteLine("context.init_declarator_list().single_declaration() != null");
-                    return Visit(context.init_declarator_list().single_declaration());
+                    CastType initializer = Visit(declaration.typeless_declaration().initializer());
+                    if (!initializer.IsAssignable(type))
+                    {
+                        _logger.Log(context.Start, $"Unable to assign {initializer} to {type}");
+                        type = CastType.ErrorType;
+                    }
                 }
-                if (context.init_declarator_list().typeless_declaration() != null)
-                {
-                    // Console.WriteLine("context.init_declarator_list().typeless_declaration() != null");
-                    // foreach (var typelessDeclarationContext in context.init_declarator_list().typeless_declaration())
-                    // {
-                    //     Visit(typelessDeclarationContext);
-                    // }
-                }
+
+                _scope.Define(new VariableSymbol(left, type));
             }
+
             return default;
         }
 
@@ -586,6 +587,12 @@ namespace cast.core.visitor
 
         public CastType VisitInitializer(CastParser.InitializerContext context)
         {
+            // function call
+            if (context.RIGHT_BRACE() != null && context.LEFT_BRACE() != null)
+            {
+                Console.WriteLine(context.assignment_expression().constant_expression());
+            }
+            
             if (context.assignment_expression() != null)
             {
                 return Visit(context.assignment_expression());
@@ -660,7 +667,25 @@ namespace cast.core.visitor
 
         public CastType VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
         {
-            throw new System.NotImplementedException();
+            string type = context.type_specifier().type_specifier_nonarray().GetText();
+            if (_scope[type] == null)
+            {
+                _logger.Log(context.Start, $"Type '{type}' not found.");
+                return CastType.ErrorType;
+            }
+
+            TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
+            List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
+            if (context.type_specifier()?.space_specifier()?.space_definition_parameters() != null)
+            {
+                var spaces = context.type_specifier().space_specifier().space_definition_parameters().IDENTIFIER();
+                foreach (ITerminalNode space in spaces)
+                {
+                    spaceSymbols.Add(_scope[space.GetText()] as SpaceSymbol);
+                }
+            }
+            
+            return new CastType(typeSymbol, spaceSymbols);
         }
 
         public CastType VisitSingle_type_qualifier(CastParser.Single_type_qualifierContext context)

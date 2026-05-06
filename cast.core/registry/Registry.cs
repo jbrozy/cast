@@ -224,6 +224,9 @@ namespace cast.core.registry
             RegisterFunction("texture", "vec4", "sampler2D", "vec2");
             RegisterFunction("texture", "vec4", "sampler3D", "vec3");
             RegisterFunction("texture", "vec4", "samplerCube", "vec3");
+            
+            RegisterFunction("vec3", "vec3", "float");
+            RegisterFunction("vec4", "vec4", "vec3", "float");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -292,7 +295,6 @@ namespace cast.core.registry
 
         public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope)
         {
-            // TODO: handle geometric generics
             if (!functions.ContainsKey(name)) return CastType.ErrorType;
             List<(string[] Params, string returnType)> candidates = functions[name];
 
