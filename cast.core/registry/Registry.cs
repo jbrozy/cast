@@ -10,6 +10,11 @@ namespace cast.core.registry
 {
     public class Registry
     {
+        static Registry()
+        {
+            Setup();
+        }
+        
         private static Dictionary<string, List<(string[] Params, string returnType)>> functions = new Dictionary<string, List<(string[], string)>>();
 
         public static bool HasCandidates(string functionName)
@@ -26,16 +31,7 @@ namespace cast.core.registry
             
             functions[name].Add((parameters, returnType));
         }
-
-        private static void Constructors()
-        {
-            RegisterFunction("vec2", "vec2", "float");
-            RegisterFunction("vec2", "vec2<T>", "float");
-            
-            RegisterFunction("vec2", "vec2", "float", "float");
-            RegisterFunction("vec2<T>", "vec2<T>", "float", "float");
-        }
-
+        
         public static void Setup()
         {
             string[] vectors = { "vec2", "vec3", "vec4" };

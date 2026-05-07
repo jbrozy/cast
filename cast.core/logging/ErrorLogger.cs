@@ -14,6 +14,8 @@ namespace cast.core.logging
             int column = token.Column;
             errors.Add($"[Line {line}:{column}] Semantic Error: {message}");
         }
+        
+        public List<string> Errors => errors;
 
         public void Print()
         {

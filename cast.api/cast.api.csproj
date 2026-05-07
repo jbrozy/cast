@@ -19,4 +19,8 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\cast.api.core\cast.api.core.csproj" />
+    </ItemGroup>
+
 </Project>

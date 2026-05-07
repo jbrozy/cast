@@ -39,6 +39,11 @@ namespace cast.core.parser
             _logger = new ErrorLogger();
         }
 
+        public List<string> GetLogs()
+        {
+            return _logger.Errors;
+        }
+
         /// <summary>
         /// Reads Cast Input Source and transpiles to GLSL
         /// </summary>
@@ -67,17 +72,15 @@ namespace cast.core.parser
             CastParser mainParser = new CastParser(mainTokens);
             var translationUnit = mainParser.translation_unit();
 
-            ErrorLogger logger = new ErrorLogger();
-
-            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, logger);
+            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, _logger);
             declarationPassVisitor.Visit(translationUnit);
 
-            SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(_scope, logger);
+            SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(_scope, _logger);
             semanticPassVisitor.Visit(translationUnit);
 
-            if (logger.HasErrors)
+            if (_logger.HasErrors)
             {
-                logger.Print();
+                _logger.Print();
             }
 
             GLSLShaderConfiguration configuration = new GLSLShaderConfiguration

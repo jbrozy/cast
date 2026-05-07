@@ -1,47 +1,44 @@
 using System.Text.Json.Serialization;
+using cast.api.core;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
+builder.Services.AddSingleton<CompilationService>();
+
+// Nur für Minimal APIs konfigurieren
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy =>
+    {
+        // Erlaube dein Frontend (am besten 127.0.0.1 UND localhost angeben)
+        policy.WithOrigins("http://127.0.0.1:3000", "http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod(); 
+    });
+});
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+app.UseCors("frontend");
+app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationService service) =>
 {
-    app.MapOpenApi();
-}
-
-Todo[] sampleTodos =
-[
-    new(1, "Walk the dog"),
-    new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-    new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-    new(4, "Clean the bathroom"),
-    new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-];
-
-var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", () => sampleTodos)
-    .WithName("GetTodos");
-
-todosApi.MapGet("/{id}", Results<Ok<Todo>, NotFound> (int id) =>
-        sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-            ? TypedResults.Ok(todo)
-            : TypedResults.NotFound())
-    .WithName("GetTodoById");
+    Console.WriteLine(request.Input);
+    return service.Compile(request.Input);
+});
 
 app.Run();
 
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-[JsonSerializable(typeof(Todo[]))]
+[JsonSerializable(typeof(CompilationResult))]
+[JsonSerializable(typeof(CompilationRequest))]
+// WICHTIG: Wenn du einen Request-Body hast (z.B. ein CompilationRequest-Objekt), 
+// musst du das hier auch als [JsonSerializable(typeof(DeinRequest))] hinzufügen!
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }

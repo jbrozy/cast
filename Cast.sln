@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.cli", "cast.cli\cast.c
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.core", "cast.core\cast.core.csproj", "{3C692211-0E8D-470A-8B2A-5CA03AB775E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cast.api.core", "cast.api.core\cast.api.core.csproj", "{F3BA57BC-DD5A-487C-ACB7-7C31E8430C6A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,5 +34,9 @@ Global
 		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C692211-0E8D-470A-8B2A-5CA03AB775E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3BA57BC-DD5A-487C-ACB7-7C31E8430C6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3BA57BC-DD5A-487C-ACB7-7C31E8430C6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3BA57BC-DD5A-487C-ACB7-7C31E8430C6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3BA57BC-DD5A-487C-ACB7-7C31E8430C6A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
