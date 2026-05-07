@@ -383,7 +383,12 @@ namespace cast.core.visitor
 
             if (context.function_call_parameters() != null)
             {
-                string functionName = context.type_specifier().type_specifier_nonarray().GetText();
+                string functionName = context.type_specifier()?.type_specifier_nonarray()?.GetText();
+                // interpret functionName as expression, since its not a type
+                if (string.IsNullOrEmpty(functionName))
+                {
+                    functionName = context.postfix_expression().GetText();
+                }
                 List<CastType> parameters = new List<CastType>();
                 foreach (var parameterContext in context.function_call_parameters().assignment_expression())
                 {

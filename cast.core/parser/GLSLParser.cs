@@ -23,6 +23,7 @@ namespace cast.core.parser
             _scope.Define(new SpaceSymbol("Model"));
             _scope.Define(new SpaceSymbol("View"));
             _scope.Define(new SpaceSymbol("World"));
+            _scope.Define(new SpaceSymbol("Projection"));
             _scope.Define(new SpaceSymbol("Color"));
             
             _scope.Define(new TypeSymbol("vec4", 1, true));

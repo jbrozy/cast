@@ -64,7 +64,7 @@ public class ComposeCommand : Command<ComposeSettings>
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
             }
         }
 

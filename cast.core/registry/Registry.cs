@@ -12,6 +12,11 @@ namespace cast.core.registry
     {
         private static Dictionary<string, List<(string[] Params, string returnType)>> functions = new Dictionary<string, List<(string[], string)>>();
 
+        public static bool HasCandidates(string functionName)
+        {
+            return functions.ContainsKey(functionName);
+        }
+        
         private static void RegisterFunction(string name, string returnType, params string[] parameters)
         {
             if (!functions.ContainsKey(name))
@@ -162,6 +167,8 @@ namespace cast.core.registry
             RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
             RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
 
+            RegisterFunction("*", "mat4<T, V>", "mat4<U, V>", "mat4<T, U>");
+            
             RegisterFunction("+", "float", "float", "float");
             RegisterFunction("+", "int", "int", "int");
 
@@ -280,28 +287,35 @@ namespace cast.core.registry
                 
                 if (lhsParams.Length != fnLhsParams.Length) continue;
                 if (rhsParams.Length != fnRhsParams.Length) continue;
-
-                // add left spaces
-                for (int i = 0; i < lhsParams.Length; ++i)
+                
+                // add left side to dictionary
+                for (int i = 0; i < lhsParams.Length; i++)
                 {
                     s[fnLhsParams[i]] = lhsParams[i];
                 }
-                
-                // validate right side based on left side
-                bool valid = true;
+
                 for (int i = 0; i < rhsParams.Length; i++)
                 {
-                    if (s[fnRhsParams[i]] != rhsParams[i]) valid = false;
+                    // continue if left generic-key-value is unequal to right generic-key-value
+                    if (s.ContainsKey(fnRhsParams[i])) continue;
+                    s[fnRhsParams[i]] = rhsParams[i];
                 }
 
-                for (int i = 0; i < returnTypeParams.Length; i++)
+                List<SpaceSymbol> typeSpaces = new  List<SpaceSymbol>();
+                for(int i = 0; i < returnTypeParams.Length; i++)
                 {
-                    if (!s.ContainsKey(returnTypeParams[i])) valid = false;
+                    SpaceSymbol? symbol = scope[s[returnTypeParams[i]]] as SpaceSymbol;
+                    if (symbol == null)
+                    {
+                        logger.Log(token, $"Could not find {s[returnTypeParams[i]]} symbol for {s[fnRhsParams[i]]}");
+                    }
+                    else
+                    {
+                        typeSpaces.Add(symbol);
+                    }
                 }
-
-                if (!valid) continue;
+                
                 TypeSymbol? type = scope[returnTypeType] as TypeSymbol;
-                List<SpaceSymbol> typeSpaces = returnTypeParams.Select(c => scope[s[c]] as SpaceSymbol).ToList();
                 return new CastType(type, typeSpaces);
             }
 
@@ -317,15 +331,44 @@ namespace cast.core.registry
             if (!functions.ContainsKey(name)) return CastType.ErrorType;
             List<(string[] Params, string returnType)> candidates = functions[name];
 
+            Dictionary<string, string> genericParameters = new Dictionary<string, string>();
+            
             foreach ((string[] fnParams, string returnType) in candidates)
             {
                 bool valid = fnParams.Length == parameters.Count;
                 if (!valid) continue;
+
                 for (int i = 0; i < fnParams.Length; ++i)
                 {
-                    if (fnParams[i] != parameters[i].Type.Name) valid = false;
+                    (string expectedType, string[] leftGenerics) = ParseType(fnParams[i]);
+                    (string givenType, string[] rightGenerics) = ParseType(parameters[i].ToString());
+
+                    for (int j = 0; j < leftGenerics.Length; j++)
+                    {
+                        genericParameters.Add(leftGenerics[j], rightGenerics[j]);
+                    }
+
+                    if (expectedType != givenType)
+                    {
+                        genericParameters.Clear();
+                        valid = false;
+                        continue;
+                    }
                 }
 
+                if (genericParameters.Any())
+                {
+                    (string expected, string [] expectedParams) = ParseType(returnType);
+                    List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
+                    for (int i = 0; i < expectedParams.Length; ++i)
+                    {
+                        spaces.Add(scope[genericParameters[expectedParams[i]]] as SpaceSymbol);
+                    }
+                    TypeSymbol type = scope[expected] as TypeSymbol;
+                    CastType result = new CastType(type, spaces);
+                    return result;
+                }
+                
                 if (valid)
                 {
                     TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;

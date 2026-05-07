@@ -1,14 +1,14 @@
 {
   "name": "cast compose example",
   "stages": [
-    { 
-      "id": "gbuffer", 
-      "type": "geometry", 
-      "entry": "shaders/geometry" 
+    {
+      "id": "gbuffer",
+      "type": "geometry",
+	  "entry": "shaders/geometry"
     },
-    { 
-      "id": "lighting", 
-      "type": "fullscreen", 
+    {
+      "id": "lighting",
+      "type": "fullscreen",
       "entry": "shaders/lighting",
 	  "depends_on": ["gbuffer"]
     }

@@ -55,7 +55,7 @@ namespace cast.core.models
         public bool IsAssignable(CastType rhs)
         {
             // 1. Der Basis-Typ muss IMMER stimmen (vec4 kann nicht vec3 werden)
-            if (this.Type.Name != rhs.Type.Name) return false;
+            if (this.Type?.Name != rhs.Type?.Name) return false;
 
             // vec4<World> = vec4(...) -- upcast allowed
             // vec4 = vec4<World>(...) -- downcast is allowed
