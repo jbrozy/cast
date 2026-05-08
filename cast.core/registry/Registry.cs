@@ -328,10 +328,11 @@ namespace cast.core.registry
             List<(string[] Params, string returnType)> candidates = functions[name];
 
             Dictionary<string, string> genericParameters = new Dictionary<string, string>();
-            
+
+            bool valid = false;
             foreach ((string[] fnParams, string returnType) in candidates)
             {
-                bool valid = fnParams.Length == parameters.Count;
+                valid = fnParams.Length == parameters.Count;
                 if (!valid) continue;
 
                 for (int i = 0; i < fnParams.Length; ++i)
@@ -339,6 +340,11 @@ namespace cast.core.registry
                     (string expectedType, string[] leftGenerics) = ParseType(fnParams[i]);
                     (string givenType, string[] rightGenerics) = ParseType(parameters[i].ToString());
 
+                    if (leftGenerics.Length != rightGenerics.Length)
+                    {
+                        valid = false;
+                        continue;
+                    }
                     for (int j = 0; j < leftGenerics.Length; j++)
                     {
                         genericParameters.Add(leftGenerics[j], rightGenerics[j]);
@@ -352,7 +358,7 @@ namespace cast.core.registry
                     }
                 }
 
-                if (genericParameters.Any())
+                if (genericParameters.Any() && valid)
                 {
                     (string expected, string [] expectedParams) = ParseType(returnType);
                     List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
@@ -364,7 +370,7 @@ namespace cast.core.registry
                     CastType result = new CastType(type, spaces);
                     return result;
                 }
-                
+
                 if (valid)
                 {
                     TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;

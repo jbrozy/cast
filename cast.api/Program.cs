@@ -7,19 +7,16 @@ var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddSingleton<CompilationService>();
 
-// Nur für Minimal APIs konfigurieren
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("frontend", policy =>
     {
-        // Erlaube dein Frontend (am besten 127.0.0.1 UND localhost angeben)
-        policy.WithOrigins("http://127.0.0.1:3000", "http://localhost:3000")
+        policy.WithOrigins("http://127.0.0.1:3000", "http://localhost:3000", "http://87.106.28.73:3000")
             .AllowAnyHeader()
             .AllowAnyMethod(); 
     });
@@ -37,8 +34,6 @@ app.Run();
 
 [JsonSerializable(typeof(CompilationResult))]
 [JsonSerializable(typeof(CompilationRequest))]
-// WICHTIG: Wenn du einen Request-Body hast (z.B. ein CompilationRequest-Objekt), 
-// musst du das hier auch als [JsonSerializable(typeof(DeinRequest))] hinzufügen!
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }
