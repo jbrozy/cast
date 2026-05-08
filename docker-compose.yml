@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   backend:
+    container_name: cast
+    networks:
+      - proxy-network
     build: 
       context: .
       dockerfile: cast.api/Dockerfile
@@ -9,3 +12,6 @@ services:
       - "8080:8080"
       - "8081:8081"
     restart: unless-stopped
+networks:
+    proxy-network:
+      external: true

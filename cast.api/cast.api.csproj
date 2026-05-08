@@ -20,12 +20,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="www\**">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\cast.api.core\cast.api.core.csproj" />
     </ItemGroup>
 

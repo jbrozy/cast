@@ -31,7 +31,11 @@ app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationSe
     return service.Compile(request.Input);
 });
 
-Console.WriteLine(Path.Combine(builder.Environment.ContentRootPath, @"www"));
+app.UseDefaultFiles(new DefaultFilesOptions()
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, @"www")),
+    RequestPath = ""
+});
 
 app.UseStaticFiles(new StaticFileOptions()
 {
