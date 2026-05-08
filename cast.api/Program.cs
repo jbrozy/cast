@@ -33,7 +33,7 @@ app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationSe
 
 app.UseStaticFiles(new StaticFileOptions()
 {
-    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"www")),
+    FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, @"www")),
     RequestPath = new PathString("/editor")
 });
 
