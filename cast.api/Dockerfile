@@ -11,7 +11,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY ["cast.api/cast.api.csproj", "cast.api/"]
-COPY ["cast.api/web/index.html", "cast.api/web/index.html"]
+COPY ["cast.api/www/index.html", "cast.api/www/index.html"]
 COPY ["cast.api.core/cast.api.core.csproj", "cast.api.core/"]
 COPY ["cast.core/cast.core.csproj", "cast.core/"]
 

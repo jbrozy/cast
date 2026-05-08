@@ -31,10 +31,12 @@ app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationSe
     return service.Compile(request.Input);
 });
 
+Console.WriteLine(Path.Combine(builder.Environment.ContentRootPath, @"www"));
+
 app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, @"www")),
-    RequestPath = new PathString("/editor")
+    RequestPath = ""
 });
 
 app.Run();
