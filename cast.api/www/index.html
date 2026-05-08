@@ -321,7 +321,28 @@
                     spellcheck="false"
                     autocomplete="off"
                     autocorrect="off"
-                    autocapitalize="off"></textarea>
+                    autocapitalize="off">
+                    #version 330
+
+uniform sampler2D txt;
+
+void main() {
+	mat4<Model, World> modelWorld;
+	mat4<World, View>  worldView;
+	mat4<View, Projection> viewProjection;
+	
+	mat4<Model, Projection> modelProjection = viewProjection * worldView * modelWorld;
+	
+	vec4<Model> m;
+	vec4<Projection> p = modelProjection * m;
+	vec4<View> k = p;
+
+	mat4<Projection, Model> modelProjectionInverse = inverse(modelProjection);
+	vec4<Model> m2 = modelProjectionInverse * m;
+	vec4<World> w2 = m;
+
+	vec4<Model> data = texture(txt, vec2(1.0));
+}</textarea>
             </div>
         </div>
 
