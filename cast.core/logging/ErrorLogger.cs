@@ -12,7 +12,7 @@ namespace cast.core.logging
         {
             int line = token.Line;
             int column = token.Column;
-            errors.Add($"[Line {line}:{column}] Semantic Error: {message}");
+            errors.Add($"[Line {line + 1}:{column}] Semantic Error: {message}");
         }
         
         public List<string> Errors => errors;

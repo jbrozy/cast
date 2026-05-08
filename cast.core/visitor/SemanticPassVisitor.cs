@@ -647,13 +647,10 @@ namespace cast.core.visitor
             if (context.typeless_declaration() != null)
             {
                 CastType? eval = Visit(context.typeless_declaration());
-                if (eval != null && !eval.Equals(variableType))
+                if (eval != null && !eval.Equals(variableType) || eval != null && !eval.IsAssignable(variableType))
                 {
-                    if (!eval.IsAssignable(variableType))
-                    {
-                        string message = $"Unable to assign type '{eval.Type}' to '{context.fully_specified_type().GetText()}'";
-                        _logger.Log(context.Start, message);
-                    }
+                    string message = $"Unable to assign type '{eval.Type}' to '{context.fully_specified_type().GetText()}'";
+                    _logger.Log(context.Start, message);
                 }
             }
 
