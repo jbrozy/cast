@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using cast.api.core;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -28,6 +29,12 @@ app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationSe
 {
     Console.WriteLine(request.Input);
     return service.Compile(request.Input);
+});
+
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"www")),
+    RequestPath = new PathString("/editor")
 });
 
 app.Run();
