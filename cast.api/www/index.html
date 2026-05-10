@@ -524,8 +524,10 @@ void main() {
             if (!shaderFiles[stage]) return null;
             let current = shaderFiles[stage];
             for (let i of rest) {
-                if (current[i]) {
+                if (current && Array.isArray(current) && current[i]) {
                     current = current[i];
+                } else if (current && current.children && Array.isArray(current.children) && current.children[i]) {
+                    current = current.children[i];
                 } else {
                     return null;
                 }
@@ -875,22 +877,36 @@ void main() {
 
         // Datei auswählen
         function selectFile(path) {
-            saveCurrentFile(); // Speichere die aktuelle Datei vor dem Wechsel
-            currentPath = path;
-            renderFileList();
-            loadCurrentFile();
+            try {
+                saveCurrentFile();
+                currentPath = path;
+                const file = getFileByPath(currentPath);
+                if (!file) {
+                    console.error('File not found at path:', currentPath);
+                    return;
+                }
+                renderFileList();
+                loadCurrentFile();
+            } catch (error) {
+                console.error('Error selecting file:', error);
+            }
         }
 
-        // Aktuelle Datei laden
         function loadCurrentFile() {
-            const file = getFileByPath(currentPath);
-            if (file) {
-                codeEditor.value = file.content;
-                updateLineNumbers();
-                // Trigger compilation
-                codeEditor.dispatchEvent(new Event('input'));
+            try {
+                const file = getFileByPath(currentPath);
+                if (file) {
+                    codeEditor.value = file.content;
+                    updateLineNumbers();
+                    codeEditor.dispatchEvent(new Event('input'));
+                } else {
+                    console.warn('File not found for currentPath:', currentPath);
+                    codeEditor.value = '';
+                }
+                updateCurrentFileName();
+            } catch (error) {
+                console.error('Error loading current file:', error);
             }
-            updateCurrentFileName();
         }
 
         // Datei löschen
@@ -1053,7 +1069,7 @@ void main() {
             lineNumbersContainer.scrollTop = codeEditor.scrollTop;
         });
 
-        let debounceTimer;
+        let debounceTimer = null;
         codeEditor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -1086,11 +1102,13 @@ void main() {
 
         codeEditor.addEventListener('input', () => {
             updateLineNumbers();
-            saveCurrentFile(); // Speichere aktuelle Datei
+            saveCurrentFile();
             
-            clearTimeout(debounceTimer);
+            if (debounceTimer !== null) {
+                clearTimeout(debounceTimer);
+                debounceTimer = null;
+            }
             
-            // Loading-Status anzeigen
             loadingStatus.textContent = 'transpiling...';
             loadingStatus.style.display = 'inline-block';
             
