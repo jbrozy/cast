@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLSL Code Editor mit HTMX</title>
+    <title>Cast Editor</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
@@ -32,7 +32,6 @@
         }
 
         .pane {
-            flex: 1;
             background-color: #252526;
             display: flex;
             flex-direction: column;
@@ -41,6 +40,19 @@
 
         .pane:last-child {
             border-right: none;
+        }
+
+        .file-explorer {
+            width: 250px;
+            flex-shrink: 0;
+        }
+
+        .editor-pane {
+            flex: 1;
+        }
+
+        .output-pane {
+            flex: 1;
         }
 
         .editor-wrapper {
@@ -66,6 +78,27 @@
             box-sizing: border-box;
         }
 
+        .pane-footer {
+            padding: 8px;
+            border-top: 1px solid #3e3e42;
+            background-color: #2d2d30;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        #graph-btn {
+            padding: 4px 12px !important;
+            background: #1e88e5 !important;
+            color: white !important;
+            border: none !important;
+            cursor: pointer !important;
+            border-radius: 3px !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        
         #test-btn {
             padding: 4px 12px !important;
             background: #1e88e5 !important;
@@ -247,7 +280,7 @@
             border: 1px solid #e57373;
             border-radius: 4px;
             background-color: #3c2525;
-            overflow: hidden;
+            overflow: scroll;
         }
 
         .errors-header {
@@ -305,14 +338,122 @@
         .hljs-comment { color: #6a9955; }
         .hljs-attr { color: #9cdcfe; }
         .hljs-function { color: #dcdcaa; }
+
+        /* File Explorer Styles */
+        #file-list {
+            font-size: 12px;
+        }
+
+        .file-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            color: #cccccc;
+        }
+
+        .file-item:hover {
+            background-color: #37373d;
+        }
+
+        .file-item.active {
+            background-color: #094771;
+            color: #ffffff;
+        }
+
+        .file-item .file-icon {
+            margin-right: 6px;
+            font-size: 11px;
+        }
+
+        .file-item .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-item .delete-btn {
+            opacity: 0;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 2px;
+            border-radius: 2px;
+            width: 16px;
+            height: 16px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        .file-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .file-item .delete-btn:hover {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .file-item .add-fragment-btn {
+            opacity: 0;
+            margin-left: 4px;
+            background: none;
+            border: none;
+            color: #4caf50;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 2px;
+            border-radius: 2px;
+            font-weight: bold;
+            width: 16px;
+            height: 16px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        .file-item:hover .add-fragment-btn {
+            opacity: 1;
+        }
+
+        .file-item .add-fragment-btn:hover {
+            background-color: #4caf50;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         
-        <div class="pane">
-            <div class="pane-header">GLSL Code (Original Cast)</div>
+        <!-- Linkes Fenster: File Explorer -->
+        <div class="pane file-explorer">
+            <div class="pane-header">
+                <span>Shader Files</span>
+                <div>
+                    <button id="new-pass-btn" type="button" style="padding: 4px 8px; background: #1e88e5; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">New Pass</button>
+                    <button id="new-file-btn" type="button" style="padding: 4px 8px; background: #1e88e5; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">+</button>
+                </div>
+            </div>
+            <div id="file-list" style="flex: 1; overflow-y: auto; padding: 8px;">
+                <!-- Dateien werden hier dynamisch eingefügt -->
+            </div>
+            <div class="pane-footer">
+                <button id="export-btn" type="button" style="padding: 4px 8px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Export</button>
+                <button id="import-btn" type="button" style="padding: 4px 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Import</button>
+            </div>
+        </div>
+
+        <!-- Mittleres Fenster: Code Editor -->
+        <div class="pane editor-pane">
+            <div class="pane-header">
+                <span id="current-file-name">Cast Code</span>
+            </div>
             <div class="editor-wrapper">
                 <div class="line-numbers" id="editor-line-numbers"></div>
                 <textarea 
@@ -347,10 +488,13 @@ void main() {
         </div>
 
         <!-- Rechtes Fenster: Ausgabe vom Server -->
-        <div class="pane">
+        <div class="pane output-pane">
             <div class="pane-header">
                 <span>Compiled Result <span class="loading-indicator" id="loading-status"></span></span>
-                <button id="test-btn">Test</button>
+                <div>
+                    <button id="graph-btn">Visualize</button>
+                    <button id="test-btn">Test</button>
+                </div>
             </div>
             <div id="output-container">
                 <p style="color: #888;">The compilation result will be displayed here. Start by entering code in the left window.</p>
@@ -360,6 +504,497 @@ void main() {
     </div>
 
     <script>
+        let shaderFiles = {};
+        try {
+            const stored = localStorage.getItem('shaderFiles');
+            if (stored) {
+                shaderFiles = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.warn('Error loading shader files from localStorage:', e);
+            shaderFiles = {};
+        }
+        let currentPath = ['shadow', 0];
+
+        let fileList, newFileBtn, newPassBtn, currentFileNameEl;
+
+        function getFileByPath(path) {
+            if (path.length === 0) return null;
+            const [stage, ...rest] = path;
+            if (!shaderFiles[stage]) return null;
+            let current = shaderFiles[stage];
+            for (let i of rest) {
+                if (current[i]) {
+                    current = current[i];
+                } else {
+                    return null;
+                }
+            }
+            return current;
+        }
+
+        function updateCurrentFileName() {
+            const file = getFileByPath(currentPath);
+            if (file) {
+                currentFileNameEl.textContent = file.name;
+            } else {
+                currentFileNameEl.textContent = 'Cast Code';
+            }
+        }
+
+        function renderFileList(container = fileList, level = 0) {
+            if (level === 0) {
+                container.innerHTML = '';
+            }
+            const stages = Object.keys(shaderFiles).sort();
+            stages.forEach(stage => {
+                if (!shaderFiles[stage] || !Array.isArray(shaderFiles[stage])) {
+                    shaderFiles[stage] = [];
+                }
+                if (stage === 'shadow') return; // Shadow Pass nicht anzeigen
+                const stageItem = document.createElement('div');
+                stageItem.className = 'file-item';
+                stageItem.style.paddingLeft = `${level * 20 + 8}px`;
+                stageItem.innerHTML = `<span class="file-icon">📁</span><span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
+                container.appendChild(stageItem);
+                
+                renderStage(container, shaderFiles[stage], [stage], level + 1);
+            });
+            if (level === 0) {
+                updateCurrentFileName();
+            }
+        }
+
+        function renderStage(container, files, path, level) {
+            files.forEach((file, index) => {
+                const itemPath = path.concat(index);
+                const isActive = JSON.stringify(itemPath) === JSON.stringify(currentPath);
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${isActive ? 'active' : ''}`;
+                fileItem.style.paddingLeft = `${level * 20 + 8}px`;
+                let buttons = `<button class="delete-btn" onclick="deleteFile('${itemPath.join(',')}')">×</button>`;
+                if (file.name.endsWith('.vsh')) {
+                    buttons += `<button class="add-fragment-btn" title="Fragment Shader hinzufügen" onclick="addFragmentShader('${itemPath.join(',')}')">F</button>`;
+                }
+                let icon = '📄';
+                if (file.name.endsWith('.vsh')) {
+                    icon = '🔺'; // Vertex Shader Icon
+                } else if (file.name.endsWith('.fsh')) {
+                    icon = '🎨'; // Fragment Shader Icon
+                } else if (file.children && file.children.length > 0) {
+                    icon = '📁';
+                }
+                fileItem.innerHTML = `
+                    <span class="file-icon">${icon}</span>
+                    <span class="file-name">${file.name}</span>
+                    ${buttons}
+                `;
+                fileItem.onclick = () => selectFile(itemPath);
+                container.appendChild(fileItem);
+
+                if (file.children && file.children.length > 0) {
+                    renderStage(container, file.children, itemPath, level + 1);
+                }
+            });
+        }
+
+        function addFragmentShader(vertexPathStr) {
+            const parts = vertexPathStr.split(',');
+            const stage = parts[0];
+            const indices = parts.slice(1).map(Number);
+            const vertexPath = [stage, ...indices];
+            const vertexFile = getFileByPath(vertexPath);
+            if (!vertexFile || !vertexFile.name.endsWith('.vsh')) return;
+            
+            const baseName = vertexFile.name.replace('.vsh', '');
+            const fragmentName = baseName + '.fsh';
+            
+            if (vertexFile.children && vertexFile.children.some(child => child.name === fragmentName)) {
+                alert('Fragment Shader already exists for this vertex shader.');
+                return;
+            }
+            
+            const newFragment = {
+                name: fragmentName,
+                content: '#version 330\n\nvoid main() {\n    // Fragment shader code for ' + baseName + '\n}',
+                children: undefined
+            };
+            
+            if (!vertexFile.children) vertexFile.children = [];
+            vertexFile.children.push(newFragment);
+            
+            saveFiles();
+            renderFileList();
+        }
+
+        function importProject() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const importedData = JSON.parse(event.target.result);
+                            shaderFiles = importedData;
+                            saveFiles();
+                            renderFileList();
+                            // Setze currentPath auf erste verfügbare Datei
+                            const stages = Object.keys(shaderFiles).sort();
+                            if (stages.length > 0) {
+                                const firstStage = stages[0];
+                                if (shaderFiles[firstStage].length > 0) {
+                                    currentPath = [firstStage, 0];
+                                }
+                            }
+                            loadCurrentFile();
+                        } catch (error) {
+                            alert('Error importing: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Projekt exportieren
+        function exportProject() {
+            const exportData = {};
+            Object.keys(shaderFiles).forEach(stage => {
+                if (stage !== 'shadow') {
+                    exportData[stage] = shaderFiles[stage];
+                }
+            });
+            const dataStr = JSON.stringify(exportData, null, 2);
+            if (dataStr === '{}' || dataStr.length < 10) {
+                alert('No data to export found. Add files first.');
+                return;
+            }
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'shader-project.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function createNewFile(e) {
+            if (e) e.preventDefault();
+            const container = document.createElement('div');
+            container.style.cssText = 'padding: 8px; background: #2d2d30; border: 1px solid #3e3e42; margin: 4px 0;';
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Dateiname eingeben...';
+            nameInput.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            
+            const typeSelect = document.createElement('select');
+            typeSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            typeSelect.innerHTML = '<option value="vertex">Vertex Shader</option><option value="fragment">Fragment Shader</option>';
+            
+            const stageSelect = document.createElement('select');
+            stageSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            function populateStages() {
+                stageSelect.innerHTML = '';
+                Object.keys(shaderFiles).sort().forEach(stage => {
+                    const option = document.createElement('option');
+                    option.value = stage;
+                    option.textContent = stage.replace('_', ' ').toUpperCase();
+                    stageSelect.appendChild(option);
+                });
+            }
+            populateStages();
+            
+            const parentSelect = document.createElement('select');
+            parentSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            parentSelect.innerHTML = '<option value="">Kein Parent (Root)</option>';
+            
+            function populateParents() {
+                const selectedStage = stageSelect.value;
+                parentSelect.innerHTML = '<option value="">Kein Parent (Root)</option>';
+                if (shaderFiles[selectedStage]) {
+                    function addOptions(files, path = []) {
+                        files.forEach((file, index) => {
+                            if (file.children) {
+                                const option = document.createElement('option');
+                                option.value = path.concat(index).join(',');
+                                option.textContent = '  '.repeat(path.length) + file.name;
+                                parentSelect.appendChild(option);
+                                addOptions(file.children, path.concat(index));
+                            }
+                        });
+                    }
+                    addOptions(shaderFiles[selectedStage]);
+                }
+            }
+            stageSelect.addEventListener('change', populateParents);
+            populateParents();
+            
+            container.appendChild(nameInput);
+            container.appendChild(typeSelect);
+            container.appendChild(stageSelect);
+            container.appendChild(parentSelect);
+            
+            const buttons = document.createElement('div');
+            buttons.style.cssText = 'display: flex; gap: 4px;';
+            const okBtn = document.createElement('button');
+            okBtn.textContent = 'Erstellen';
+            okBtn.style.cssText = 'padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Abbrechen';
+            cancelBtn.style.cssText = 'padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            buttons.appendChild(okBtn);
+            buttons.appendChild(cancelBtn);
+            container.appendChild(buttons);
+            
+            fileList.appendChild(container);
+            nameInput.focus();
+            
+            const removeContainer = () => {
+                if (fileList.contains(container)) {
+                    fileList.removeChild(container);
+                }
+            };
+            
+            okBtn.onclick = () => {
+                let fileName = nameInput.value.trim();
+                const type = typeSelect.value;
+                const stage = stageSelect.value;
+                const parentPath = parentSelect.value ? parentSelect.value.split(',').map(Number) : null;
+                
+                if (fileName && stage) {
+                    fileName = fileName.replace(/\.(vsh|fsh)$/i, '');
+                    const extension = type === 'vertex' ? '.vsh' : '.fsh';
+                    const finalName = fileName + extension;
+                    
+                    if (!shaderFiles[stage]) shaderFiles[stage] = [];
+                    
+                    const newFile = {
+                        name: finalName,
+                        content: type === 'vertex' ? '#version 330\n\nvoid main() {\n    // Vertex shader code for ' + stage + '\n}' : '#version 330\n\nvoid main() {\n    // Fragment shader code for ' + stage + '\n}',
+                        children: type === 'vertex' ? [] : undefined
+                    };
+                    
+                    if (parentPath) {
+                        const parent = getFileByPath([stage, ...parentPath]);
+                        if (parent && parent.children) {
+                            parent.children.push(newFile);
+                        } else {
+                            shaderFiles[stage].push(newFile); // Fallback
+                        }
+                    } else {
+                        shaderFiles[stage].push(newFile);
+                    }
+                    
+                    saveFiles();
+                    renderFileList();
+                    removeContainer();
+                }
+            };
+            
+            cancelBtn.onclick = removeContainer;
+            
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') okBtn.click();
+                if (e.key === 'Escape') cancelBtn.click();
+            });
+        }
+
+        function createNewPass() {
+            const container = document.createElement('div');
+            container.style.cssText = 'padding: 8px; background: #2d2d30; border: 1px solid #3e3e42; margin: 4px 0;';
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Pass-Name eingeben...';
+            nameInput.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            
+            const typeSelect = document.createElement('select');
+            typeSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            typeSelect.innerHTML = `
+                <option value="shadow">Shadow Pass</option>
+                <option value="depth_only">Depth Only Pass</option>
+                <option value="geometry">Geometry Pass</option>
+                <option value="fullscreen">Fullscreen Pass</option>
+                <option value="forward">Forward Pass</option>
+                <option value="post_process">Post Process Pass</option>
+                <option value="custom">Custom Pass</option>
+            `;
+            
+            container.appendChild(nameInput);
+            container.appendChild(typeSelect);
+            
+            const buttons = document.createElement('div');
+            buttons.style.cssText = 'display: flex; gap: 4px;';
+            const okBtn = document.createElement('button');
+            okBtn.textContent = 'Erstellen';
+            okBtn.style.cssText = 'padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Abbrechen';
+            cancelBtn.style.cssText = 'padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            buttons.appendChild(okBtn);
+            buttons.appendChild(cancelBtn);
+            container.appendChild(buttons);
+            
+            fileList.appendChild(container);
+            nameInput.focus();
+            
+            const removeContainer = () => {
+                if (fileList.contains(container)) {
+                    fileList.removeChild(container);
+                }
+            };
+            
+            okBtn.onclick = () => {
+                const passName = nameInput.value.trim();
+                const passType = typeSelect.value;
+                
+                if (passName && !shaderFiles[passName]) {
+                    shaderFiles[passName] = [];
+                    saveFiles();
+                    renderFileList();
+                    removeContainer();
+                } else if (shaderFiles[passName]) {
+                    alert('Pass name already exists.');
+                }
+            };
+            
+            cancelBtn.onclick = removeContainer;
+            
+            nameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') okBtn.click();
+                if (e.key === 'Escape') cancelBtn.click();
+            });
+        }
+
+        // Datei auswählen
+        function selectFile(path) {
+            saveCurrentFile(); // Speichere die aktuelle Datei vor dem Wechsel
+            currentPath = path;
+            renderFileList();
+            loadCurrentFile();
+        }
+
+        // Aktuelle Datei laden
+        function loadCurrentFile() {
+            const file = getFileByPath(currentPath);
+            if (file) {
+                codeEditor.value = file.content;
+                updateLineNumbers();
+                // Trigger compilation
+                codeEditor.dispatchEvent(new Event('input'));
+            }
+            updateCurrentFileName();
+        }
+
+        // Datei löschen
+        function deleteFile(pathStr) {
+            const path = pathStr.split(',');
+            const stage = path[0];
+            const rest = path.slice(1).map(Number);
+            const file = getFileByPath(path);
+            if (confirm(`Delete "${file ? file.name : 'file'}"?`)) {
+                // Entferne aus der Struktur
+                function removeFrom(files, path) {
+                    if (path.length === 1) {
+                        files.splice(path[0], 1);
+                    } else {
+                        const parent = files[path[0]];
+                        if (parent && parent.children) {
+                            removeFrom(parent.children, path.slice(1));
+                        }
+                    }
+                }
+                removeFrom(shaderFiles[stage], rest);
+                
+                // Passe currentPath an
+                if (JSON.stringify(currentPath.slice(0, path.length)) === JSON.stringify(path)) {
+                    currentPath = ['shadow', 0]; // Fallback
+                }
+                
+                saveFiles();
+                renderFileList();
+                loadCurrentFile();
+            }
+        }
+
+        // Dateien speichern
+        function saveFiles() {
+            localStorage.setItem('shaderFiles', JSON.stringify(shaderFiles));
+        }
+
+        // Aktuelle Datei speichern (beim Bearbeiten)
+        function saveCurrentFile() {
+            const file = getFileByPath(currentPath);
+            if (file) {
+                file.content = codeEditor.value;
+                saveFiles();
+            }
+        }
+
+        // Event Listener für neue Datei
+        // onclick im HTML
+
+        // Event Listener für neuen Pass
+        // onclick im HTML
+
+        // Tastatur-Shortcuts für Dateiwechsel
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Tab') {
+                e.preventDefault();
+                const nextIndex = (currentFileIndex + 1) % shaderFiles.length;
+                selectFile(nextIndex);
+            } else if (e.ctrlKey && e.shiftKey && e.key === 'Tab') {
+                e.preventDefault();
+                const prevIndex = (currentFileIndex - 1 + shaderFiles.length) % shaderFiles.length;
+                selectFile(prevIndex);
+            }
+        });
+
+        window.onload = function() {
+            fileList = document.getElementById('file-list');
+            currentFileNameEl = document.getElementById('current-file-name');
+
+            // Setze onclick für Buttons
+            const newFileBtn = document.getElementById('new-file-btn');
+            const newPassBtn = document.getElementById('new-pass-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            if (newFileBtn) newFileBtn.onclick = createNewFile;
+            if (newPassBtn) newPassBtn.onclick = createNewPass;
+            if (exportBtn) exportBtn.onclick = exportProject;
+            if (importBtn) importBtn.onclick = importProject;
+
+            // Initialisierung: Falls keine Dateien vorhanden, erstelle eine Standarddatei
+            if (Object.keys(shaderFiles).length === 0) {
+                shaderFiles = {
+                    shadow: [{ name: 'main.vsh', content: codeEditor.value, children: [] }],
+                    depth_only: [],
+                    geometry: [],
+                    fullscreen: [],
+                    forward: [],
+                    post_process: []
+                };
+                currentPath = ['shadow', 0];
+                saveFiles();
+            } else {
+                // Stelle sicher, dass currentPath gültig ist
+                if (!getFileByPath(currentPath)) {
+                    currentPath = ['shadow', 0];
+                }
+            }
+
+            // Render initial file list
+            renderFileList();
+            loadCurrentFile();
+        };
+
         const DEBOUNCE_TIME_MS = 500;
         const API_ENDPOINT = '/api/compile';
         const TEST_ENDPOINT = '/api/test';
@@ -369,6 +1004,7 @@ void main() {
         const outputContainer = document.getElementById('output-container');
         const loadingStatus = document.getElementById('loading-status');
         const testBtn = document.getElementById('test-btn');
+        const visualizeButton = document.getElementById('graph-btn');
 
         // Test-Button Funktionalität
         testBtn.addEventListener('click', async () => {
@@ -450,6 +1086,7 @@ void main() {
 
         codeEditor.addEventListener('input', () => {
             updateLineNumbers();
+            saveCurrentFile(); // Speichere aktuelle Datei
             
             clearTimeout(debounceTimer);
             

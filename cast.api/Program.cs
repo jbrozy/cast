@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using cast.api.core;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -25,11 +26,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 app.UseCors("frontend");
-app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationService service) =>
-{
-    Console.WriteLine(request.Input);
-    return service.Compile(request.Input);
-});
+app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationService service) 
+    => service.Compile(request.Input));
 
 app.UseDefaultFiles(new DefaultFilesOptions()
 {

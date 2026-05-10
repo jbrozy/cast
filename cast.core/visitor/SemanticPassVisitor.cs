@@ -298,7 +298,54 @@ namespace cast.core.visitor
 
         public CastType VisitField_selection(CastParser.Field_selectionContext context)
         {
-            throw new System.NotImplementedException();
+            CastParser.Postfix_expressionContext parent = context.Parent as CastParser.Postfix_expressionContext;
+            if (parent == null)
+            {
+                
+            }
+
+            CastType left = CastType.ErrorType;
+            if (parent.postfix_expression() != null)
+            {
+                left = Visit(parent.postfix_expression());
+            }
+            if (parent.primary_expression() != null)
+            {
+                left = Visit(parent.primary_expression());
+            }
+            if (parent.integer_expression() != null)
+            {
+                left = Visit(parent.integer_expression());
+            }
+            string identifier = context.variable_identifier().GetText();
+
+            if (left.Type.Name.StartsWith("vec"))
+            {
+                int vectorSize = int.Parse(left.Type.Name.Substring(3));
+                if (identifier.Length > vectorSize)
+                {
+                    _logger.Log(context.Start, $"Unable to swizzle with '{identifier} on type {left}'");
+                }
+                else
+                {
+                    int swizzledSize = identifier.Length;
+                    
+                    // return float
+                    TypeSymbol newType;
+                    List<SpaceSymbol> spaces = left.Spaces;
+                    if (swizzledSize == 1)
+                    {
+                        newType = _scope["float"] as TypeSymbol;
+                    }
+                    else
+                    {
+                        newType = _scope[$"vec{swizzledSize}"] as TypeSymbol;
+                    }
+                    return new CastType(newType, spaces);
+                }
+            }
+            
+            return CastType.ErrorType;
         }
 
         public CastType VisitFunction_identifier(CastParser.Function_identifierContext context)
@@ -372,13 +419,19 @@ namespace cast.core.visitor
 
         public CastType VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
+            if (context.field_selection() != null)
+            {
+                return Visit(context.field_selection());
+            }
+            
             if (context.primary_expression() != null)
             {
                 return Visit(context.primary_expression());
             }
 
-            if (context.type_specifier() != null)
+            if (context.integer_expression() != null)
             {
+                return Visit(context.integer_expression());
             }
 
             if (context.function_call_parameters() != null)

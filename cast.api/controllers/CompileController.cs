@@ -12,6 +12,13 @@ public class CompileController : ControllerBase
     {
         _compilationService = compilationService;
     }
+    
+    [HttpPost]
+    [Produces("application/json")]
+    public CompilationResult Graph(string[] input)
+    {
+        return new CompilationResult();
+    }
 
     [HttpPost]
     [Produces("application/json")]
