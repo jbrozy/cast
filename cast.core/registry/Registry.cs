@@ -10,11 +10,6 @@ namespace cast.core.registry
 {
     public class Registry
     {
-        static Registry()
-        {
-            Setup();
-        }
-        
         private static Dictionary<string, List<(string[] Params, string returnType)>> functions = new Dictionary<string, List<(string[], string)>>();
 
         public static bool HasCandidates(string functionName)
@@ -148,6 +143,8 @@ namespace cast.core.registry
             RegisterFunction("*", "uint", "uint", "uint");
 
             RegisterFunction("*", "vec2<T>", "vec2<T>", "float");
+            RegisterFunction("*", "vec3", "vec3", "float");
+            RegisterFunction("*", "vec3", "vec3", "vec3");
             RegisterFunction("*", "vec3<T>", "vec3<T>", "float");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "float");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4");
@@ -163,6 +160,9 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2<U>", "mat2<T, U>", "vec2<T>");
             RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
             RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
+            RegisterFunction("/", "vec3", "vec3", "float");
+            RegisterFunction("/", "vec3", "vec3", "vec3");
+            RegisterFunction("-", "vec3", "vec3", "vec3");
 
             RegisterFunction("*", "mat4<T, V>", "mat4<U, V>", "mat4<T, U>");
             
@@ -184,6 +184,8 @@ namespace cast.core.registry
 
             RegisterFunction("-", "float", "float", "float");
             RegisterFunction("-", "int", "int", "int");
+            RegisterFunction("-", "vec3", "float", "vec3");
+            RegisterFunction("-", "vec3<T>", "float", "vec3<T>");
 
             RegisterFunction("-", "vec2<T>", "vec2<T>", "vec2<T>");
             RegisterFunction("-", "vec3<T>", "vec3<T>", "vec3<T>");
@@ -241,6 +243,10 @@ namespace cast.core.registry
             RegisterFunction("vec3", "vec3", "float", "vec2");
             RegisterFunction("vec3", "vec3", "vec4");
             RegisterFunction("vec4", "vec4", "float");
+            
+            RegisterFunction("vec3", "vec3", "float");
+            
+            RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
 
             RegisterFunction("vec4", "vec4", "float", "float", "float", "float");
 
@@ -266,8 +272,7 @@ namespace cast.core.registry
         }
             
         private static CastType t(IToken token, Scope scope, ErrorLogger logger, string left, string right, string op)
-        {
-            // mat4<T, U> * vec4<T> -> vec4<U>
+        { // mat4<T, U> * vec4<T> -> vec4<U>
             (string lhsType, string[] lhsParams) = ParseType(left);
             (string rhsType, string[] rhsParams) = ParseType(right);
 
@@ -319,9 +324,9 @@ namespace cast.core.registry
                 return new CastType(type, typeSpaces);
             }
 
-            string functionCandidates = string.Join("\n", candidates.Select(c => $"     ({string.Join(", ", c.Params)}) -> {c.returnType}"));
-            string message = $"Unable to find function '{op}' with params ['{left}', '{right}'], \n candidates are: \n{functionCandidates}";
-            logger.Log(token, message);
+            // string functionCandidates = string.Join("\n", candidates.Select(c => $"     ({string.Join(", ", c.Params)}) -> {c.returnType}"));
+            // string message = $"Unable to find function '{op}' with params ['{left}', '{right}'], \n candidates are: \n{functionCandidates}";
+            // logger.Log(token, message);
             
             return CastType.ErrorType;
         }
@@ -351,7 +356,7 @@ namespace cast.core.registry
                     }
                     for (int j = 0; j < leftGenerics.Length; j++)
                     {
-                        genericParameters.Add(leftGenerics[j], rightGenerics[j]);
+                        if (!genericParameters.ContainsKey(leftGenerics[j])) genericParameters.Add(leftGenerics[j], rightGenerics[j]);
                     }
 
                     if (expectedType != givenType)

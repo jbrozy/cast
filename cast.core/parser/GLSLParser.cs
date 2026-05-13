@@ -19,6 +19,7 @@ namespace cast.core.parser
         public GlslParser()
         {
             _scope = new Scope();
+            _scope.Define(new SpaceSymbol("Screen"));
             _scope.Define(new SpaceSymbol("Local"));
             _scope.Define(new SpaceSymbol("Model"));
             _scope.Define(new SpaceSymbol("View"));

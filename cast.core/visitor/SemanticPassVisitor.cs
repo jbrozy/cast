@@ -136,6 +136,15 @@ namespace cast.core.visitor
         {
             if (context.RETURN() != null)
             {
+                if (context.expression() == null)
+                {
+                    TypeSymbol voidType = _scope["void"] as TypeSymbol;
+                    return new CastType(voidType, null)
+                    {
+                        IsReturn = true
+                    };
+                }
+                Console.WriteLine(context.expression().GetText());
                 CastType returnValue = Visit(context.expression());
                 returnValue.IsReturn = true;
                 return returnValue;
@@ -165,7 +174,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.expression_statement());
             }
-
+            
             return default;
         }
 
@@ -200,7 +209,7 @@ namespace cast.core.visitor
         {
             if (context.compound_statement() != null)
             {
-                Visit(context.compound_statement());
+                return Visit(context.compound_statement());
             }
 
             if (context.simple_statement() != null)
@@ -246,11 +255,13 @@ namespace cast.core.visitor
                 if (context.function_prototype().function_parameters() != null)
                 {
                     foreach (var parameterDeclarationContext in context.function_prototype()
-                                 .function_parameters()
-                                 .parameter_declaration())
+                                 .function_parameters().parameter_declaration())
                     {
                         string name = parameterDeclarationContext.parameter_declarator().IDENTIFIER().GetText();
-                        // _scope.Define(new TypeSymbol(name))
+                        CastType param = Visit(parameterDeclarationContext.parameter_declarator());
+                        VariableSymbol parameterSymbol = new VariableSymbol(name, param);
+                        _scope.Define(parameterSymbol);
+                        function.AddParameter(name, param);
                     }
                 }
                 
@@ -282,9 +293,14 @@ namespace cast.core.visitor
 
         public CastType VisitVariable_identifier(CastParser.Variable_identifierContext context)
         {
-            string identifier = context.IDENTIFIER().GetText();
+            string identifier = context.GetChild(0).GetText();
             AbstractSymbol symbol = _scope[identifier];
 
+            if (identifier == "geometrySchlickGGX")
+            {
+                Console.WriteLine("debug");
+            }
+            
             if (symbol is VariableSymbol variable) return variable.Type;
             if (symbol is FunctionSymbol function) return function.ReturnType();
             
@@ -299,11 +315,6 @@ namespace cast.core.visitor
         public CastType VisitField_selection(CastParser.Field_selectionContext context)
         {
             CastParser.Postfix_expressionContext parent = context.Parent as CastParser.Postfix_expressionContext;
-            if (parent == null)
-            {
-                
-            }
-
             CastType left = CastType.ErrorType;
             if (parent.postfix_expression() != null)
             {
@@ -396,6 +407,11 @@ namespace cast.core.visitor
                 return Visit(context.variable_identifier());
             }
 
+            if (context.expression() != null)
+            {
+                return Visit(context.expression());
+            }
+
             if (context.INTCONSTANT() != null)
             {
                 TypeSymbol s = _scope["int"] as TypeSymbol;
@@ -447,8 +463,19 @@ namespace cast.core.visitor
                 {
                     parameters.Add(Visit(parameterContext));
                 }
+
+                if (_scope[functionName] != null)
+                {
+                    if (_scope[functionName] is FunctionSymbol function)
+                        return function.ReturnType();
+                }
                 
                 return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+            }
+
+            if (context.postfix_expression() != null)
+            {
+                return Visit(context.postfix_expression());
             }
             
             return CastType.ErrorType;
@@ -533,10 +560,7 @@ namespace cast.core.visitor
         {
             if (context.assignment_expression() != null)
             {
-                CastType left = Visit(context.children[0]);
-                CastType right = Visit(context.children[2]);
-
-                return CastType.ErrorType;
+                return Visit(context.assignment_expression());
             }
             
             if (context.unary_expression() != null)
@@ -556,12 +580,16 @@ namespace cast.core.visitor
         {
             if (context.ChildCount == 3)
             {
-                CastType? left = Visit(context.children[0]);
-                CastType? right = Visit(context.children[2]);
+                CastType? left = Visit(context.binary_expression(0));
+                CastType? right = Visit(context.binary_expression(1));
                 
                 string op = context.children[1].ToString();
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
-                if (eval == null) return CastType.ErrorType;
+                if (Equals(eval, CastType.ErrorType))
+                {
+                    Console.WriteLine($"left: {left}, right: {right}, op: {op}, expression: {context.GetText()}");
+                    return CastType.ErrorType;
+                }
                 return eval;
             }
 
@@ -592,10 +620,16 @@ namespace cast.core.visitor
                 }
                 if (declaration.typeless_declaration().initializer() != null)
                 {
-                    CastType initializer = Visit(declaration.typeless_declaration());
-                    if (!initializer.IsAssignable(type))
+                    CastParser.InitializerContext initializer = declaration.typeless_declaration().initializer();
+                    CastType initializerType = CastType.ErrorType;
+                    if (initializer != null)
                     {
-                        _logger.Log(context.Start, $"Unable to assign {initializer} to {type}");
+                        initializerType = Visit(initializer);
+                    }
+                    if (!initializerType.IsAssignable(type))
+                    {
+                        Console.WriteLine(initializer.GetText());
+                        _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
                         type = CastType.ErrorType;
                     }
                 }
@@ -623,7 +657,10 @@ namespace cast.core.visitor
 
         public CastType VisitParameter_declarator(CastParser.Parameter_declaratorContext context)
         {
-            throw new System.NotImplementedException();
+            CastParser.Type_specifierContext typeSpecifierContext = context.type_specifier();
+            CastType typeSpecifier = Visit(typeSpecifierContext);
+            
+            return typeSpecifier;
         }
 
         public CastType VisitParameter_declaration(CastParser.Parameter_declarationContext context)
@@ -633,7 +670,14 @@ namespace cast.core.visitor
 
         public CastType VisitParameter_type_specifier(CastParser.Parameter_type_specifierContext context)
         {
-            throw new System.NotImplementedException();
+            CastType returnType = CastType.ErrorType;
+
+            if (context.type_specifier() != null)
+            {
+                returnType = Visit(context.type_specifier());
+            }
+
+            return returnType;
         }
 
         public CastType VisitType_qualifier(CastParser.Type_qualifierContext context)

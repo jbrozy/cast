@@ -327,11 +327,6 @@ namespace cast.core.visitor
             {
                 return Visit(context.FLOATCONSTANT());
             }
-            
-            if (context.expression() != null)
-            {
-                return Visit(context);
-            }
 
             if (context.variable_identifier() != null)
             {

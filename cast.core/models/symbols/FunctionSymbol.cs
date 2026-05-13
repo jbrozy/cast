@@ -7,7 +7,7 @@ namespace cast.core.models.symbols
     public class FunctionSymbol : AbstractSymbol
     {
         private readonly Dictionary<string, CastType> _parameters;
-        private readonly CastType _returnType;
+        private readonly CastType _returnType = new CastType(new TypeSymbol("void", 0, false));
         
         private Scope _scope { get; set; }
         
@@ -39,6 +39,11 @@ namespace cast.core.models.symbols
         public CastType ReturnType()
         {
             return _returnType;
+        }
+
+        public void AddParameter(string name, CastType type)
+        {
+            _parameters.Add(name, type);
         }
     }
 }
