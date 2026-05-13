@@ -150,6 +150,7 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2<T>", "vec2<T>", "float");
             RegisterFunction("*", "vec3<T>", "vec3<T>", "float");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "float");
+            RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4");
             
             RegisterFunction("*", "vec2<T>", "float", "vec2<T>");
             RegisterFunction("*", "vec3<T>", "float", "vec3<T>");
@@ -174,6 +175,8 @@ namespace cast.core.registry
 
             RegisterFunction("+", "vec2<T>", "vec2<T>", "float");
             RegisterFunction("+", "vec3<T>", "vec3<T>", "float");
+            RegisterFunction("+", "vec3", "vec3", "vec3");
+            RegisterFunction("+", "vec3<T>", "vec3<T>", "vec3");
             RegisterFunction("+", "vec4<T>", "vec4<T>", "float");
             RegisterFunction("+", "vec2<T>", "float", "vec2<T>");
             RegisterFunction("+", "vec3<T>", "float", "vec3<T>");
@@ -245,6 +248,7 @@ namespace cast.core.registry
             RegisterFunction("vec4", "vec4", "float", "vec3");
 
             RegisterFunction("vec4", "vec4", "vec2", "vec2");
+            RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
 
             RegisterFunction("vec4", "vec4", "vec2", "float", "float");
             RegisterFunction("vec4", "vec4", "float", "vec2", "float");

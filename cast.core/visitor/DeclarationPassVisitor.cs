@@ -453,13 +453,9 @@ namespace cast.core.visitor
             Modifier modifier = Modifier.NONE;
             if (!string.IsNullOrEmpty(qualifier))
             {
-                if (!Enum.TryParse(qualifier, true, out modifier))
-                {
-                    throw new Exception($"Qualifier '{qualifier}' is invalid.");
-                }
+                if (!Enum.TryParse(qualifier, true, out modifier)) ;
             }
 
-        
             CastType type = new CastType(typeSymbol, spaceSymbols);
             VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
             

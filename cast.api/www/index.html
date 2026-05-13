@@ -445,7 +445,8 @@
             </div>
             <div class="pane-footer">
                 <button id="export-btn" type="button" style="padding: 4px 8px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Export</button>
-                <button id="import-btn" type="button" style="padding: 4px 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Import</button>
+                <button id="import-btn" type="button" style="padding: 4px 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Import</button>
+                <button id="reset-btn" type="button" style="padding: 4px 8px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Reset Storage</button>
             </div>
         </div>
 
@@ -462,32 +463,9 @@
                     spellcheck="false"
                     autocomplete="off"
                     autocorrect="off"
-                    autocapitalize="off">
-#version 330
-
-uniform sampler2D txt;
-
-void main() {
-	mat4<Model, World> modelWorld;
-	mat4<World, View>  worldView;
-	mat4<View, Projection> viewProjection;
-	
-	mat4<Model, Projection> modelProjection = viewProjection * worldView * modelWorld;
-	
-	vec4<Model> m;
-	vec4<Projection> p = modelProjection * m;
-	vec4<View> k = p;
-
-	mat4<Projection, Model> modelProjectionInverse = inverse(modelProjection);
-	vec4<Model> m2 = modelProjectionInverse * m;
-	vec4<World> w2 = m;
-
-	vec4<Model> data = texture(txt, vec2(1.0));
-}</textarea>
+                    autocapitalize="off"></textarea>
             </div>
         </div>
-
-        <!-- Rechtes Fenster: Ausgabe vom Server -->
         <div class="pane output-pane">
             <div class="pane-header">
                 <span>Compiled Result <span class="loading-indicator" id="loading-status"></span></span>
@@ -514,7 +492,7 @@ void main() {
             console.warn('Error loading shader files from localStorage:', e);
             shaderFiles = {};
         }
-        let currentPath = ['shadow', 0];
+        let currentPath = null;
 
         let fileList, newFileBtn, newPassBtn, currentFileNameEl;
 
@@ -553,13 +531,13 @@ void main() {
                 if (!shaderFiles[stage] || !Array.isArray(shaderFiles[stage])) {
                     shaderFiles[stage] = [];
                 }
-                if (stage === 'shadow') return; // Shadow Pass nicht anzeigen
+
                 const stageItem = document.createElement('div');
                 stageItem.className = 'file-item';
                 stageItem.style.paddingLeft = `${level * 20 + 8}px`;
                 stageItem.innerHTML = `<span class="file-icon">📁</span><span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
                 container.appendChild(stageItem);
-                
+
                 renderStage(container, shaderFiles[stage], [stage], level + 1);
             });
             if (level === 0) {
@@ -982,33 +960,36 @@ void main() {
             const newPassBtn = document.getElementById('new-pass-btn');
             const exportBtn = document.getElementById('export-btn');
             const importBtn = document.getElementById('import-btn');
+            const resetBtn = document.getElementById('reset-btn');
             if (newFileBtn) newFileBtn.onclick = createNewFile;
             if (newPassBtn) newPassBtn.onclick = createNewPass;
             if (exportBtn) exportBtn.onclick = exportProject;
             if (importBtn) importBtn.onclick = importProject;
+            if (resetBtn) resetBtn.onclick = () => {
+                if (confirm('Are you sure you want to reset all stored data? This cannot be undone.')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            };
 
             // Initialisierung: Falls keine Dateien vorhanden, erstelle eine Standarddatei
-            if (Object.keys(shaderFiles).length === 0) {
-                shaderFiles = {
-                    shadow: [{ name: 'main.vsh', content: codeEditor.value, children: [] }],
-                    depth_only: [],
-                    geometry: [],
-                    fullscreen: [],
-                    forward: [],
-                    post_process: []
-                };
-                currentPath = ['shadow', 0];
-                saveFiles();
-            } else {
-                // Stelle sicher, dass currentPath gültig ist
-                if (!getFileByPath(currentPath)) {
-                    currentPath = ['shadow', 0];
+            // Stelle sicher, dass currentPath gültig ist
+            if (Object.keys(shaderFiles).length > 0) {
+                // Wenn Dateien vorhanden, setze currentPath auf die erste verfügbare Datei
+                const stages = Object.keys(shaderFiles).sort();
+                if (stages.length > 0) {
+                    const firstStage = stages[0];
+                    if (shaderFiles[firstStage].length > 0) {
+                        currentPath = [firstStage, 0];
+                    }
                 }
             }
 
             // Render initial file list
             renderFileList();
-            loadCurrentFile();
+            if (currentPath) {
+                loadCurrentFile();
+            }
         };
 
         const DEBOUNCE_TIME_MS = 500;
@@ -1070,6 +1051,7 @@ void main() {
         });
 
         let debounceTimer = null;
+        let abortController = null;
         codeEditor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -1109,6 +1091,11 @@ void main() {
                 debounceTimer = null;
             }
             
+            if (abortController !== null) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+            
             loadingStatus.textContent = 'transpiling...';
             loadingStatus.style.display = 'inline-block';
             
@@ -1124,7 +1111,8 @@ void main() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ Input: code })
+                    body: JSON.stringify({ Input: code }),
+                    signal: abortController.signal
                 })
                 .then(response => {
                     console.log('Response status:', response.status);
@@ -1139,7 +1127,7 @@ void main() {
                         data.errors.forEach(err => {
                             const match = err.match(/\[Line (\d+):/);
                             if (match) {
-                                const lineNum = parseInt(match[1]) + 1;
+                                const lineNum = parseInt(match[1]);
                                 errorMap[lineNum] = err;
                             }
                         });
@@ -1192,7 +1180,7 @@ void main() {
                             const match = err.match(/\[Line (\d+):(\d+)\]\s*(.*)/);
                             if (match) {
                                 const [, line, column, rest] = match;
-                                return `<li><strong>Line Nr: ${(parseInt(line) + 1)}:${column}</strong><br>${htmlEscape(rest)}</li>`;
+                                return `<li><strong>Line Nr: ${(parseInt(line))}:${column}</strong><br>${htmlEscape(rest)}</li>`;
                             }
                             return `<li>${err}</li>`;
                         }).join('');
@@ -1214,6 +1202,10 @@ void main() {
                     }, 2000);
                 })
                 .catch(error => {
+                    if (error.name === 'AbortError') {
+                        console.log('Compile request aborted due to new input.');
+                        return;
+                    }
                     console.error('❌ Compile request failed:', error);
                     loadingStatus.textContent = '❌ Error';
                     outputContainer.innerHTML = '<p style="color: #ff6b6b;">❌ Error while compiling!<br>' + error.message + '<br><br>Make sure the backend server is running on port 5264.</p>';

@@ -287,7 +287,7 @@ namespace cast.core.visitor
 
             if (symbol is VariableSymbol variable) return variable.Type;
             if (symbol is FunctionSymbol function) return function.ReturnType();
-
+            
             return CastType.ErrorType;
         }
 
@@ -570,7 +570,7 @@ namespace cast.core.visitor
                 return Visit(context.unary_expression());
             }
             
-            return Visit(context.children[0]);
+            return CastType.ErrorType;
         }
 
         public CastType VisitAssignment_operator(CastParser.Assignment_operatorContext context)
@@ -585,10 +585,14 @@ namespace cast.core.visitor
                 CastParser.Single_declarationContext declaration = context.init_declarator_list().single_declaration();
                 CastType type = Visit(declaration.fully_specified_type());
 
-                string left = declaration.typeless_declaration().IDENTIFIER().GetText();
+                string left = declaration.typeless_declaration()?.IDENTIFIER()?.GetText();
+                if (string.IsNullOrEmpty(left))
+                {
+                    return CastType.ErrorType;
+                }
                 if (declaration.typeless_declaration().initializer() != null)
                 {
-                    CastType initializer = Visit(declaration.typeless_declaration().initializer());
+                    CastType initializer = Visit(declaration.typeless_declaration());
                     if (!initializer.IsAssignable(type))
                     {
                         _logger.Log(context.Start, $"Unable to assign {initializer} to {type}");

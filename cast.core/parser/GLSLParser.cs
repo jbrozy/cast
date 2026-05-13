@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Antlr4.Runtime;
 using cast.core.logging;
 using cast.core.models;
 using cast.core.models.symbols;
 using cast.core.parser.programs;
-using cast.core.registry;
 using cast.core.visitor;
 using cast.core.visitor.configuration;
 
@@ -20,6 +19,7 @@ namespace cast.core.parser
         public GlslParser()
         {
             _scope = new Scope();
+            _scope.Define(new SpaceSymbol("Local"));
             _scope.Define(new SpaceSymbol("Model"));
             _scope.Define(new SpaceSymbol("View"));
             _scope.Define(new SpaceSymbol("World"));
@@ -52,8 +52,12 @@ namespace cast.core.parser
         {
             ICharStream rawStream = CharStreams.fromString(castInput);
             CastLexer lexer = new CastLexer(rawStream);
+            lexer.RemoveErrorListeners();
+            // lexer.AddErrorListener(new CastErrorListener(_logger));
             CommonTokenStream commonTokenStream = new CommonTokenStream(lexer, CastLexer.DIRECTIVES);
             CastPreParser castPreParser = new CastPreParser(commonTokenStream);
+            castPreParser.RemoveErrorListeners();
+            castPreParser.AddErrorListener(new CastErrorListener(_logger));
             GlslMacroPreProcessor glslMacroPreProcessor = new GlslMacroPreProcessor(commonTokenStream);
             glslMacroPreProcessor.Visit(castPreParser.translation_unit());
             
@@ -67,9 +71,14 @@ namespace cast.core.parser
             
             ICharStream mainStream = CharStreams.fromString(castInput);
             CastLexer mainLexer = new CastLexer(mainStream);
+            mainLexer.RemoveErrorListeners();
+            // mainLexer.AddErrorListener(new CastErrorListener(_logger));
+            
             CommonTokenStream mainTokens = new CommonTokenStream(mainLexer);
 
             CastParser mainParser = new CastParser(mainTokens);
+            mainParser.RemoveErrorListeners();
+            mainParser.AddErrorListener(new CastErrorListener(_logger));
             var translationUnit = mainParser.translation_unit();
 
             DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, _logger);

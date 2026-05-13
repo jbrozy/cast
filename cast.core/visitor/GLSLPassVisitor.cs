@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Text;
 using Antlr4.Runtime.Tree;
 using cast.core.models;
@@ -282,7 +283,7 @@ namespace cast.core.visitor
 
         public string VisitField_selection(CastParser.Field_selectionContext context)
         {
-            throw new System.NotImplementedException();
+            return context.variable_identifier().GetText();
         }
 
         public string VisitFunction_identifier(CastParser.Function_identifierContext context)
@@ -345,7 +346,15 @@ namespace cast.core.visitor
             StringBuilder builder = new StringBuilder();
             if (context.primary_expression() != null)
             {
-                return Visit(context.primary_expression());
+                builder.Append(Visit(context.primary_expression()));
+            }
+
+            if (context.DOT() != null)
+            {
+                var left = Visit(context.postfix_expression());
+                var right = Visit(context.field_selection());
+
+                return $"{left}.{right}";
             }
 
             if (context.function_call_parameters() != null)
@@ -362,6 +371,11 @@ namespace cast.core.visitor
                     parameters.Add(Visit(parameterContext));
                 }
                 builder.Append($"{functionName}({string.Join(", ", parameters)})");
+            }
+            
+            if (context.field_selection() != null)
+            {
+                builder.Append(Visit(context.field_selection()));
             }
 
             return builder.ToString();
@@ -386,12 +400,9 @@ namespace cast.core.visitor
 
             if (context.assignment_expression() != null)
             {
-                string left = Visit(context.assignment_expression().unary_expression());
-                string right = Visit(context.assignment_expression().assignment_expression());
-                string op = context.assignment_expression().assignment_operator().GetText();
-                return $"{left} {op} {right};";
+                return Visit(context.assignment_expression());
             }
-
+            
             return string.Empty;
         }
 
@@ -439,9 +450,7 @@ namespace cast.core.visitor
         {
             if (context.assignment_expression() != null)
             {
-                string left = context.children[0].GetText();
-                string right = context.children[2].GetText();
-                return $"{left} = {right};";
+                return Visit(context.assignment_expression());
             }
             if (context.constant_expression() != null)
             {
@@ -453,24 +462,31 @@ namespace cast.core.visitor
                 return Visit(context.unary_expression());
             }
 
+            if (context.children.Count == 3)
+            {
+                string left = context.children[0].GetText();
+                string right = context.children[2].GetText();
+                return $"{left} = {right};";
+            }
+
             return string.Empty;
         }
 
         public string VisitBinary_expression(CastParser.Binary_expressionContext context)
         {
-            if (context.binary_expression() != null && context.binary_expression().Length > 0)
-            {
-                string left = Visit(context.binary_expression()[0]);
-                string right = Visit(context.binary_expression()[1]);
-
-                string op = context.children[1].GetText();
-
-                return $"{left} {op} {right}";
-            }
-
             if (context.unary_expression() != null)
             {
                 return Visit(context.unary_expression());
+            }
+            
+            if (context.binary_expression() != null && context.binary_expression().Length == 2)
+            {
+                string left = Visit(context.binary_expression(0));
+                string right = Visit(context.binary_expression(1));
+
+                string op = context.GetChild(1).GetText();
+
+                return $"{left} {op} {right}";
             }
 
             return string.Empty;

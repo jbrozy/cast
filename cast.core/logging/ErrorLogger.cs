@@ -15,6 +15,11 @@ namespace cast.core.logging
             errors.Add($"[Line {line + 1}:{column}] Semantic Error: {message}");
         }
         
+        public void Log(int column, int line, string message)
+        {
+            errors.Add($"[Line {line + 1}:{column}] Semantic Error: {message}");
+        }
+        
         public List<string> Errors => errors;
 
         public void Print()
