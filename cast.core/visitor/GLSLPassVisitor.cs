@@ -318,6 +318,15 @@ namespace cast.core.visitor
 
         public string VisitPrimary_expression(CastParser.Primary_expressionContext context)
         {
+            if (context.expression() != null)
+            {
+                StringBuilder builder = new StringBuilder();
+                if (context.LEFT_PAREN() != null) builder.Append("(");
+                builder.Append(Visit(context.expression()));
+                if (context.RIGHT_PAREN() != null) builder.Append(")");
+                
+                return builder.ToString();
+            }
             if (context.INTCONSTANT() != null)
             {
                 return Visit(context.INTCONSTANT());
@@ -341,7 +350,7 @@ namespace cast.core.visitor
             StringBuilder builder = new StringBuilder();
             if (context.primary_expression() != null)
             {
-                builder.Append(Visit(context.primary_expression()));
+                return Visit(context.primary_expression());
             }
 
             if (context.DOT() != null)
@@ -443,6 +452,13 @@ namespace cast.core.visitor
 
         public string VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
+            if (context.assignment_operator() != null)
+            {
+                string left = Visit(context.unary_expression());
+                string right = Visit(context.assignment_expression());
+                
+                return $"{left} = {right}";
+            }
             if (context.assignment_expression() != null)
             {
                 return Visit(context.assignment_expression());
@@ -461,7 +477,8 @@ namespace cast.core.visitor
             {
                 string left = context.children[0].GetText();
                 string right = context.children[2].GetText();
-                return $"{left} = {right};";
+                string op = context.children[1].GetText();
+                return $"{left} {op} {right};";
             }
 
             return string.Empty;
@@ -584,7 +601,7 @@ namespace cast.core.visitor
             {
                 return Visit(context.assignment_expression());
             }
-
+            
             return string.Empty;
         }
 
