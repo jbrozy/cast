@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 using cast.api.core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Win32;
 using Registry = cast.core.registry.Registry;
 
 var builder = WebApplication.CreateSlimBuilder(args);

@@ -21,6 +21,7 @@ namespace cast.core.parser
             _scope = new Scope();
             _scope.Define(new SpaceSymbol("Screen"));
             _scope.Define(new SpaceSymbol("Local"));
+            _scope.Define(new SpaceSymbol("Clip"));
             _scope.Define(new SpaceSymbol("Model"));
             _scope.Define(new SpaceSymbol("View"));
             _scope.Define(new SpaceSymbol("World"));
@@ -37,7 +38,31 @@ namespace cast.core.parser
             _scope.Define(new TypeSymbol("float", 0, false));
             _scope.Define(new TypeSymbol("sampler2D", 0, false));
             
+            RegisterConstant("gl_Position", "vec4", "Clip");
+            RegisterConstant("gl_PointSize",  "float");
+            RegisterConstant("gl_VertexID",   "int");
+            RegisterConstant("gl_InstanceID", "int");
+            
+            RegisterConstant("gl_FragCoord",  "vec4",  "Screen");
+            RegisterConstant("gl_FrontFacing","bool");
+            RegisterConstant("gl_PointCoord", "vec2");
+            RegisterConstant("gl_FragDepth",  "float");
+            
             _logger = new ErrorLogger();
+        }
+
+        private void RegisterConstant(string name, string type, params string[] spaces)
+        {
+            List<SpaceSymbol> _spaces = new List<SpaceSymbol>();
+            TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
+            CastType internalType = new CastType(typeSymbol, _spaces);
+            
+            foreach (string space in spaces)
+            {
+                _spaces.Add(_scope[space] as SpaceSymbol);
+            }
+
+            _scope.Define(new VariableSymbol(name, internalType));
         }
 
         public List<string> GetLogs()
