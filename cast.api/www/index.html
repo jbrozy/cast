@@ -1079,6 +1079,81 @@
                     codeEditor.selectionStart = codeEditor.selectionEnd = start + 1;
                 }
                 codeEditor.dispatchEvent(new Event('input'));
+            } else if (e.key === '(') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                const value = codeEditor.value;
+                const selectedText = value.substring(start, end);
+                
+                codeEditor.value = value.substring(0, start) + '(' + selectedText + ')' + value.substring(end);
+                codeEditor.selectionStart = start + 1;
+                if (start === end) {
+                    codeEditor.selectionEnd = start + 1;
+                } else {
+                    codeEditor.selectionEnd = end + 1;
+                }
+                codeEditor.dispatchEvent(new Event('input'));
+            } else if (e.key === '{') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                const value = codeEditor.value;
+                const selectedText = value.substring(start, end);
+                
+                codeEditor.value = value.substring(0, start) + '{' + selectedText + '}' + value.substring(end);
+                codeEditor.selectionStart = start + 1;
+                if (start === end) {
+                    codeEditor.selectionEnd = start + 1;
+                } else {
+                    codeEditor.selectionEnd = end + 1;
+                }
+                codeEditor.dispatchEvent(new Event('input'));
+            } else if (e.key === '[') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                const value = codeEditor.value;
+                const selectedText = value.substring(start, end);
+                
+                codeEditor.value = value.substring(0, start) + '[' + selectedText + ']' + value.substring(end);
+                codeEditor.selectionStart = start + 1;
+                if (start === end) {
+                    codeEditor.selectionEnd = start + 1;
+                } else {
+                    codeEditor.selectionEnd = end + 1;
+                }
+                codeEditor.dispatchEvent(new Event('input'));
+            } else if (e.key === '"') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                const value = codeEditor.value;
+                const selectedText = value.substring(start, end);
+                
+                codeEditor.value = value.substring(0, start) + '"' + selectedText + '"' + value.substring(end);
+                codeEditor.selectionStart = start + 1;
+                if (start === end) {
+                    codeEditor.selectionEnd = start + 1;
+                } else {
+                    codeEditor.selectionEnd = end + 1;
+                }
+                codeEditor.dispatchEvent(new Event('input'));
+            } else if (e.key === "'") {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                const value = codeEditor.value;
+                const selectedText = value.substring(start, end);
+                
+                codeEditor.value = value.substring(0, start) + "'" + selectedText + "'" + value.substring(end);
+                codeEditor.selectionStart = start + 1;
+                if (start === end) {
+                    codeEditor.selectionEnd = start + 1;
+                } else {
+                    codeEditor.selectionEnd = end + 1;
+                }
+                codeEditor.dispatchEvent(new Event('input'));
             }
         });
 
@@ -1149,8 +1224,8 @@
                         
                         try {
                             normalizedResult = js_beautify(normalizedResult, {
-                                indent_size: 4,
-                                indent_char: ' ',
+                                indent_size: 1,
+                                indent_char: '  ',
                                 preserve_newlines: true,
                                 max_preserve_newlines: 2
                             });

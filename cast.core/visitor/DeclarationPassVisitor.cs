@@ -237,7 +237,19 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitType_specifier(CastParser.Type_specifierContext context)
         {
-            return default;
+            if (context.type_specifier_nonarray() != null)
+            {
+                Console.WriteLine(context.type_specifier_nonarray().GetText().ToString());
+                if (context.type_specifier_nonarray().struct_specifier() != null)
+                {
+                    return Visit(context.type_specifier_nonarray().struct_specifier());
+                }
+
+                return Visit(context.type_specifier_nonarray());
+            }
+
+            string typeName = context.GetText();
+            return _scope[typeName] as TypeSymbol;
         }
 
         public AbstractSymbol VisitPrimary_expression(CastParser.Primary_expressionContext context)
@@ -410,60 +422,70 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
-            string typeName = context.fully_specified_type().type_specifier().GetChild(0).GetText();
+            AbstractSymbol t = Visit(context.fully_specified_type());
             string name = context.typeless_declaration().GetChild(0).GetText();
 
-            TypeSymbol? typeSymbol = _scope[typeName] as TypeSymbol;
-            if (typeSymbol == null)
+            if (t is StructSymbol structSymbol)
             {
-                throw new Exception("Unknown Type: " + typeName);
+                
             }
 
-            List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
-            if (context.fully_specified_type().type_specifier().space_specifier() != null)
+            if (t is VariableSymbol variableSymbol)
             {
-                CastParser.Space_definition_parametersContext typeSpaces = context.fully_specified_type()
-                    .type_specifier()
-                    .space_specifier().space_definition_parameters();
-
-                foreach (ITerminalNode space in typeSpaces.IDENTIFIER())
-                {
-                    string spaceName = space.GetText();
-                    SpaceSymbol? spaceSymbol = _scope[spaceName] as SpaceSymbol;
-
-                    if (spaceSymbol == null)
-                    {
-                        throw new Exception("Unknown Space: " + spaceName);
-                    }
-                    
-                    spaceSymbols.Add(spaceSymbol);
-                }
-
-                bool hasSpaces = typeSymbol.HasSpaces();
-                bool hasOptionalSpaces = typeSymbol.HasSpaces();
-
-                // if spaces are mandatory and no spaces were set
-                if (!hasOptionalSpaces && !spaceSymbols.Any())
-                {
-                    throw new Exception($"Spaces for '{typeName}' are mandatory.");
-                }
+                
             }
 
-            string qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
-            Modifier modifier = Modifier.NONE;
-            if (!string.IsNullOrEmpty(qualifier))
-            {
-                if (!Enum.TryParse(qualifier, true, out modifier)) ;
-            }
+            // TypeSymbol? typeSymbol = _scope[typeName] as TypeSymbol;
+            // if (typeSymbol == null)
+            // {
+            //     throw new Exception("Unknown Type: " + typeName);
+            // }
 
-            CastType type = new CastType(typeSymbol, spaceSymbols);
-            VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
-            
-            if (modifier == Modifier.IN) Inputs.Add(variableSymbol);
-            if (modifier == Modifier.OUT) Outputs.Add(variableSymbol);
-            if (modifier == Modifier.UNIFORM) Uniforms.Add(variableSymbol);
+            // List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
+            // if (context.fully_specified_type().type_specifier().space_specifier() != null)
+            // {
+            //     CastParser.Space_definition_parametersContext typeSpaces = context.fully_specified_type()
+            //         .type_specifier()
+            //         .space_specifier().space_definition_parameters();
+
+            //     foreach (ITerminalNode space in typeSpaces.IDENTIFIER())
+            //     {
+            //         string spaceName = space.GetText();
+            //         SpaceSymbol? spaceSymbol = _scope[spaceName] as SpaceSymbol;
+
+            //         if (spaceSymbol == null)
+            //         {
+            //             throw new Exception("Unknown Space: " + spaceName);
+            //         }
+            //         
+            //         spaceSymbols.Add(spaceSymbol);
+            //     }
+
+            //     bool hasSpaces = typeSymbol.HasSpaces();
+            //     bool hasOptionalSpaces = typeSymbol.HasSpaces();
+
+            //     // if spaces are mandatory and no spaces were set
+            //     if (!hasOptionalSpaces && !spaceSymbols.Any())
+            //     {
+            //         throw new Exception($"Spaces for '{typeName}' are mandatory.");
+            //     }
+            // }
+
+            // string qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
+            // Modifier modifier = Modifier.NONE;
+            // if (!string.IsNullOrEmpty(qualifier))
+            // {
+            //     if (!Enum.TryParse(qualifier, true, out modifier)) ;
+            // }
+
+            // CastType type = new CastType(typeSymbol, spaceSymbols);
+            // VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
+            // 
+            // if (modifier == Modifier.IN) Inputs.Add(variableSymbol);
+            // if (modifier == Modifier.OUT) Outputs.Add(variableSymbol);
+            // if (modifier == Modifier.UNIFORM) Uniforms.Add(variableSymbol);
         
-            _scope.Define(variableSymbol);
+            // _scope.Define(variableSymbol);
 
             return null;
         }
@@ -540,7 +562,8 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitStruct_declaration(CastParser.Struct_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            TypeSymbol type = Visit(context.type_specifier()) as TypeSymbol;
+            return type;
         }
 
         public AbstractSymbol VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
@@ -567,7 +590,9 @@ namespace cast.core.visitor
             {
                 foreach (var structDeclaration in context.struct_declaration_list().struct_declaration())
                 {
-                    // structSymbol.AddField(structDeclaration., Visit(structDeclaration));
+                    string name = structDeclaration.type_specifier().GetChild(0).GetText();
+                    TypeSymbol field = Visit(structDeclaration) as TypeSymbol;
+                    structSymbol.AddField(name, field);
                 }
             }
             return structSymbol;
@@ -580,7 +605,8 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
         {
-            throw new System.NotImplementedException();
+            string typeName = context.type_name().GetText();
+            return _scope[typeName] as TypeSymbol;
         }
     }
 }
