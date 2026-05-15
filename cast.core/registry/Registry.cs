@@ -270,66 +270,6 @@ namespace cast.core.registry
             
             return (lhsType, lhsSpaces);
         }
-            
-        private static CastType t(IToken token, Scope scope, ErrorLogger logger, string left, string right, string op)
-        { // mat4<T, U> * vec4<T> -> vec4<U>
-            (string lhsType, string[] lhsParams) = ParseType(left);
-            (string rhsType, string[] rhsParams) = ParseType(right);
-
-            var candidates = functions[op];
-
-            Dictionary<string, string> s = new Dictionary<string, string>();
-            
-            foreach ((string[] parameters, string returnType) in candidates)
-            {
-                s.Clear();
-                (string fnLhs, string[] fnLhsParams) = ParseType(parameters[0]);
-                (string fnRhs, string[] fnRhsParams) = ParseType(parameters[1]);
-                (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);
-
-                if (lhsType != fnLhs) continue;
-                if (rhsType != fnRhs) continue;
-                
-                if (lhsParams.Length != fnLhsParams.Length) continue;
-                if (rhsParams.Length != fnRhsParams.Length) continue;
-                
-                // add left side to dictionary
-                for (int i = 0; i < lhsParams.Length; i++)
-                {
-                    s[fnLhsParams[i]] = lhsParams[i];
-                }
-
-                for (int i = 0; i < rhsParams.Length; i++)
-                {
-                    // continue if left generic-key-value is unequal to right generic-key-value
-                    if (s.ContainsKey(fnRhsParams[i])) continue;
-                    s[fnRhsParams[i]] = rhsParams[i];
-                }
-
-                List<SpaceSymbol> typeSpaces = new  List<SpaceSymbol>();
-                for(int i = 0; i < returnTypeParams.Length; i++)
-                {
-                    SpaceSymbol? symbol = scope[s[returnTypeParams[i]]] as SpaceSymbol;
-                    if (symbol == null)
-                    {
-                        logger.Log(token, $"Could not find {s[returnTypeParams[i]]} symbol for {s[fnRhsParams[i]]}");
-                    }
-                    else
-                    {
-                        typeSpaces.Add(symbol);
-                    }
-                }
-                
-                TypeSymbol? type = scope[returnTypeType] as TypeSymbol;
-                return new CastType(type, typeSpaces);
-            }
-
-            // string functionCandidates = string.Join("\n", candidates.Select(c => $"     ({string.Join(", ", c.Params)}) -> {c.returnType}"));
-            // string message = $"Unable to find function '{op}' with params ['{left}', '{right}'], \n candidates are: \n{functionCandidates}";
-            // logger.Log(token, message);
-            
-            return CastType.ErrorType;
-        }
 
         public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope)
         {
@@ -392,33 +332,56 @@ namespace cast.core.registry
 
         public static CastType? ResolveOperator(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)
         {
-            // List<string> stringParams = parameters.Select(c=> c.ToString()).ToList();
-            // List<(string[] Params, string returnType)> functionCandidates = functions[op];
-            // 
-            // CastType a = t(scope, "mat4<Model, View>", "vec4<Model>", op);
+            if (!functions.ContainsKey(op)) return CastType.ErrorType;
 
-            // foreach ((string[] functionParameters, string functionReturnType) in functionCandidates)
-            // {
-            //     bool valid = true;
-            //     if (functionParameters.Length != stringParams.Count) continue;
-            //     
-            //     for (int i = 0; i < functionParameters.Length; ++i)
-            //     {
-            //         Console.WriteLine($"functionParameters[i] != stringParams[i], {functionParameters[i]} != {stringParams[i]}");
-            //         if (functionParameters[i] != stringParams[i])
-            //         {
-            //             valid = false;
-            //         }
-            //     }
+            string left = parameters[0].ToString();
+            string right = parameters[1].ToString();
+            (string lhsType, string[] lhsParams) = ParseType(left);
+            (string rhsType, string[] rhsParams) = ParseType(right);
 
-            //     if (valid)
-            //     {
-            //         TypeSymbol? type = scope[functionReturnType] as TypeSymbol;
-            //         return new CastType(type);
-            //     }
-            // }
+            var candidates = functions[op];
+            var s = new Dictionary<string, string>();
 
-            return t(token, scope, logger, parameters[0].ToString(), parameters[1].ToString(), op);
+            foreach ((string[] fnParams, string returnType) in candidates)
+            {
+                s.Clear();
+                (string fnLhs, string[] fnLhsParams) = ParseType(fnParams[0]);
+                (string fnRhs, string[] fnRhsParams) = ParseType(fnParams[1]);
+                (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);
+
+                if (lhsType != fnLhs || rhsType != fnRhs) continue;
+                if (lhsParams.Length != fnLhsParams.Length || rhsParams.Length != fnRhsParams.Length) continue;
+
+                for (int i = 0; i < lhsParams.Length; i++)
+                    s[fnLhsParams[i]] = lhsParams[i];
+
+                bool mismatch = false;
+                for (int i = 0; i < rhsParams.Length; i++)
+                {
+                    if (s.TryGetValue(fnRhsParams[i], out var existing))
+                    {
+                        if (existing != rhsParams[i]) { mismatch = true; break; }
+                    }
+                    else
+                    {
+                        s[fnRhsParams[i]] = rhsParams[i];
+                    }
+                }
+                if (mismatch) continue;
+
+                var typeSpaces = new List<SpaceSymbol>();
+                for (int i = 0; i < returnTypeParams.Length; i++)
+                {
+                    var symbol = scope[s[returnTypeParams[i]]] as SpaceSymbol;
+                    if (symbol != null)
+                        typeSpaces.Add(symbol);
+                }
+
+                var type = scope[returnTypeType] as TypeSymbol;
+                return new CastType(type, typeSpaces);
+            }
+
+            return CastType.ErrorType;
         }
     }
 }

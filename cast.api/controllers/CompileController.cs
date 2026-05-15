@@ -25,7 +25,6 @@ public class CompileController : ControllerBase
     public CompilationResult Compile(string input)
     {
         CompilationResult result = _compilationService.Compile(input);
-        Console.WriteLine(result.Result);
         return result;
     }
 }

@@ -101,7 +101,6 @@ namespace cast.core.visitor
         public string VisitSelection_statement(CastParser.Selection_statementContext context)
         {
             StringBuilder builder = new StringBuilder();
-            Console.WriteLine($"Indent Level: {_indent}");
             builder.Append($"if ({Visit(context.expression())})");
             _indent++;
             builder.Append(" {\n");

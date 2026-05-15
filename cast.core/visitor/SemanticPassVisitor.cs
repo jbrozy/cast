@@ -144,7 +144,6 @@ namespace cast.core.visitor
                         IsReturn = true
                     };
                 }
-                Console.WriteLine(context.expression().GetText());
                 CastType returnValue = Visit(context.expression());
                 returnValue.IsReturn = true;
                 return returnValue;
@@ -296,11 +295,6 @@ namespace cast.core.visitor
             string identifier = context.GetChild(0).GetText();
             AbstractSymbol symbol = _scope[identifier];
 
-            if (identifier == "geometrySchlickGGX")
-            {
-                Console.WriteLine("debug");
-            }
-            
             if (symbol is VariableSymbol variable) return variable.Type;
             if (symbol is FunctionSymbol function) return function.ReturnType();
             
@@ -587,7 +581,6 @@ namespace cast.core.visitor
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (Equals(eval, CastType.ErrorType))
                 {
-                    Console.WriteLine($"left: {left}, right: {right}, op: {op}, expression: {context.GetText()}");
                     return CastType.ErrorType;
                 }
                 return eval;
@@ -628,7 +621,6 @@ namespace cast.core.visitor
                     }
                     if (!initializerType.IsAssignable(type))
                     {
-                        Console.WriteLine(initializer.GetText());
                         _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
                         type = CastType.ErrorType;
                     }
@@ -682,7 +674,6 @@ namespace cast.core.visitor
 
         public CastType VisitType_qualifier(CastParser.Type_qualifierContext context)
         {
-            Console.WriteLine(context.GetText());
             return default;
         }
 
@@ -693,12 +684,6 @@ namespace cast.core.visitor
 
         public CastType VisitInitializer(CastParser.InitializerContext context)
         {
-            // function call
-            if (context.RIGHT_BRACE() != null && context.LEFT_BRACE() != null)
-            {
-                Console.WriteLine(context.assignment_expression().constant_expression());
-            }
-            
             if (context.assignment_expression() != null)
             {
                 return Visit(context.assignment_expression());

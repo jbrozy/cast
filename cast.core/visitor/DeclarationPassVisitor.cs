@@ -239,7 +239,6 @@ namespace cast.core.visitor
         {
             if (context.type_specifier_nonarray() != null)
             {
-                Console.WriteLine(context.type_specifier_nonarray().GetText().ToString());
                 if (context.type_specifier_nonarray().struct_specifier() != null)
                 {
                     return Visit(context.type_specifier_nonarray().struct_specifier());

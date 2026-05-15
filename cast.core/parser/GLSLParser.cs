@@ -95,6 +95,7 @@ namespace cast.core.parser
                 castInput = Regex.Replace(castInput, pattern, macro.Value);
             }
             
+            _logger.SetSource(castInput);
             ICharStream mainStream = CharStreams.fromString(castInput);
             CastLexer mainLexer = new CastLexer(mainStream);
             mainLexer.RemoveErrorListeners();
