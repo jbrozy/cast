@@ -425,6 +425,71 @@
             background-color: #4caf50;
             color: white;
         }
+
+        /* Modal Styles */
+        .modal-container {
+            padding: 8px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            margin: 4px 0;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 4px;
+            margin-bottom: 4px;
+            background: #37373d;
+            color: #cccccc;
+            border: 1px solid #569cd6;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .modal-btn-primary {
+            padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;
+        }
+        .modal-btn-secondary {
+            padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;
+        }
+
+        /* Theme Transitions */
+        body, .container, .pane, .pane-header, .pane-footer, .line-numbers, .code-editor, 
+        #output-container, .output-line-numbers, .output-code, .file-item, .modal-container, 
+        .modal-input, .hljs, [class^="hljs-"] {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Light Mode Styles */
+        body.light-mode { background-color: #f3f3f3; color: #333333; }
+        body.light-mode .container { background-color: #e0e0e0; }
+        body.light-mode .pane { background-color: #ffffff; border-right: 1px solid #cccccc; }
+        body.light-mode .pane-header { background-color: #f3f3f3; border-bottom: 1px solid #cccccc; color: #333333; }
+        body.light-mode .pane-footer { border-top: 1px solid #cccccc; background-color: #f3f3f3; }
+        body.light-mode .line-numbers { background-color: #f9f9f9; color: #2b91af; border-right: 1px solid #cccccc; }
+        body.light-mode .code-editor { background-color: #ffffff; color: #333333; scrollbar-color: #c1c1c1 #ffffff; }
+        body.light-mode .code-editor::-webkit-scrollbar-track { background: #ffffff; }
+        body.light-mode .code-editor::-webkit-scrollbar-thumb { background: #c1c1c1; }
+        body.light-mode .code-editor::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        body.light-mode #output-container { background-color: #ffffff; }
+        body.light-mode .output-line-numbers { background-color: #f9f9f9; color: #2b91af; border-right: 1px solid #cccccc; }
+        body.light-mode .output-code { color: #333333; background-color: #ffffff; }
+        body.light-mode .hljs { background: #ffffff !important; color: #333333 !important; }
+        body.light-mode .file-item { color: #333333; }
+        body.light-mode .file-item:hover { background-color: #e8e8e8; }
+        body.light-mode .file-item.active { background-color: #007acc; color: #ffffff; }
+        body.light-mode .errors { border: 1px solid #ffbaba; background-color: #ffeded; }
+        body.light-mode .errors-header { background-color: #d8000c; color: white; }
+        body.light-mode .errors li { border-bottom: 1px solid #ffbaba; color: #d8000c; }
+        body.light-mode .hljs-keyword { color: #0000ff; }
+        body.light-mode .hljs-literal { color: #0000ff; }
+        body.light-mode .hljs-built_in { color: #795e26; }
+        body.light-mode .hljs-type { color: #267f99; }
+        body.light-mode .hljs-number { color: #098658; }
+        body.light-mode .hljs-string { color: #a31515; }
+        body.light-mode .hljs-comment { color: #008000; }
+        body.light-mode .hljs-attr { color: #001080; }
+        body.light-mode .hljs-function { color: #795e26; }
+        
+        body.light-mode .modal-container { background: #f3f3f3; border-color: #cccccc; }
+        body.light-mode .modal-input { background: #ffffff; color: #333333; border-color: #007acc; }
     </style>
 </head>
 <body>
@@ -470,6 +535,7 @@
             <div class="pane-header">
                 <span>Compiled Result <span class="loading-indicator" id="loading-status"></span></span>
                 <div>
+                    <button id="theme-toggle-btn" type="button" style="padding: 4px 8px; background: #555; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;" title="Toggle Light/Dark Mode">☀️</button>
                     <button id="graph-btn">Visualize</button>
                     <button id="test-btn">Test</button>
                 </div>
@@ -667,19 +733,19 @@
         function createNewFile(e) {
             if (e) e.preventDefault();
             const container = document.createElement('div');
-            container.style.cssText = 'padding: 8px; background: #2d2d30; border: 1px solid #3e3e42; margin: 4px 0;';
+            container.className = 'modal-container';
             
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = 'Dateiname eingeben...';
-            nameInput.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            nameInput.className = 'modal-input';
             
             const typeSelect = document.createElement('select');
-            typeSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            typeSelect.className = 'modal-input';
             typeSelect.innerHTML = '<option value="vertex">Vertex Shader</option><option value="fragment">Fragment Shader</option>';
             
             const stageSelect = document.createElement('select');
-            stageSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            stageSelect.className = 'modal-input';
             function populateStages() {
                 stageSelect.innerHTML = '';
                 Object.keys(shaderFiles).sort().forEach(stage => {
@@ -692,7 +758,7 @@
             populateStages();
             
             const parentSelect = document.createElement('select');
-            parentSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            parentSelect.className = 'modal-input';
             parentSelect.innerHTML = '<option value="">Kein Parent (Root)</option>';
             
             function populateParents() {
@@ -725,10 +791,10 @@
             buttons.style.cssText = 'display: flex; gap: 4px;';
             const okBtn = document.createElement('button');
             okBtn.textContent = 'Erstellen';
-            okBtn.style.cssText = 'padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            okBtn.className = 'modal-btn-primary';
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Abbrechen';
-            cancelBtn.style.cssText = 'padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            cancelBtn.className = 'modal-btn-secondary';
             buttons.appendChild(okBtn);
             buttons.appendChild(cancelBtn);
             container.appendChild(buttons);
@@ -788,15 +854,15 @@
 
         function createNewPass() {
             const container = document.createElement('div');
-            container.style.cssText = 'padding: 8px; background: #2d2d30; border: 1px solid #3e3e42; margin: 4px 0;';
+            container.className = 'modal-container';
             
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = 'Pass-Name eingeben...';
-            nameInput.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            nameInput.className = 'modal-input';
             
             const typeSelect = document.createElement('select');
-            typeSelect.style.cssText = 'width: 100%; padding: 4px; margin-bottom: 4px; background: #37373d; color: #cccccc; border: 1px solid #569cd6; border-radius: 3px; font-size: 12px;';
+            typeSelect.className = 'modal-input';
             typeSelect.innerHTML = `
                 <option value="shadow">Shadow Pass</option>
                 <option value="depth_only">Depth Only Pass</option>
@@ -814,10 +880,10 @@
             buttons.style.cssText = 'display: flex; gap: 4px;';
             const okBtn = document.createElement('button');
             okBtn.textContent = 'Erstellen';
-            okBtn.style.cssText = 'padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            okBtn.className = 'modal-btn-primary';
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Abbrechen';
-            cancelBtn.style.cssText = 'padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;';
+            cancelBtn.className = 'modal-btn-secondary';
             buttons.appendChild(okBtn);
             buttons.appendChild(cancelBtn);
             container.appendChild(buttons);
@@ -954,6 +1020,24 @@
         window.onload = function() {
             fileList = document.getElementById('file-list');
             currentFileNameEl = document.getElementById('current-file-name');
+
+            // Theme setup
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            
+            if (currentTheme === 'light') {
+                document.body.classList.add('light-mode');
+                if (themeToggleBtn) themeToggleBtn.textContent = '🌙';
+            }
+            
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    document.body.classList.toggle('light-mode');
+                    const isLight = document.body.classList.contains('light-mode');
+                    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                    themeToggleBtn.textContent = isLight ? '🌙' : '☀️';
+                });
+            }
 
             // Setze onclick für Buttons
             const newFileBtn = document.getElementById('new-file-btn');
