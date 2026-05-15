@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mime;
 using System.Text;
+using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using cast.core.models;
 using cast.core.models.symbols;
@@ -13,10 +12,12 @@ namespace cast.core.visitor
     {
         private int _indent = 0;
         private readonly Scope _scope;
-        
-        public GlslPassVisitor(Scope scope)
+        private readonly CommonTokenStream _tokenStream;
+
+        public GlslPassVisitor(Scope scope, CommonTokenStream tokenStream)
         {
             _scope = scope;
+            _tokenStream = tokenStream;
         }
 
         private string GetIndentedText(string text)
@@ -54,12 +55,29 @@ namespace cast.core.visitor
         public string VisitTranslation_unit(CastParser.Translation_unitContext context)
         {
             StringBuilder builder = new StringBuilder();
+            var declarations = context.external_declaration();
 
-            foreach (var externalDeclarationContext in context.external_declaration())
+            for (int i = 0; i < declarations.Length; i++)
             {
-                builder.AppendLine(Visit(externalDeclarationContext));
+                builder.AppendLine(Visit(declarations[i]));
+
+                if (i < declarations.Length - 1)
+                {
+                    int startIdx = declarations[i].Stop.TokenIndex + 1;
+                    int endIdx = declarations[i + 1].Start.TokenIndex - 1;
+                    int newlines = 0;
+                    for (int t = startIdx; t <= endIdx; t++)
+                    {
+                        string text = _tokenStream.Get(t).Text;
+                        foreach (char c in text)
+                            if (c == '\n') newlines++;
+                    }
+                    newlines--;
+                    for (int j = 0; j < newlines; j++)
+                        builder.AppendLine();
+                }
             }
-            
+
             return builder.ToString();
         }
 
@@ -511,23 +529,48 @@ namespace cast.core.visitor
         public string VisitDeclaration(CastParser.DeclarationContext context)
         {
             StringBuilder builder = new StringBuilder();
-            if (context.init_declarator_list() != null)
+
+            if (context.struct_declaration_list() != null)
             {
-                CastParser.Single_declarationContext declarationContext =
-                    context.init_declarator_list().single_declaration();
-                
-                string identifier = Visit(declarationContext.typeless_declaration());
-                
-                string type = Visit(declarationContext.fully_specified_type());
-                builder.Append($"{type} {identifier}");
-                if (declarationContext.typeless_declaration().initializer() != null)
+                string blockName = context.IDENTIFIER(0).GetText();
+                string qualifier = context.type_qualifier().GetText();
+                builder.Append($"{qualifier} {blockName} {{\n");
+                _indent++;
+                foreach (var decl in context.struct_declaration_list().struct_declaration())
                 {
-                    string initializer = Visit(declarationContext.typeless_declaration().initializer());
-                    builder.Append($" = {initializer}");
+                    builder.Append(GetIndentedText(Visit(decl)));
                 }
+                _indent--;
+                builder.Append(GetIndentedText("}"));
+
+                if (context.IDENTIFIER().Length > 1)
+                    builder.Append($" {context.IDENTIFIER(1).GetText()}");
+
+                builder.Append(";");
+                return builder.ToString();
             }
 
-            return builder + ";";
+            if (context.init_declarator_list() != null)
+            {
+                var singleDecl = context.init_declarator_list().single_declaration();
+                string type = Visit(singleDecl.fully_specified_type());
+
+                if (singleDecl.typeless_declaration() != null)
+                {
+                    string identifier = Visit(singleDecl.typeless_declaration());
+                    builder.Append($"{type} {identifier}");
+                    if (singleDecl.typeless_declaration().initializer() != null)
+                        builder.Append($" = {Visit(singleDecl.typeless_declaration().initializer())}");
+                }
+                else
+                {
+                    builder.Append(type);
+                }
+
+                return builder + ";";
+            }
+
+            return string.Empty;
         }
 
         public string VisitIdentifier_list(CastParser.Identifier_listContext context)
@@ -618,15 +661,22 @@ namespace cast.core.visitor
         {
             StringBuilder builder = new StringBuilder();
 
-            string variableName = context.typeless_declaration().IDENTIFIER().GetText();
-            string variableType = context.fully_specified_type().type_specifier().type_specifier_nonarray().GetChild(0).GetText();
-            string? qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
+            string? qualifier = context.fully_specified_type()?.type_qualifier()?.GetText();
             if (qualifier != null) builder.Append($"{qualifier} ");
-            builder.Append($"{variableType} {variableName}");
 
-            if (context.typeless_declaration().initializer() != null)
+            string variableType = Visit(context.fully_specified_type().type_specifier().type_specifier_nonarray());
+
+            if (context.typeless_declaration() != null)
             {
-                builder.Append($" = {Visit(context.typeless_declaration().initializer())}");
+                string variableName = context.typeless_declaration().IDENTIFIER().GetText();
+                builder.Append($"{variableType} {variableName}");
+
+                if (context.typeless_declaration().initializer() != null)
+                    builder.Append($" = {Visit(context.typeless_declaration().initializer())}");
+            }
+            else
+            {
+                builder.Append(variableType);
             }
             
             return builder + ";";
@@ -653,7 +703,7 @@ namespace cast.core.visitor
                 builder.Append($"{Visit(context.type_qualifier())} ");
             }
             
-            string type = context.type_specifier().type_specifier_nonarray().GetText();
+            string type = Visit(context.type_specifier().type_specifier_nonarray());
             builder.Append($"{type}");
             return builder.ToString();
         }
@@ -705,7 +755,13 @@ namespace cast.core.visitor
 
         public string VisitStruct_declaration(CastParser.Struct_declarationContext context)
         {
-            throw new System.NotImplementedException();
+            string type = context.type_specifier().type_specifier_nonarray().GetText();
+            List<string> fields = new List<string>();
+            foreach (var declarator in context.struct_declarator_list().struct_declarator())
+            {
+                fields.Add($"{type} {declarator.IDENTIFIER().GetText()}");
+            }
+            return string.Join(";\n", fields) + ";\n";
         }
 
         public string VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
@@ -720,12 +776,26 @@ namespace cast.core.visitor
 
         public string VisitStruct_declarator(CastParser.Struct_declaratorContext context)
         {
-            throw new System.NotImplementedException();
+            return context.IDENTIFIER().GetText();
         }
 
         public string VisitStruct_specifier(CastParser.Struct_specifierContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+            string? name = context.IDENTIFIER()?.GetText();
+            builder.Append($"struct {name ?? ""} {{\n");
+            _indent++;
+            foreach (var decl in context.struct_declaration_list().struct_declaration())
+            {
+                string type = decl.type_specifier().type_specifier_nonarray().GetText();
+                foreach (var declarator in decl.struct_declarator_list().struct_declarator())
+                {
+                    builder.Append(GetIndentedText($"{type} {Visit(declarator)};\n"));
+                }
+            }
+            _indent--;
+            builder.Append(GetIndentedText("}"));
+            return builder.ToString();
         }
 
         public string VisitType_name(CastParser.Type_nameContext context)
@@ -735,7 +805,13 @@ namespace cast.core.visitor
 
         public string VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.struct_specifier() != null)
+                return Visit(context.struct_specifier());
+
+            if (context.type_name() != null)
+                return context.type_name().GetText();
+
+            return context.GetText();
         }
     }
 }

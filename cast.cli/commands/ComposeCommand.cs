@@ -1,10 +1,8 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Nodes;
 using cast.cli.builder;
 using cast.core.models;
 using cast.core.parser;
 using cast.core.parser.programs;
-using cast.core.visitor.configuration;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -23,55 +21,95 @@ public class ComposeCommand : Command<ComposeSettings>
         
         PipelineManifest pipelineManifest = JsonSerializer.Deserialize<PipelineManifest>(File.ReadAllText(composeFile));
 
-        var args= context.Arguments;
-        DirectoryInfo? composePath = new FileInfo(args[1]).Directory;
+        DirectoryInfo? composeDir = new FileInfo(composeFile).Directory;
+        if (composeDir == null)
+        {
+            AnsiConsole.MarkupLine($"[red]Error:[/] Could not determine directory for compose file: {composeFile}");
+            return 1;
+        }
         List<Node> nodes = new List<Node>();
         foreach (Stage stage in pipelineManifest.Stages)
         {
-            string fragment = stage.Entry + ".fsh";
-            FileInfo fragmentInfo = new FileInfo(fragment);
             string vertex   = stage.Entry + ".vsh";
-            FileInfo vertexInfo = new FileInfo(vertex);
+            string fragment = stage.Entry + ".fsh";
 
-            string fragmentShader = File.ReadAllText($"{composePath}/shaders/{fragmentInfo.Name}");
-            string vertexShader = File.ReadAllText($"{composePath}/shaders/{vertexInfo.Name}");
+            string vertexPath   = Path.Combine(composeDir.FullName, "shaders", vertex);
+            string fragmentPath = Path.Combine(composeDir.FullName, "shaders", fragment);
 
-            try
+            if (!File.Exists(vertexPath))
             {
-                
-                GlslParser parser = new GlslParser();
-                GlslShaderProgram vertexShaderProgram = parser.Parse(vertexShader);
-                Node vertexNode = new Node(stage.Id, vertexInfo.Name, stage.DependsOn, stage.Type);
-                vertexNode.Inputs = vertexShaderProgram.Inputs;
-                vertexNode.Outputs = vertexShaderProgram.Outputs;
-                parser = new GlslParser();
-                GlslShaderProgram fragmentShaderProgram = parser.Parse(fragmentShader);
-                Node fragmentNode = new Node(stage.Id, fragmentInfo.Name, stage.DependsOn, stage.Type);
-                fragmentNode.Inputs = fragmentShaderProgram.Inputs;
-                fragmentNode.Outputs = fragmentShaderProgram.Outputs;
-            
-                Console.WriteLine(vertexShaderProgram.GetShaderCode());
-                Console.WriteLine(fragmentShaderProgram.GetShaderCode());
-
-                string output = $"{composePath}/output/";
-                if (!Directory.Exists(output)) Directory.CreateDirectory(output);
-            
-                File.WriteAllText(output + vertexInfo.Name, vertexShaderProgram.GetShaderCode());
-                File.WriteAllText(output + fragmentInfo.Name, fragmentShaderProgram.GetShaderCode());
-            
-                nodes.Add(vertexNode);
-                nodes.Add(fragmentNode);
+                AnsiConsole.MarkupLine($"[red]Error:[/] Vertex shader not found: {vertexPath}");
+                continue;
             }
-            catch (Exception e)
+            if (!File.Exists(fragmentPath))
             {
-                Console.WriteLine(e.StackTrace);
+                AnsiConsole.MarkupLine($"[red]Error:[/] Fragment shader not found: {fragmentPath}");
+                continue;
             }
+
+            string vertexShader   = File.ReadAllText(vertexPath);
+            string fragmentShader = File.ReadAllText(fragmentPath);
+
+            GlslParser parser = new GlslParser();
+            GlslShaderProgram vertexProgram   = parser.Parse(vertexShader);
+            if (parser.GetLogs().Any())
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warnings/Errors for {vertex}:[/]");
+                foreach (var log in parser.GetLogs())
+                    AnsiConsole.MarkupLine($"  {log}");
+            }
+
+            Node vertexNode = new Node(stage.Id, vertex, stage.DependsOn, stage.Type);
+            vertexNode.Inputs = vertexProgram.Inputs;
+            vertexNode.Outputs = vertexProgram.Outputs;
+
+            parser = new GlslParser();
+            GlslShaderProgram fragmentProgram = parser.Parse(fragmentShader);
+            if (parser.GetLogs().Any())
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warnings/Errors for {fragment}:[/]");
+                foreach (var log in parser.GetLogs())
+                    AnsiConsole.MarkupLine($"  {log}");
+            }
+
+            Node fragmentNode = new Node(stage.Id, fragment, stage.DependsOn, stage.Type);
+            fragmentNode.Inputs = fragmentProgram.Inputs;
+            fragmentNode.Outputs = fragmentProgram.Outputs;
+
+            string output = Path.Combine(composeDir.FullName, "output");
+            if (!Directory.Exists(output)) Directory.CreateDirectory(output);
+
+            File.WriteAllText(Path.Combine(output, vertex), vertexProgram.GetShaderCode());
+            File.WriteAllText(Path.Combine(output, fragment), fragmentProgram.GetShaderCode());
+
+            nodes.Add(vertexNode);
+            nodes.Add(fragmentNode);
         }
 
         if (settings.VerifyGraph)
         {
-            GraphBuilder.Wire(nodes);
-            Console.WriteLine(GraphBuilder.AsMermaidGraph(nodes));
+            var errors = GraphBuilder.Wire(nodes);
+            foreach (var err in errors)
+                AnsiConsole.MarkupLine($"[red]Error:[/] {err}");
+
+            if (errors.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[green]Graph validation passed.[/]");
+                string graphJson = GraphBuilder.AsJson(nodes);
+                string graphJsonPath = Path.Combine(composeDir.FullName, "output", "graph.json");
+                File.WriteAllText(graphJsonPath, graphJson);
+
+                if (settings.OutputFormat == "mermaid" || settings.OutputFormat == null)
+                    Console.WriteLine(GraphBuilder.AsMermaidGraph(nodes));
+
+                if (settings.OutputFormat == "json")
+                    Console.WriteLine(graphJson);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine($"[red]{errors.Count} connection error(s) found.[/]");
+                return 1;
+            }
         }
         
         return 0;

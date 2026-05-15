@@ -28,6 +28,8 @@ var app = builder.Build();
 app.UseCors("frontend");
 app.MapPost("/api/compile", ([FromBody]CompilationRequest request, CompilationService service) 
     => service.Compile(request.Input));
+app.MapPost("/api/graph", ([FromBody]GraphRequest request, CompilationService service)
+    => service.Graph(request));
 
 app.UseDefaultFiles(new DefaultFilesOptions()
 {
@@ -45,6 +47,8 @@ app.Run();
 
 [JsonSerializable(typeof(CompilationResult))]
 [JsonSerializable(typeof(CompilationRequest))]
+[JsonSerializable(typeof(GraphResult))]
+[JsonSerializable(typeof(GraphRequest))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
 }

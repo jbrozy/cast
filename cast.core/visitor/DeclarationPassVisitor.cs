@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Antlr4.Runtime.Tree;
 using cast.core.logging;
 using cast.core.models;
@@ -309,19 +307,38 @@ namespace cast.core.visitor
         public AbstractSymbol VisitDeclaration(CastParser.DeclarationContext context)
         {
             if (context.function_prototype() != null)
-            {
                 return Visit(context.function_prototype());
-            }
 
-            if (context.identifier_list() != null)
+            if (context.struct_declaration_list() != null)
             {
-                Visit(context.identifier_list());
+                string blockName = context.IDENTIFIER(0).GetText();
+                var structSymbol = new StructSymbol(blockName);
+
+                foreach (var decl in context.struct_declaration_list().struct_declaration())
+                {
+                    var fieldType = Visit(decl.type_specifier()) as TypeSymbol;
+                    if (fieldType == null) continue;
+
+                    foreach (var declarator in decl.struct_declarator_list().struct_declarator())
+                    {
+                        structSymbol.AddField(declarator.IDENTIFIER().GetText(), fieldType);
+                    }
+                }
+
+                _scope.Define(structSymbol);
+
+                if (context.IDENTIFIER().Length > 1)
+                {
+                    string varName = context.IDENTIFIER(1).GetText();
+                    var varType = new CastType(structSymbol);
+                    _scope.Define(new VariableSymbol(varName, varType));
+                }
+
+                return default;
             }
 
             if (context.init_declarator_list() != null)
-            {
                 Visit(context.init_declarator_list());
-            }
 
             return default;
         }
@@ -421,72 +438,56 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
-            AbstractSymbol t = Visit(context.fully_specified_type());
-            string name = context.typeless_declaration().GetChild(0).GetText();
+            var typeSymbol = Visit(context.fully_specified_type()) as TypeSymbol;
+            if (typeSymbol == null) return null;
 
-            if (t is StructSymbol structSymbol)
+            if (context.typeless_declaration() == null)
             {
-                
+                if (typeSymbol is StructSymbol)
+                    return typeSymbol;
+                return null;
             }
 
-            if (t is VariableSymbol variableSymbol)
+            string name = context.typeless_declaration().IDENTIFIER().GetText();
+
+            List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+            var spaceSpec = context.fully_specified_type().type_specifier().space_specifier();
+            if (spaceSpec != null)
             {
-                
+                foreach (ITerminalNode spaceId in spaceSpec.space_definition_parameters().IDENTIFIER())
+                {
+                    var space = _scope[spaceId.GetText()] as SpaceSymbol;
+                    if (space != null)
+                        spaces.Add(space);
+                }
             }
 
-            // TypeSymbol? typeSymbol = _scope[typeName] as TypeSymbol;
-            // if (typeSymbol == null)
-            // {
-            //     throw new Exception("Unknown Type: " + typeName);
-            // }
+            Modifier modifier = Modifier.NONE;
+            var typeQualifier = context.fully_specified_type()?.type_qualifier();
+            if (typeQualifier != null)
+            {
+                foreach (var sq in typeQualifier.single_type_qualifier())
+                {
+                    var storage = sq.storage_qualifier();
+                    if (storage != null)
+                    {
+                        string sqText = storage.GetText();
+                        if (Enum.TryParse(sqText, true, out Modifier m))
+                            modifier = m;
+                        break;
+                    }
+                }
+            }
 
-            // List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
-            // if (context.fully_specified_type().type_specifier().space_specifier() != null)
-            // {
-            //     CastParser.Space_definition_parametersContext typeSpaces = context.fully_specified_type()
-            //         .type_specifier()
-            //         .space_specifier().space_definition_parameters();
+            var type = new CastType(typeSymbol, spaces);
+            var variable = new VariableSymbol(name, type, modifier);
 
-            //     foreach (ITerminalNode space in typeSpaces.IDENTIFIER())
-            //     {
-            //         string spaceName = space.GetText();
-            //         SpaceSymbol? spaceSymbol = _scope[spaceName] as SpaceSymbol;
+            if (modifier == Modifier.IN) Inputs.Add(variable);
+            if (modifier == Modifier.OUT) Outputs.Add(variable);
+            if (modifier == Modifier.UNIFORM) Uniforms.Add(variable);
 
-            //         if (spaceSymbol == null)
-            //         {
-            //             throw new Exception("Unknown Space: " + spaceName);
-            //         }
-            //         
-            //         spaceSymbols.Add(spaceSymbol);
-            //     }
-
-            //     bool hasSpaces = typeSymbol.HasSpaces();
-            //     bool hasOptionalSpaces = typeSymbol.HasSpaces();
-
-            //     // if spaces are mandatory and no spaces were set
-            //     if (!hasOptionalSpaces && !spaceSymbols.Any())
-            //     {
-            //         throw new Exception($"Spaces for '{typeName}' are mandatory.");
-            //     }
-            // }
-
-            // string qualifier = context.fully_specified_type()?.type_qualifier()?.single_type_qualifier(0).GetText();
-            // Modifier modifier = Modifier.NONE;
-            // if (!string.IsNullOrEmpty(qualifier))
-            // {
-            //     if (!Enum.TryParse(qualifier, true, out modifier)) ;
-            // }
-
-            // CastType type = new CastType(typeSymbol, spaceSymbols);
-            // VariableSymbol variableSymbol = new VariableSymbol(name, type, modifier);
-            // 
-            // if (modifier == Modifier.IN) Inputs.Add(variableSymbol);
-            // if (modifier == Modifier.OUT) Outputs.Add(variableSymbol);
-            // if (modifier == Modifier.UNIFORM) Uniforms.Add(variableSymbol);
-        
-            // _scope.Define(variableSymbol);
-
-            return null;
+            _scope.Define(variable);
+            return variable;
         }
 
         public AbstractSymbol VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
@@ -494,21 +495,31 @@ namespace cast.core.visitor
             throw new System.NotImplementedException();
         }
 
+        public AbstractSymbol VisitStruct_declaration(CastParser.Struct_declarationContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public AbstractSymbol VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public AbstractSymbol VisitStruct_declarator_list(CastParser.Struct_declarator_listContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public AbstractSymbol VisitStruct_declarator(CastParser.Struct_declaratorContext context)
+        {
+            throw new System.NotImplementedException();
+        }
+
         public AbstractSymbol VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
         {
-            String? qualifier = String.Empty;
-            
-            if (context.type_qualifier() != null)
-            {
-                if (context.type_qualifier().single_type_qualifier() != null)
-                {
-                    qualifier = context.type_qualifier().single_type_qualifier().ToString();
-                }
-            }
-
             if (context.type_specifier() != null)
             {
-                Visit(context.type_specifier());
+                return Visit(context.type_specifier());
             }
 
             return default;
@@ -559,41 +570,28 @@ namespace cast.core.visitor
             throw new System.NotImplementedException();
         }
 
-        public AbstractSymbol VisitStruct_declaration(CastParser.Struct_declarationContext context)
-        {
-            TypeSymbol type = Visit(context.type_specifier()) as TypeSymbol;
-            return type;
-        }
-
-        public AbstractSymbol VisitStruct_declaration_list(CastParser.Struct_declaration_listContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public AbstractSymbol VisitStruct_declarator_list(CastParser.Struct_declarator_listContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public AbstractSymbol VisitStruct_declarator(CastParser.Struct_declaratorContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public AbstractSymbol VisitStruct_specifier(CastParser.Struct_specifierContext context)
         {
-            string structName = context.IDENTIFIER().GetText();
-            StructSymbol structSymbol = new StructSymbol(structName);
+            string? structName = context.IDENTIFIER()?.GetText();
+            var structSymbol = new StructSymbol(structName ?? "_anonymous");
 
             if (context.struct_declaration_list() != null)
             {
-                foreach (var structDeclaration in context.struct_declaration_list().struct_declaration())
+                foreach (var decl in context.struct_declaration_list().struct_declaration())
                 {
-                    string name = structDeclaration.type_specifier().GetChild(0).GetText();
-                    TypeSymbol field = Visit(structDeclaration) as TypeSymbol;
-                    structSymbol.AddField(name, field);
+                    var fieldType = Visit(decl.type_specifier()) as TypeSymbol;
+                    if (fieldType == null) continue;
+
+                    foreach (var declarator in decl.struct_declarator_list().struct_declarator())
+                    {
+                        structSymbol.AddField(declarator.IDENTIFIER().GetText(), fieldType);
+                    }
                 }
             }
+
+            if (structName != null)
+                _scope.Define(structSymbol);
+
             return structSymbol;
         }
 
@@ -604,8 +602,16 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitType_specifier_nonarray(CastParser.Type_specifier_nonarrayContext context)
         {
-            string typeName = context.type_name().GetText();
-            return _scope[typeName] as TypeSymbol;
+            if (context.struct_specifier() != null)
+                return Visit(context.struct_specifier());
+
+            string name;
+            if (context.type_name() != null)
+                name = context.type_name().GetText();
+            else
+                name = context.GetText();
+
+            return _scope[name] as TypeSymbol;
         }
     }
 }

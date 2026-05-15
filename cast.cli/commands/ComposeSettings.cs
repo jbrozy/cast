@@ -13,4 +13,9 @@ public class ComposeSettings : CommandSettings
     [Description("Verify the Input-Output Graph")]
     [DefaultValue("false")]
     public bool VerifyGraph { get; set; } = false;
+
+    [CommandOption("-f|--format")]
+    [Description("Output format for graph (mermaid, json)")]
+    [DefaultValue("mermaid")]
+    public string? OutputFormat { get; set; }
 }

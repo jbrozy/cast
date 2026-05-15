@@ -124,7 +124,7 @@ namespace cast.core.parser
                 Version = int.Parse(glslMacroPreProcessor.Version)
             };
             
-            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope);
+            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope, mainTokens);
             return new GlslShaderProgram()
             {
                 Configuration = configuration,

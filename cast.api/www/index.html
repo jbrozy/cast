@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
 
     <style>
         * {
@@ -40,6 +41,72 @@
 
         .pane:last-child {
             border-right: none;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+        .overlay-content {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            width: 90vw;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transform: scale(0.95) translateY(8px);
+            transition: transform 0.25s ease;
+        }
+        .overlay.open .overlay-content {
+            transform: scale(1) translateY(0);
+        }
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .overlay-header button {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .overlay-header button:hover {
+            color: #fff;
+        }
+        #overlay-body {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+        #overlay-body svg {
+            max-width: 100%;
+            height: auto !important;
+        }
+        #overlay-body .errors {
+            margin-bottom: 12px;
+            font-size: 12px;
         }
 
         .file-explorer {
@@ -545,6 +612,16 @@
             </div>
         </div>
 
+    </div>
+
+    <div id="graph-overlay" class="overlay">
+        <div class="overlay-content">
+            <div class="overlay-header">
+                <span>Pipeline Graph</span>
+                <button id="overlay-close">&times;</button>
+            </div>
+            <div id="overlay-body"></div>
+        </div>
     </div>
 
     <script>
@@ -1107,6 +1184,200 @@
                 testBtn.disabled = false;
             }
         });
+
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            themeVariables: {
+                background: '#1e1e1e',
+                primaryColor: '#2d2d2d',
+                primaryBorderColor: '#3e3e42',
+                primaryTextColor: '#d4d4d4',
+                lineColor: '#569cd6',
+                secondaryColor: '#1e1e1e',
+                tertiaryColor: '#252526',
+                fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace'
+            },
+            flowchart: { htmlLabels: true, curve: 'basis', padding: 16 }
+        });
+
+        visualizeButton.addEventListener('click', async () => {
+            const fileTree = getShaderFilesForGraph();
+            if (!fileTree || Object.keys(fileTree).length === 0) {
+                outputContainer.innerHTML = '<p style="color: #888;">No shader files to visualize. Create some shader files first.</p>';
+                return;
+            }
+
+            visualizeButton.disabled = true;
+            visualizeButton.textContent = 'Visualizing...';
+            loadingStatus.textContent = 'visualizing...';
+            loadingStatus.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/graph', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Files: fileTree })
+                });
+                const data = await response.json();
+
+                let html = '';
+                if (data.errors && data.errors.length > 0) {
+                    html += '<div class="errors"><div class="errors-header">⚠️ Parser Warnings/Errors:</div><ul>';
+                    data.errors.forEach(err => {
+                        html += `<li>${htmlEscape(err)}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+
+                if (data.nodes && data.nodes.length > 0) {
+                    const matched = new Set();
+                    const typeMismatch = new Set();
+                    const inputStatus = {};
+                    data.edges.forEach(edge => {
+                        if (edge.status === 'typeMismatch') {
+                            typeMismatch.add(`${edge.sourceNode}_${edge.sourcePort}`);
+                            inputStatus[`${edge.targetNode}_${edge.targetPort}`] = 'typeMismatch';
+                        } else {
+                            matched.add(`${edge.sourceNode}_${edge.sourcePort}`);
+                            inputStatus[`${edge.targetNode}_${edge.targetPort}`] = 'matched';
+                        }
+                    });
+                    data.nodes.forEach(node => {
+                        (node.inputs || []).forEach(port => {
+                            const key = `${node.id}_${port.name}`;
+                            if (!inputStatus[key] && !node.name.endsWith('.vsh')) {
+                                inputStatus[key] = 'miss';
+                            }
+                        });
+                    });
+
+                    let mermaidDef = '%%{init: {\n' +
+                        "  'theme': 'base',\n" +
+                        "  'themeVariables': {\n" +
+                        "    'background': '#1e1e1e',\n" +
+                        "    'primaryColor': '#2d2d2d',\n" +
+                        "    'primaryBorderColor': '#3e3e42',\n" +
+                        "    'primaryTextColor': '#d4d4d4',\n" +
+                        "    'lineColor': '#888',\n" +
+                        "    'secondaryColor': '#1e1e1e',\n" +
+                        "    'tertiaryColor': '#252526',\n" +
+                        "    'fontFamily': 'Monaco, Menlo, Ubuntu Mono, monospace',\n" +
+                        "    'fontSize': '12px'\n" +
+                        "  },\n" +
+                        "  'flowchart': {\n" +
+                        "    'useMaxWidth': true,\n" +
+                        "    'htmlLabels': true,\n" +
+                        "    'padding': 12,\n" +
+                        "    'nodeSpacing': 60,\n" +
+                        "    'rankSpacing': 80,\n" +
+                        "    'curve': 'basis'\n" +
+                        "  }\n" +
+                        "}}%%\n" +
+                        'graph TD;\n';
+
+                    const stages = {};
+                    data.nodes.forEach(node => {
+                        const s = node.stage || 'default';
+                        if (!stages[s]) stages[s] = [];
+                        stages[s].push(node);
+                    });
+
+                    for (const [stageName, stageNodes] of Object.entries(stages)) {
+                        mermaidDef += `    subgraph STAGE_${stageName}["${stageName}"]\n`;
+                        mermaidDef += `        direction LR\n`;
+                        stageNodes.forEach(node => {
+                            mermaidDef += `    subgraph ${node.id}["${node.name}"]\n`;
+                            mermaidDef += `        direction TB\n`;
+                            (node.inputs || []).forEach(port => {
+                                if (node.name.endsWith('.vsh')) return;
+                                const portId = `${node.id}_in_${port.name}`;
+                                const key = `${node.id}_${port.name}`;
+                                const label = port.type ? `${port.name} : ${port.type}` : port.name;
+                                const cls = inputStatus[key] === 'matched' ? 'match' : inputStatus[key] === 'typeMismatch' ? 'typeMis' : 'miss';
+                                mermaidDef += `        ${portId}((${label})):::${cls}\n`;
+                            });
+                            (node.outputs || []).forEach(port => {
+                                const portId = `${node.id}_out_${port.name}`;
+                                const key = `${node.id}_${port.name}`;
+                                const label = port.type ? `${port.name} : ${port.type}` : port.name;
+                                let cls = 'miss';
+                                if (matched.has(key)) cls = 'match';
+                                else if (typeMismatch.has(key)) cls = 'typeMis';
+                                mermaidDef += `        ${portId}((${label})):::${cls}\n`;
+                            });
+                            mermaidDef += `    end\n`;
+                        });
+                        mermaidDef += `    end\n`;
+                    }
+
+                    data.edges.forEach(edge => {
+                        const src = `${edge.sourceNode}_out_${edge.sourcePort}`;
+                        const tgt = `${edge.targetNode}_in_${edge.targetPort}`;
+                        const style = edge.status === 'typeMismatch' ? '-.->' : '==>';
+                        const label = edge.status === 'typeMismatch'
+                            ? `${edge.sourcePort} != ${edge.targetPort}`
+                            : `${edge.sourcePort} → ${edge.targetPort}`;
+                        mermaidDef += `    ${src} ${style}|"${label}"| ${tgt};\n`;
+                    });
+
+                    mermaidDef += 'classDef match fill:#1a3a2a,stroke:#4caf50,stroke-width:2px,color:#81c784;\n';
+                    mermaidDef += 'classDef typeMis fill:#3d2e0a,stroke:#ff9800,stroke-width:2px,color:#ffb74d;\n';
+                    mermaidDef += 'classDef miss fill:#3d1b1b,stroke:#f44336,stroke-width:2px,color:#e57373;\n';
+
+                    const graphId = 'mermaid-graph-' + Date.now();
+                    const { svg } = await mermaid.render(graphId, mermaidDef);
+                    const body = document.getElementById('overlay-body');
+                    body.innerHTML = html + svg;
+                    document.getElementById('graph-overlay').classList.add('open');
+                    return;
+                } else {
+                    html += '<p style="color:#888;">No graph data available.</p>';
+                }
+
+                outputContainer.innerHTML = html;
+            } catch (error) {
+                console.error('Visualization error:', error);
+                outputContainer.innerHTML = `<p style="color:#ff6b6b;">❌ Visualization failed: ${htmlEscape(error.message)}</p>`;
+            } finally {
+                visualizeButton.disabled = false;
+                visualizeButton.textContent = 'Visualize';
+                loadingStatus.textContent = '';
+                loadingStatus.style.display = 'none';
+            }
+        });
+
+        document.getElementById('overlay-close').addEventListener('click', () => {
+            document.getElementById('graph-overlay').classList.remove('open');
+        });
+        document.getElementById('graph-overlay').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('graph-overlay').classList.remove('open');
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('graph-overlay').classList.remove('open');
+            }
+        });
+
+        function getShaderFilesForGraph() {
+            const result = {};
+            const stages = Object.keys(shaderFiles).sort();
+            stages.forEach(stage => {
+                if (Array.isArray(shaderFiles[stage]) && shaderFiles[stage].length > 0) {
+                    result[stage] = shaderFiles[stage].map(f => ({
+                        name: f.name,
+                        content: f.content || '',
+                        children: f.children && f.children.length > 0 ? f.children.map(c => ({
+                            name: c.name,
+                            content: c.content || ''
+                        })) : null
+                    }));
+                }
+            });
+            return result;
+        }
 
         function htmlEscape(text) {
             return String(text)

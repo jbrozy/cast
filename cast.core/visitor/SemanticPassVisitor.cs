@@ -378,10 +378,19 @@ namespace cast.core.visitor
             throw new System.NotImplementedException();
         }
 
+        private string GetTypeName(CastParser.Type_specifier_nonarrayContext context)
+        {
+            if (context.struct_specifier() != null)
+                return context.struct_specifier().IDENTIFIER()?.GetText();
+            if (context.type_name() != null)
+                return context.type_name().GetText();
+            return context.GetText();
+        }
+
         public CastType VisitType_specifier(CastParser.Type_specifierContext context)
         {
             List<SpaceSymbol> spaces = new List<SpaceSymbol>();
-            string typeName = context.type_specifier_nonarray().GetText();
+            string typeName = GetTypeName(context.type_specifier_nonarray());
             TypeSymbol type = _scope[typeName] as TypeSymbol;
             if (context.space_specifier() != null)
             {
@@ -699,7 +708,7 @@ namespace cast.core.visitor
 
         public CastType VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
-            string typeName = context.fully_specified_type().type_specifier().type_specifier_nonarray().GetText();
+            string typeName = GetTypeName(context.fully_specified_type().type_specifier().type_specifier_nonarray());
             string variableName = context.typeless_declaration().IDENTIFIER().GetText();
 
             if (_scope[variableName] != null)
@@ -755,7 +764,7 @@ namespace cast.core.visitor
 
         public CastType VisitFully_specified_type(CastParser.Fully_specified_typeContext context)
         {
-            string type = context.type_specifier().type_specifier_nonarray().GetText();
+            string type = GetTypeName(context.type_specifier().type_specifier_nonarray());
             if (_scope[type] == null)
             {
                 _logger.Log(context.Start, $"Type '{type}' not found.");

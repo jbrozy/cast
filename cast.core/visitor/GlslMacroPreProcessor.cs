@@ -243,7 +243,8 @@ namespace cast.core.visitor
             {
                 Version = $"{context.number().GetText()}";
             }
-            
+
+            _rewriter.InsertAfter(context.number().Stop, "\n");
             return default;
         }
     }

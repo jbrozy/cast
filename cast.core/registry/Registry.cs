@@ -152,6 +152,9 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2<T>", "float", "vec2<T>");
             RegisterFunction("*", "vec3<T>", "float", "vec3<T>");
             RegisterFunction("*", "vec4<T>", "float", "vec4<T>");
+            RegisterFunction("*", "vec2", "float", "vec2");
+            RegisterFunction("*", "vec3", "float", "vec3");
+            RegisterFunction("*", "vec4", "float", "vec4");
 
             RegisterFunction("*", "vec2<T>", "vec2<T>", "vec2<T>");
             RegisterFunction("*", "vec3<T>", "vec3<T>", "vec3<T>");
@@ -276,13 +279,12 @@ namespace cast.core.registry
             if (!functions.ContainsKey(name)) return CastType.ErrorType;
             List<(string[] Params, string returnType)> candidates = functions[name];
 
-            Dictionary<string, string> genericParameters = new Dictionary<string, string>();
-
-            bool valid = false;
             foreach ((string[] fnParams, string returnType) in candidates)
             {
-                valid = fnParams.Length == parameters.Count;
-                if (!valid) continue;
+                if (fnParams.Length != parameters.Count) continue;
+
+                Dictionary<string, string> genericParameters = new Dictionary<string, string>();
+                bool valid = true;
 
                 for (int i = 0; i < fnParams.Length; ++i)
                 {
@@ -292,22 +294,35 @@ namespace cast.core.registry
                     if (leftGenerics.Length != rightGenerics.Length)
                     {
                         valid = false;
-                        continue;
+                        break;
                     }
                     for (int j = 0; j < leftGenerics.Length; j++)
                     {
-                        if (!genericParameters.ContainsKey(leftGenerics[j])) genericParameters.Add(leftGenerics[j], rightGenerics[j]);
+                        if (genericParameters.TryGetValue(leftGenerics[j], out var existing))
+                        {
+                            if (existing != rightGenerics[j])
+                            {
+                                valid = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            genericParameters.Add(leftGenerics[j], rightGenerics[j]);
+                        }
                     }
+                    if (!valid) break;
 
                     if (expectedType != givenType)
                     {
-                        genericParameters.Clear();
                         valid = false;
-                        continue;
+                        break;
                     }
                 }
 
-                if (genericParameters.Any() && valid)
+                if (!valid) continue;
+
+                if (genericParameters.Any())
                 {
                     (string expected, string [] expectedParams) = ParseType(returnType);
                     List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
@@ -316,17 +331,13 @@ namespace cast.core.registry
                         spaces.Add(scope[genericParameters[expectedParams[i]]] as SpaceSymbol);
                     }
                     TypeSymbol type = scope[expected] as TypeSymbol;
-                    CastType result = new CastType(type, spaces);
-                    return result;
+                    return new CastType(type, spaces);
                 }
 
-                if (valid)
-                {
-                    TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
-                    return new CastType(returnTypeSymbol);
-                }
+                TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
+                return new CastType(returnTypeSymbol);
             }
-            
+
             return CastType.ErrorType;
         }
 
