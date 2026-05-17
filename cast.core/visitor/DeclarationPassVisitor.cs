@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Antlr4.Runtime.Tree;
 using cast.core.logging;
 using cast.core.models;
@@ -11,15 +12,18 @@ namespace cast.core.visitor
     {
         private readonly Scope _scope;
         private readonly ErrorLogger _logger;
+        private readonly Dictionary<string, string> _samplerPayloads;
         
         public List<VariableSymbol> Inputs = new List<VariableSymbol>();
         public List<VariableSymbol> Outputs = new List<VariableSymbol>();
         public List<VariableSymbol> Uniforms = new List<VariableSymbol>();
-        
-        public DeclarationPassVisitor(Scope scope, ErrorLogger logger)
+        public List<VariableSymbol> Textures = new List<VariableSymbol>();
+
+        public DeclarationPassVisitor(Scope scope, ErrorLogger logger, Dictionary<string, string>? samplerPayloads = null)
         {
             _scope = scope;
             _logger = logger;
+            _samplerPayloads = samplerPayloads ?? new Dictionary<string, string>();
         }
         
         public AbstractSymbol Visit(IParseTree tree)
@@ -104,16 +108,48 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitIteration_statement(CastParser.Iteration_statementContext context)
         {
+            if (context.WHILE() != null)
+            {
+                if (context.condition() != null)
+                    Visit(context.condition());
+                if (context.statement_no_new_scope() != null)
+                    Visit(context.statement_no_new_scope());
+            }
+            else if (context.DO() != null)
+            {
+                if (context.statement() != null)
+                    Visit(context.statement());
+                if (context.expression() != null)
+                    Visit(context.expression());
+            }
+            else if (context.FOR() != null)
+            {
+                if (context.for_init_statement() != null)
+                    Visit(context.for_init_statement());
+                if (context.for_rest_statement() != null)
+                    Visit(context.for_rest_statement());
+                if (context.statement_no_new_scope() != null)
+                    Visit(context.statement_no_new_scope());
+            }
+
             return default;
         }
 
         public AbstractSymbol VisitFor_init_statement(CastParser.For_init_statementContext context)
         {
+            if (context.expression_statement() != null)
+                return Visit(context.expression_statement());
+            if (context.declaration_statement() != null)
+                return Visit(context.declaration_statement());
             return default;
         }
 
         public AbstractSymbol VisitFor_rest_statement(CastParser.For_rest_statementContext context)
         {
+            if (context.condition() != null)
+                Visit(context.condition());
+            if (context.expression() != null)
+                Visit(context.expression());
             return default;
         }
 
@@ -144,7 +180,11 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.compound_statement_no_new_scope() != null)
+                return Visit(context.compound_statement_no_new_scope());
+            if (context.simple_statement() != null)
+                return Visit(context.simple_statement());
+            return default;
         }
 
         public AbstractSymbol VisitCompound_statement(CastParser.Compound_statementContext context)
@@ -200,17 +240,29 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitFunction_call(CastParser.Function_callContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.function_identifier() != null)
+                Visit(context.function_identifier());
+            if (context.function_call_parameters() != null)
+                Visit(context.function_call_parameters());
+            return default;
         }
 
         public AbstractSymbol VisitField_selection(CastParser.Field_selectionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.function_call() != null)
+                return Visit(context.function_call());
+            if (context.variable_identifier() != null)
+                return Visit(context.variable_identifier());
+            return default;
         }
 
         public AbstractSymbol VisitFunction_identifier(CastParser.Function_identifierContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.type_specifier() != null)
+                return Visit(context.type_specifier());
+            if (context.postfix_expression() != null)
+                return Visit(context.postfix_expression());
+            return default;
         }
 
         public AbstractSymbol VisitDimension(CastParser.DimensionContext context)
@@ -251,22 +303,45 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitPrimary_expression(CastParser.Primary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.variable_identifier() != null)
+                return Visit(context.variable_identifier());
+            if (context.expression() != null)
+                return Visit(context.expression());
+            return default;
         }
 
         public AbstractSymbol VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.primary_expression() != null)
+                return Visit(context.primary_expression());
+            if (context.postfix_expression() != null)
+            {
+                Visit(context.postfix_expression());
+                if (context.integer_expression() != null)
+                    Visit(context.integer_expression());
+            }
+            if (context.field_selection() != null)
+                return Visit(context.field_selection());
+            if (context.function_call_parameters() != null)
+                return Visit(context.function_call_parameters());
+            return default;
         }
 
         public AbstractSymbol VisitInteger_expression(CastParser.Integer_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+                return Visit(context.expression());
+            return default;
         }
 
         public AbstractSymbol VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.assignment_expression() != null)
+            {
+                foreach (var expr in context.assignment_expression())
+                    Visit(expr);
+            }
+            return default;
         }
 
         public AbstractSymbol VisitExpression(CastParser.ExpressionContext context)
@@ -276,32 +351,57 @@ namespace cast.core.visitor
 
         public AbstractSymbol VisitUnary_expression(CastParser.Unary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.postfix_expression() != null)
+                return Visit(context.postfix_expression());
+            if (context.unary_expression() != null)
+                return Visit(context.unary_expression());
+            return default;
         }
 
         public AbstractSymbol VisitUnary_operator(CastParser.Unary_operatorContext context)
         {
-            throw new System.NotImplementedException();
+            return default;
         }
 
         public AbstractSymbol VisitConstant_expression(CastParser.Constant_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.QUESTION() != null)
+            {
+                Visit(context.binary_expression());
+                Visit(context.expression());
+                Visit(context.assignment_expression());
+                return default;
+            }
+            if (context.binary_expression() != null)
+                return Visit(context.binary_expression());
+            return default;
         }
 
         public AbstractSymbol VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.unary_expression() != null)
+                Visit(context.unary_expression());
+            if (context.assignment_expression() != null)
+                Visit(context.assignment_expression());
+            if (context.constant_expression() != null)
+                return Visit(context.constant_expression());
+            return default;
         }
 
         public AbstractSymbol VisitBinary_expression(CastParser.Binary_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.binary_expression(0) != null)
+                Visit(context.binary_expression(0));
+            if (context.binary_expression(1) != null)
+                Visit(context.binary_expression(1));
+            if (context.unary_expression() != null)
+                return Visit(context.unary_expression());
+            return default;
         }
 
         public AbstractSymbol VisitAssignment_operator(CastParser.Assignment_operatorContext context)
         {
-            throw new System.NotImplementedException();
+            return default;
         }
 
         public AbstractSymbol VisitDeclaration(CastParser.DeclarationContext context)
@@ -486,8 +586,61 @@ namespace cast.core.visitor
             if (modifier == Modifier.OUT) Outputs.Add(variable);
             if (modifier == Modifier.UNIFORM) Uniforms.Add(variable);
 
+            if (modifier == Modifier.UNIFORM && typeSymbol.Name.Contains("sampler"))
+            {
+                if (_samplerPayloads.TryGetValue(name, out var payloadText))
+                {
+                    CastType payloadType = ParseCastType(payloadText, _scope);
+                    variable = new VariableSymbol(name, new SamplerType(typeSymbol, payloadType), modifier);
+                }
+                Textures.Add(variable);
+            }
+
             _scope.Define(variable);
             return variable;
+        }
+
+        private static CastType ParseCastType(string text, Scope scope)
+        {
+            text = text.Trim();
+            int angleStart = text.IndexOf('<');
+            if (angleStart < 0)
+            {
+                var ts = scope[text] as TypeSymbol;
+                return ts != null ? new CastType(ts) : CastType.ErrorType;
+            }
+
+            string baseName = text.Substring(0, angleStart).Trim();
+            string inner = text.Substring(angleStart + 1, text.Length - angleStart - 2).Trim();
+
+            var baseType = scope[baseName] as TypeSymbol;
+            if (baseType == null) return CastType.ErrorType;
+
+            var innerParts = inner.Split(',');
+            var spaces = new List<SpaceSymbol>();
+            CastType? payload = null;
+
+            foreach (var part in innerParts)
+            {
+                string trimmed = part.Trim();
+                var space = scope[trimmed] as SpaceSymbol;
+                if (space != null)
+                    spaces.Add(space);
+                else
+                {
+                    var innerType = ParseCastType(trimmed, scope);
+                    if (innerType != CastType.ErrorType && !innerType.Type.Name.Contains("ERROR"))
+                    {
+                        if (innerType.Spaces.Count > 0 || innerType.Type.Name.Contains("vec") || innerType.Type.Name.Contains("mat") || innerType.Type.Name.Contains("float") || innerType.Type.Name.Contains("int"))
+                            payload = innerType;
+                    }
+                }
+            }
+
+            if (baseName.Contains("sampler"))
+                return new SamplerType(baseType, payload ?? new CastType(baseType));
+
+            return new CastType(baseType, spaces);
         }
 
         public AbstractSymbol VisitTypeless_declaration(CastParser.Typeless_declarationContext context)

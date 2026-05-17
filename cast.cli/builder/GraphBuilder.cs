@@ -32,6 +32,12 @@ public static class GraphBuilder
                 string portId = $"{node.Id}_out_{output.Name}";
                 graph.AppendLine($"        {portId}([out {output.Type} {output.Name}]);");
             }
+
+            foreach(var tex in node.Textures)
+            {
+                string portId = $"{node.Id}_tex_{tex.Name}";
+                graph.AppendLine($"        {portId}[[tex {tex.Type} {tex.Name}]];");
+            }
         
             graph.AppendLine("    end");
             graph.AppendLine();
@@ -70,6 +76,11 @@ public static class GraphBuilder
                 {
                     name = o.Name,
                     type = o.Type.ToString()
+                }),
+                textures = n.Textures.Select(t => new
+                {
+                    name = t.Name,
+                    type = t.Type.ToString()
                 })
             }),
             edges = nodes.SelectMany(n => n.Outgoing).Select(c => new
@@ -77,7 +88,8 @@ public static class GraphBuilder
                 sourceNode = c.SourceNode.Id,
                 sourcePort = c.SourcePort.Name,
                 targetNode = c.TargetNode.Id,
-                targetPort = c.TargetPort.Name
+                targetPort = c.TargetPort.Name,
+                status = c.SourcePort.Type.IsAssignable(c.TargetPort.Type) ? "matched" : "typeMismatch"
             })
         };
 
@@ -88,6 +100,7 @@ public static class GraphBuilder
     {
         List<string> errors = new List<string>();
 
+        // regular I/O edges
         for (int i = 0; i < nodes.Count; i++)
         {
             Node target = nodes[i];
@@ -98,6 +111,36 @@ public static class GraphBuilder
                 if (matchSource == null)
                 {
                     errors.Add($"Stage '{target.Id}': input '{input.Type}' '{input.Name}' has no matching output in any preceding stage");
+                }
+            }
+        }
+
+        // texture edges: fragment shader outputs -> sampler uniforms in fragment shaders
+        var fshNodes = nodes.Where(n => n.Name.EndsWith(".fsh")).ToList();
+        foreach (var target in fshNodes)
+        {
+            if (target.Textures.Count == 0) continue;
+
+            foreach (var tex in target.Textures)
+            {
+                bool found = false;
+                foreach (var source in fshNodes)
+                {
+                    if (source == target) continue;
+
+                    var match = source.Outputs.FirstOrDefault(o => o.Name == tex.Name);
+                    if (match == null) continue;
+
+                    found = true;
+                    Connection connection = new Connection(source, target, match, tex);
+                    source.Outgoing.Add(connection);
+                    target.Incoming.Add(connection);
+                    break;
+                }
+
+                if (!found)
+                {
+                    errors.Add($"Stage '{target.Id}': texture uniform '{tex.Type}' '{tex.Name}' has no matching output in any preceding stage");
                 }
             }
         }

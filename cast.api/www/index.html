@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cast Editor</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" id="hljs-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
 
     <style>
@@ -97,12 +95,72 @@
         }
         #overlay-body {
             flex: 1;
-            overflow: auto;
+            overflow: hidden;
             padding: 16px;
+            position: relative;
         }
-        #overlay-body svg {
-            max-width: 100%;
-            height: auto !important;
+        .graph-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .graph-controls button {
+            background: #3e3e42;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 16px;
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+        }
+        .graph-controls button:hover {
+            background: #555;
+        }
+        .zoom-level {
+            font-size: 11px;
+            color: #888;
+            min-width: 40px;
+            text-align: center;
+            font-weight: normal;
+            font-variant-numeric: tabular-nums;
+        }
+        .graph-zoom-container {
+            transform-origin: 0 0;
+        }
+        .graph-zoom-container svg {
+            max-width: none;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+        .graph-legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 11px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+        }
+        .graph-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .graph-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         #overlay-body .errors {
             margin-bottom: 12px;
@@ -193,6 +251,47 @@
             overflow: hidden;
             display: flex;
             position: relative;
+        }
+
+        .code-editor-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .code-editor-container .code-highlight {
+            display: none;
+        }
+
+        .code-editor-container .code-highlight code {
+            background: transparent !important;
+            padding: 0;
+        }
+
+        .code-editor-container .code-editor {
+            position: absolute;
+            inset: 0;
+            background: transparent;
+            color: #d4d4d4;
+            caret-color: #d4d4d4;
+            border: none;
+            resize: none;
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            outline: none;
+            padding: 8px 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #464647 transparent;
+        }
+
+        body.light-mode .code-editor-container .code-editor {
+            color: #333;
+            -webkit-text-fill-color: #333;
+            caret-color: #333;
         }
 
         .line-numbers {
@@ -467,6 +566,27 @@
             color: white;
         }
 
+        .file-item .move-btn {
+            opacity: 0.5;
+            margin-left: 2px;
+            margin-right: 2px;
+            background: none;
+            border: 1px solid #555;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 9px;
+            padding: 0 3px;
+            border-radius: 2px;
+            line-height: 1.2;
+        }
+        .file-item:hover .move-btn {
+            opacity: 1;
+        }
+        .file-item .move-btn:hover {
+            background-color: #555;
+            color: #fff;
+        }
+
         .file-item .add-fragment-btn {
             opacity: 0;
             margin-left: 4px;
@@ -539,6 +659,9 @@
         body.light-mode .output-line-numbers { background-color: #f9f9f9; color: #2b91af; border-right: 1px solid #cccccc; }
         body.light-mode .output-code { color: #333333; background-color: #ffffff; }
         body.light-mode .hljs { background: #ffffff !important; color: #333333 !important; }
+        body.light-mode .code-highlight,
+        body.light-mode .code-highlight code,
+        body.light-mode .code-highlight code * { color: #333333 !important; }
         body.light-mode .file-item { color: #333333; }
         body.light-mode .file-item:hover { background-color: #e8e8e8; }
         body.light-mode .file-item.active { background-color: #007acc; color: #ffffff; }
@@ -557,6 +680,7 @@
         
         body.light-mode .modal-container { background: #f3f3f3; border-color: #cccccc; }
         body.light-mode .modal-input { background: #ffffff; color: #333333; border-color: #007acc; }
+        body.light-mode .graph-legend { background: #f3f3f3; border-color: #cccccc; color: #333333; }
     </style>
 </head>
 <body>
@@ -578,6 +702,11 @@
             <div class="pane-footer">
                 <button id="export-btn" type="button" style="padding: 4px 8px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Export</button>
                 <button id="import-btn" type="button" style="padding: 4px 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Import</button>
+                <select id="example-select" style="padding: 4px 8px; background: #7c4dff; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">
+                    <option value="">Examples</option>
+                    <option value="deferred">Simple Deferred</option>
+                    <option value="ssao">Deferred + SSAO</option>
+                </select>
                 <button id="reset-btn" type="button" style="padding: 4px 8px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Reset Storage</button>
             </div>
         </div>
@@ -589,13 +718,16 @@
             </div>
             <div class="editor-wrapper">
                 <div class="line-numbers" id="editor-line-numbers"></div>
-                <textarea 
-                    id="code-editor" 
-                    class="code-editor" 
-                    spellcheck="false"
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"></textarea>
+                <div class="code-editor-container">
+                    <pre class="code-highlight"><code id="editor-highlight" class="language-glsl hljs"></code></pre>
+                    <textarea 
+                        id="code-editor" 
+                        class="code-editor" 
+                        spellcheck="false"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"></textarea>
+                </div>
             </div>
         </div>
         <div class="pane output-pane">
@@ -618,7 +750,13 @@
         <div class="overlay-content">
             <div class="overlay-header">
                 <span>Pipeline Graph</span>
-                <button id="overlay-close">&times;</button>
+                <div class="graph-controls">
+                    <span id="zoom-level" class="zoom-level">100%</span>
+                    <button id="zoom-out-btn" title="Rauszoomen">−</button>
+                    <button id="zoom-reset-btn" title="Zurücksetzen">⟲</button>
+                    <button id="zoom-in-btn" title="Reinzoomen">+</button>
+                    <button id="overlay-close" style="margin-left:8px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:0 4px;line-height:1;">&times;</button>
+                </div>
             </div>
             <div id="overlay-body"></div>
         </div>
@@ -626,21 +764,31 @@
 
     <script>
         let shaderFiles = {};
+        let stageOrder = {};
         try {
             const stored = localStorage.getItem('shaderFiles');
             if (stored) {
-                shaderFiles = JSON.parse(stored);
+                const parsed = JSON.parse(stored);
+                shaderFiles = parsed.files || parsed;
+                stageOrder = parsed.order || {};
+            } else {
+                // legacy flat format
+                const legacy = localStorage.getItem('shaderFiles_legacy');
+                if (legacy) {
+                    shaderFiles = JSON.parse(legacy);
+                }
             }
         } catch (e) {
             console.warn('Error loading shader files from localStorage:', e);
             shaderFiles = {};
+            stageOrder = {};
         }
         let currentPath = null;
 
         let fileList, newFileBtn, newPassBtn, currentFileNameEl;
 
         function getFileByPath(path) {
-            if (path.length === 0) return null;
+            if (!path || path.length === 0) return null;
             const [stage, ...rest] = path;
             if (!shaderFiles[stage]) return null;
             let current = shaderFiles[stage];
@@ -669,8 +817,12 @@
             if (level === 0) {
                 container.innerHTML = '';
             }
-            const stages = Object.keys(shaderFiles).sort();
-            stages.forEach(stage => {
+            const stages = Object.keys(shaderFiles).sort((a, b) => {
+                const oa = stageOrder[a] || 0;
+                const ob = stageOrder[b] || 0;
+                return oa - ob || a.localeCompare(b);
+            });
+            stages.forEach((stage, idx) => {
                 if (!shaderFiles[stage] || !Array.isArray(shaderFiles[stage])) {
                     shaderFiles[stage] = [];
                 }
@@ -678,7 +830,9 @@
                 const stageItem = document.createElement('div');
                 stageItem.className = 'file-item';
                 stageItem.style.paddingLeft = `${level * 20 + 8}px`;
-                stageItem.innerHTML = `<span class="file-icon">📁</span><span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
+                const upBtn = idx > 0 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', -1)" title="nach oben">▲</button>` : '';
+                const dnBtn = idx < stages.length - 1 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', 1)" title="nach unten">▼</button>` : '';
+                stageItem.innerHTML = `<span class="file-icon">📁</span>${upBtn}${dnBtn}<span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
                 container.appendChild(stageItem);
 
                 renderStage(container, shaderFiles[stage], [stage], level + 1);
@@ -761,7 +915,15 @@
                     reader.onload = (event) => {
                         try {
                             const importedData = JSON.parse(event.target.result);
-                            shaderFiles = importedData;
+                            if (importedData.files) {
+                                shaderFiles = importedData.files;
+                                stageOrder = importedData.order || {};
+                            } else {
+                                shaderFiles = importedData;
+                                stageOrder = {};
+                                let n = 1;
+                                Object.keys(shaderFiles).sort().forEach(s => { stageOrder[s] = n++; });
+                            }
                             saveFiles();
                             renderFileList();
                             // Setze currentPath auf erste verfügbare Datei
@@ -783,12 +945,319 @@
             input.click();
         }
 
+        function loadExample(name) {
+            if (name === 'deferred') {
+                shaderFiles = {
+                    gbuffer: [
+                        {
+                            name: 'gbuffer.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec3<Object> a_Position;
+layout(location = 1) in vec3<Object> a_Normal;
+layout(location = 2) in vec2 a_TexCoord;
+
+out vec3<World> v_WorldPos;
+out vec3<World> v_Normal;
+out vec2 v_TexCoord;
+
+uniform mat4<Object, World> u_Model;
+uniform mat4<World, Clip> u_ViewProjection;
+
+void main() {
+    vec4<World> worldPos = u_Model * vec4<Object>(a_Position, 1.0);
+    v_WorldPos = worldPos.xyz;
+    v_Normal = mat3(u_Model) * a_Normal;
+    v_TexCoord = a_TexCoord;
+    gl_Position = u_ViewProjection * worldPos;
+}`,
+                            children: [
+                                {
+                                    name: 'gbuffer.fsh',
+                                    content: `#version 330
+
+in vec3<World> v_WorldPos;
+in vec3<World> v_Normal;
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4<Color> gbuf_albedo;
+layout(location = 1) out vec4<World> gbuf_normal;
+layout(location = 2) out vec4 gbuf_metallicRoughness;
+
+uniform sampler2D u_AlbedoMap;
+uniform sampler2D u_NormalMap;
+uniform sampler2D u_MetallicRoughnessMap;
+
+void main() {
+    vec4 albedo = texture(u_AlbedoMap, v_TexCoord);
+    gbuf_albedo = albedo;
+    gbuf_normal = vec4(normalize(v_Normal), 0.0);
+    gbuf_metallicRoughness = texture(u_MetallicRoughnessMap, v_TexCoord);
+}`
+                                }
+                            ]
+                        }
+                    ],
+                    lighting: [
+                        {
+                            name: 'lighting.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main() {
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}`,
+                            children: [
+                                {
+                                    name: 'lighting.fsh',
+                                    content: `#version 330
+
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4<Color> out_Color;
+
+uniform sampler2D gbuf_albedo;
+uniform sampler2D gbuf_normal;
+uniform sampler2D gbuf_metallicRoughness;
+
+uniform vec3<World> u_LightDirection;
+uniform vec3<Color> u_LightColor;
+
+void main() {
+    vec4<Color> albedo = texture(gbuf_albedo, v_TexCoord);
+    vec4<World> packedNormal = texture(gbuf_normal, v_TexCoord);
+    vec3<World> normal = normalize(packedNormal.xyz);
+    vec3<World> lightDir = normalize(u_LightDirection);
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    vec3<Color> diffuse = albedo.xyz * u_LightColor * NdotL;
+    out_Color = vec4(diffuse, 1.0);
+}`
+                                }
+                            ]
+                        }
+                    ]
+                };
+                stageOrder = { gbuffer: 1, lighting: 2 };
+            } else if (name === 'ssao') {
+                shaderFiles = {
+                    gbuffer: [
+                        {
+                            name: 'gbuffer.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec3<Object> a_Position;
+layout(location = 1) in vec3<Object> a_Normal;
+layout(location = 2) in vec2 a_TexCoord;
+
+out vec3<World> v_WorldPos;
+out vec3<World> v_Normal;
+out vec2 v_TexCoord;
+
+uniform mat4<Object, World> u_Model;
+uniform mat4<World, Clip> u_ViewProjection;
+
+void main() {
+    vec4<World> worldPos = u_Model * vec4<Object>(a_Position, 1.0);
+    v_WorldPos = worldPos.xyz;
+    v_Normal = mat3(u_Model) * a_Normal;
+    v_TexCoord = a_TexCoord;
+    gl_Position = u_ViewProjection * worldPos;
+}`,
+                            children: [
+                                {
+                                    name: 'gbuffer.fsh',
+                                    content: `#version 330
+
+in vec3<World> v_WorldPos;
+in vec3<World> v_Normal;
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4<Color> gbuf_albedo;
+layout(location = 1) out vec4<World> gbuf_normal;
+layout(location = 2) out vec4 gbuf_metallicRoughness;
+layout(location = 3) out float gbuf_depth;
+
+uniform sampler2D u_AlbedoMap;
+uniform sampler2D u_NormalMap;
+uniform sampler2D u_MetallicRoughnessMap;
+
+void main() {
+    vec4 albedo = texture(u_AlbedoMap, v_TexCoord);
+    gbuf_albedo = albedo;
+    gbuf_normal = vec4(normalize(v_Normal), 0.0);
+    gbuf_metallicRoughness = texture(u_MetallicRoughnessMap, v_TexCoord);
+    gbuf_depth = gl_FragCoord.z;
+}`
+                                }
+                            ]
+                        }
+                    ],
+                    ssao: [
+                        {
+                            name: 'ssao.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main() {
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}`,
+                            children: [
+                                {
+                                    name: 'ssao.fsh',
+                                    content: `#version 330
+
+in vec2 v_TexCoord;
+
+layout(location = 0) out float ssao_result;
+
+uniform sampler2D gbuf_normal;
+uniform sampler2D gbuf_depth;
+uniform vec2 u_ScreenSize;
+
+void main() {
+    vec4<World> normalTexel = texture(gbuf_normal, v_TexCoord);
+    vec3<World> normal = normalize(normalTexel.xyz);
+    float depth = texture(gbuf_depth, v_TexCoord).r;
+
+    vec2 texelStep = vec2(1.0, 1.0) / u_ScreenSize * 0.5;
+    float bias = 0.01;
+
+    float occlusion = 0.0;
+    vec2 offset;
+
+    offset = v_TexCoord + vec2(texelStep.x, 0.0);
+    occlusion += step(texture(gbuf_depth, offset).r - depth - bias, 0.0);
+
+    offset = v_TexCoord + vec2(-texelStep.x, 0.0);
+    occlusion += step(texture(gbuf_depth, offset).r - depth - bias, 0.0);
+
+    offset = v_TexCoord + vec2(0.0, texelStep.y);
+    occlusion += step(texture(gbuf_depth, offset).r - depth - bias, 0.0);
+
+    offset = v_TexCoord + vec2(0.0, -texelStep.y);
+    occlusion += step(texture(gbuf_depth, offset).r - depth - bias, 0.0);
+
+    ssao_result = 1.0 - occlusion / 4.0;
+}`
+                                }
+                            ]
+                        }
+                    ],
+                    lighting: [
+                        {
+                            name: 'lighting.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main() {
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}`,
+                            children: [
+                                {
+                                    name: 'lighting.fsh',
+                                    content: `#version 330
+
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4 lighting_result;
+
+uniform sampler2D gbuf_albedo;
+uniform sampler2D gbuf_normal;
+uniform sampler2D gbuf_metallicRoughness;
+uniform sampler2D ssao_result;
+
+uniform vec3<World> u_LightDirection;
+uniform vec3<Color> u_LightColor;
+
+void main() {
+    vec4<Color> albedo = texture(gbuf_albedo, v_TexCoord);
+    vec4<World> packedNormal = texture(gbuf_normal, v_TexCoord);
+    vec3<World> normal = normalize(packedNormal.xyz);
+    float ssao = texture(ssao_result, v_TexCoord).r;
+    vec3<World> lightDir = normalize(u_LightDirection);
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    vec3<Color> diffuse = albedo.xyz * u_LightColor * NdotL * ssao;
+    vec3<Color> ambient = albedo.xyz * 0.05;
+    lighting_result = vec4(diffuse + ambient, 1.0);
+}`
+                                }
+                            ]
+                        }
+                    ],
+                    postprocess: [
+                        {
+                            name: 'post.vsh',
+                            content: `#version 330
+
+layout(location = 0) in vec2 a_Position;
+layout(location = 1) in vec2 a_TexCoord;
+
+out vec2 v_TexCoord;
+
+void main() {
+    v_TexCoord = a_TexCoord;
+    gl_Position = vec4(a_Position, 0.0, 1.0);
+}`,
+                            children: [
+                                {
+                                    name: 'post.fsh',
+                                    content: `#version 330
+
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4<Color> out_FinalColor;
+
+uniform sampler2D lighting_result;
+uniform float u_Exposure;
+
+void main() {
+    vec4<Color> color = texture(lighting_result, v_TexCoord);
+    out_FinalColor = vec4(color.xyz * u_Exposure, 1.0);
+}`
+                                }
+                            ]
+                        }
+                    ]
+                };
+                stageOrder = { gbuffer: 1, ssao: 2, lighting: 3, postprocess: 4 };
+            }
+
+            document.getElementById('example-select').value = '';
+            saveFiles();
+            renderFileList();
+            const stages = Object.keys(shaderFiles).sort();
+            if (stages.length > 0 && shaderFiles[stages[0]].length > 0) {
+                currentPath = [stages[0], 0];
+            }
+            loadCurrentFile();
+        }
+
         // Projekt exportieren
         function exportProject() {
-            const exportData = {};
-            Object.keys(shaderFiles).forEach(stage => {
+            const exportData = { files: {}, order: {} };
+            Object.keys(shaderFiles).sort((a, b) => {
+                const oa = stageOrder[a] || 0;
+                const ob = stageOrder[b] || 0;
+                return oa - ob;
+            }).forEach(stage => {
                 if (stage !== 'shadow') {
-                    exportData[stage] = shaderFiles[stage];
+                    exportData.files[stage] = shaderFiles[stage];
+                    exportData.order[stage] = stageOrder[stage] || 0;
                 }
             });
             const dataStr = JSON.stringify(exportData, null, 2);
@@ -895,8 +1364,12 @@
                     fileName = fileName.replace(/\.(vsh|fsh)$/i, '');
                     const extension = type === 'vertex' ? '.vsh' : '.fsh';
                     const finalName = fileName + extension;
-                    
+
                     if (!shaderFiles[stage]) shaderFiles[stage] = [];
+                    if (!stageOrder[stage]) {
+                        const maxOrder = Object.keys(stageOrder).reduce((max, k) => Math.max(max, stageOrder[k] || 0), 0);
+                        stageOrder[stage] = maxOrder + 1;
+                    }
                     
                     const newFile = {
                         name: finalName,
@@ -977,9 +1450,11 @@
             okBtn.onclick = () => {
                 const passName = nameInput.value.trim();
                 const passType = typeSelect.value;
-                
+
                 if (passName && !shaderFiles[passName]) {
                     shaderFiles[passName] = [];
+                    const maxOrder = Object.keys(stageOrder).reduce((max, k) => Math.max(max, stageOrder[k] || 0), 0);
+                    stageOrder[passName] = maxOrder + 1;
                     saveFiles();
                     renderFileList();
                     removeContainer();
@@ -1061,9 +1536,26 @@
             }
         }
 
+        function moveStage(stage, dir) {
+            const stages = Object.keys(shaderFiles).sort((a, b) => {
+                const oa = stageOrder[a] || 0;
+                const ob = stageOrder[b] || 0;
+                return oa - ob || a.localeCompare(b);
+            });
+            const idx = stages.indexOf(stage);
+            if (idx < 0) return;
+            const target = idx + dir;
+            if (target < 0 || target >= stages.length) return;
+            const tmp = stageOrder[stage];
+            stageOrder[stage] = stageOrder[stages[target]];
+            stageOrder[stages[target]] = tmp;
+            saveFiles();
+            renderFileList();
+        }
+
         // Dateien speichern
         function saveFiles() {
-            localStorage.setItem('shaderFiles', JSON.stringify(shaderFiles));
+            localStorage.setItem('shaderFiles', JSON.stringify({ files: shaderFiles, order: stageOrder }));
         }
 
         // Aktuelle Datei speichern (beim Bearbeiten)
@@ -1113,6 +1605,8 @@
                     const isLight = document.body.classList.contains('light-mode');
                     localStorage.setItem('theme', isLight ? 'light' : 'dark');
                     themeToggleBtn.textContent = isLight ? '🌙' : '☀️';
+                    const outCode = document.querySelector('.output-code code');
+                    if (outCode) hljs.highlightElement(outCode);
                 });
             }
 
@@ -1121,11 +1615,13 @@
             const newPassBtn = document.getElementById('new-pass-btn');
             const exportBtn = document.getElementById('export-btn');
             const importBtn = document.getElementById('import-btn');
+            const exampleSelect = document.getElementById('example-select');
             const resetBtn = document.getElementById('reset-btn');
             if (newFileBtn) newFileBtn.onclick = createNewFile;
             if (newPassBtn) newPassBtn.onclick = createNewPass;
             if (exportBtn) exportBtn.onclick = exportProject;
             if (importBtn) importBtn.onclick = importProject;
+            if (exampleSelect) exampleSelect.onchange = () => loadExample(exampleSelect.value);
             if (resetBtn) resetBtn.onclick = () => {
                 if (confirm('Are you sure you want to reset all stored data? This cannot be undone.')) {
                     localStorage.clear();
@@ -1134,6 +1630,12 @@
             };
 
             // Initialisierung: Falls keine Dateien vorhanden, erstelle eine Standarddatei
+            // assign order numbers if missing
+            if (Object.keys(stageOrder).length === 0 && Object.keys(shaderFiles).length > 0) {
+                let n = 1;
+                Object.keys(shaderFiles).sort().forEach(s => { stageOrder[s] = n++; });
+                saveFiles();
+            }
             // Stelle sicher, dass currentPath gültig ist
             if (Object.keys(shaderFiles).length > 0) {
                 // Wenn Dateien vorhanden, setze currentPath auf die erste verfügbare Datei
@@ -1153,7 +1655,7 @@
             }
         };
 
-        const DEBOUNCE_TIME_MS = 500;
+        const DEBOUNCE_TIME_MS = 300;
         const API_ENDPOINT = '/api/compile';
         const TEST_ENDPOINT = '/api/test';
 
@@ -1217,7 +1719,7 @@
                 const response = await fetch('/api/graph', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Files: fileTree })
+                    body: JSON.stringify({ Files: fileTree, StageOrder: stageOrder })
                 });
                 const data = await response.json();
 
@@ -1233,11 +1735,15 @@
                 if (data.nodes && data.nodes.length > 0) {
                     const matched = new Set();
                     const typeMismatch = new Set();
+                    const textureMatched = new Set();
                     const inputStatus = {};
                     data.edges.forEach(edge => {
                         if (edge.status === 'typeMismatch') {
                             typeMismatch.add(`${edge.sourceNode}_${edge.sourcePort}`);
                             inputStatus[`${edge.targetNode}_${edge.targetPort}`] = 'typeMismatch';
+                        } else if (edge.status === 'texture') {
+                            textureMatched.add(`${edge.sourceNode}_${edge.sourcePort}`);
+                            inputStatus[`${edge.targetNode}_tex_${edge.targetPort}`] = 'texture';
                         } else {
                             matched.add(`${edge.sourceNode}_${edge.sourcePort}`);
                             inputStatus[`${edge.targetNode}_${edge.targetPort}`] = 'matched';
@@ -1247,6 +1753,12 @@
                         (node.inputs || []).forEach(port => {
                             const key = `${node.id}_${port.name}`;
                             if (!inputStatus[key] && !node.name.endsWith('.vsh')) {
+                                inputStatus[key] = 'miss';
+                            }
+                        });
+                        (node.textures || []).forEach(tex => {
+                            const key = `${node.id}_tex_${tex.name}`;
+                            if (!inputStatus[key]) {
                                 inputStatus[key] = 'miss';
                             }
                         });
@@ -1277,17 +1789,23 @@
                         'graph TD;\n';
 
                     const stages = {};
+                    const stageOrderList = [];
                     data.nodes.forEach(node => {
                         const s = node.stage || 'default';
-                        if (!stages[s]) stages[s] = [];
+                        if (!stages[s]) {
+                            stages[s] = [];
+                            stageOrderList.push(s);
+                        }
                         stages[s].push(node);
                     });
 
-                    for (const [stageName, stageNodes] of Object.entries(stages)) {
-                        mermaidDef += `    subgraph STAGE_${stageName}["${stageName}"]\n`;
+                    for (const stageName of stageOrderList) {
+                        const stageNodes = stages[stageName];
+                        mermaidDef += `    subgraph STAGE_${stageName}["${htmlEscape(stageName)}"]\n`;
                         mermaidDef += `        direction LR\n`;
+                        mermaidDef += `        ord_start_${stageName}( ):::orderNode\n`;
                         stageNodes.forEach(node => {
-                            mermaidDef += `    subgraph ${node.id}["${node.name}"]\n`;
+                            mermaidDef += `    subgraph ${node.id}["${htmlEscape(node.name)}"]\n`;
                             mermaidDef += `        direction TB\n`;
                             (node.inputs || []).forEach(port => {
                                 if (node.name.endsWith('.vsh')) return;
@@ -1295,7 +1813,7 @@
                                 const key = `${node.id}_${port.name}`;
                                 const label = port.type ? `${port.name} : ${port.type}` : port.name;
                                 const cls = inputStatus[key] === 'matched' ? 'match' : inputStatus[key] === 'typeMismatch' ? 'typeMis' : 'miss';
-                                mermaidDef += `        ${portId}((${label})):::${cls}\n`;
+                                mermaidDef += `        ${portId}((${htmlEscape(label)})):::${cls}\n`;
                             });
                             (node.outputs || []).forEach(port => {
                                 const portId = `${node.id}_out_${port.name}`;
@@ -1304,32 +1822,137 @@
                                 let cls = 'miss';
                                 if (matched.has(key)) cls = 'match';
                                 else if (typeMismatch.has(key)) cls = 'typeMis';
-                                mermaidDef += `        ${portId}((${label})):::${cls}\n`;
+                                else if (textureMatched.has(key)) cls = 'texture';
+                                mermaidDef += `        ${portId}((${htmlEscape(label)})):::${cls}\n`;
+                            });
+                            (node.textures || []).forEach(tex => {
+                                const portId = `${node.id}_tex_${tex.name}`;
+                                const key = `${node.id}_tex_${tex.name}`;
+                                const label = tex.type ? `${tex.name} : ${tex.type}` : tex.name;
+                                const cls = inputStatus[key] === 'texture' ? 'texture' : 'miss';
+                                mermaidDef += `        ${portId}[[${htmlEscape(label)}]]:::${cls}\n`;
                             });
                             mermaidDef += `    end\n`;
                         });
+                        mermaidDef += `        ord_end_${stageName}( ):::orderNode\n`;
                         mermaidDef += `    end\n`;
                     }
 
+                    for (let i = 0; i < stageOrderList.length - 1; i++) {
+                        const curr = stageOrderList[i];
+                        const next = stageOrderList[i + 1];
+                        mermaidDef += `    ord_end_${curr} ~~~ ord_start_${next};\n`;
+                    }
+
                     data.edges.forEach(edge => {
-                        const src = `${edge.sourceNode}_out_${edge.sourcePort}`;
-                        const tgt = `${edge.targetNode}_in_${edge.targetPort}`;
-                        const style = edge.status === 'typeMismatch' ? '-.->' : '==>';
-                        const label = edge.status === 'typeMismatch'
-                            ? `${edge.sourcePort} != ${edge.targetPort}`
-                            : `${edge.sourcePort} → ${edge.targetPort}`;
-                        mermaidDef += `    ${src} ${style}|"${label}"| ${tgt};\n`;
+                        if (edge.status === 'texture') {
+                            const src = `${edge.sourceNode}_out_${edge.sourcePort}`;
+                            const tgt = `${edge.targetNode}_tex_${edge.targetPort}`;
+                            const srcPort = htmlEscape(edge.sourcePort);
+                            const tgtPort = htmlEscape(edge.targetPort);
+                            mermaidDef += `    ${src} -.->|"${srcPort} → ${tgtPort}"| ${tgt};\n`;
+                        } else {
+                            const src = `${edge.sourceNode}_out_${edge.sourcePort}`;
+                            const tgt = `${edge.targetNode}_in_${edge.targetPort}`;
+                            const style = edge.status === 'typeMismatch' ? '-.->' : '==>';
+                            const srcPort = htmlEscape(edge.sourcePort);
+                            const tgtPort = htmlEscape(edge.targetPort);
+                            const label = edge.status === 'typeMismatch'
+                                ? `${srcPort} != ${tgtPort}`
+                                : `${srcPort} → ${tgtPort}`;
+                            mermaidDef += `    ${src} ${style}|"${label}"| ${tgt};\n`;
+                        }
                     });
 
                     mermaidDef += 'classDef match fill:#1a3a2a,stroke:#4caf50,stroke-width:2px,color:#81c784;\n';
                     mermaidDef += 'classDef typeMis fill:#3d2e0a,stroke:#ff9800,stroke-width:2px,color:#ffb74d;\n';
                     mermaidDef += 'classDef miss fill:#3d1b1b,stroke:#f44336,stroke-width:2px,color:#e57373;\n';
+                    mermaidDef += 'classDef texture fill:#0a2a3d,stroke:#2196f3,stroke-width:2px,color:#64b5f6;\n';
+                    mermaidDef += 'classDef orderNode fill:none,stroke:none,color:transparent,width:0,height:0;\n';
 
                     const graphId = 'mermaid-graph-' + Date.now();
                     const { svg } = await mermaid.render(graphId, mermaidDef);
                     const body = document.getElementById('overlay-body');
-                    body.innerHTML = html + svg;
+
+                    // Legend
+                    const legend = document.createElement('div');
+                    legend.className = 'graph-legend';
+                    legend.innerHTML = `
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#1a3a2a;border-color:#4caf50;"></span> Connected</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3d1b1b;border-color:#f44336;"></span> Missing</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3d2e0a;border-color:#ff9800;"></span> Type Mismatch</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#0a2a3d;border-color:#2196f3;"></span> Texture</div>
+                    `;
+
+                    const zoomContainer = document.createElement('div');
+                    zoomContainer.className = 'graph-zoom-container';
+                    zoomContainer.innerHTML = svg;
+
+                    body.innerHTML = '';
+                    body.appendChild(legend);
+                    body.appendChild(zoomContainer);
                     document.getElementById('graph-overlay').classList.add('open');
+
+                    let zoomScale = 1, panX = 0, panY = 0;
+                    const zoomLevelEl = document.getElementById('zoom-level');
+
+                    function updateTransform() {
+                        zoomContainer.style.transform = `scale(${zoomScale}) translate(${panX}px, ${panY}px)`;
+                        if (zoomLevelEl) zoomLevelEl.textContent = Math.round(zoomScale * 100) + '%';
+                    }
+
+                    document.getElementById('zoom-in-btn').onclick = () => {
+                        zoomScale = Math.min(zoomScale * 1.3, 5);
+                        updateTransform();
+                    };
+                    document.getElementById('zoom-out-btn').onclick = () => {
+                        zoomScale = Math.max(zoomScale / 1.3, 0.1);
+                        updateTransform();
+                    };
+                    document.getElementById('zoom-reset-btn').onclick = () => {
+                        zoomScale = 1;
+                        panX = 0;
+                        panY = 0;
+                        updateTransform();
+                    };
+
+                    body.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                        const newScale = Math.min(Math.max(zoomScale * delta, 0.1), 5);
+                        const rect = body.getBoundingClientRect();
+                        const mx = e.clientX - rect.left - 16;
+                        const my = e.clientY - rect.top - 16;
+                        panX = panX + mx * (1 / newScale - 1 / zoomScale);
+                        panY = panY + my * (1 / newScale - 1 / zoomScale);
+                        zoomScale = newScale;
+                        updateTransform();
+                    }, { passive: false });
+
+                    let panning = false, startX, startY, startPanX, startPanY;
+                    body.addEventListener('mousedown', (e) => {
+                        if (e.target.closest('button') || e.target.closest('.graph-legend')) return;
+                        panning = true;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startPanX = panX;
+                        startPanY = panY;
+                        body.style.cursor = 'grabbing';
+                    });
+                    const endPan = () => {
+                        panning = false;
+                        body.style.cursor = 'grab';
+                    };
+                    body.addEventListener('mousemove', (e) => {
+                        if (!panning) return;
+                        panX = startPanX + (e.clientX - startX) / zoomScale;
+                        panY = startPanY + (e.clientY - startY) / zoomScale;
+                        updateTransform();
+                    });
+                    body.addEventListener('mouseup', endPan);
+                    body.addEventListener('mouseleave', endPan);
+                    body.style.cursor = 'grab';
+
                     return;
                 } else {
                     html += '<p style="color:#888;">No graph data available.</p>';
@@ -1363,7 +1986,11 @@
 
         function getShaderFilesForGraph() {
             const result = {};
-            const stages = Object.keys(shaderFiles).sort();
+            const stages = Object.keys(shaderFiles).sort((a, b) => {
+                const oa = stageOrder[a] || 0;
+                const ob = stageOrder[b] || 0;
+                return oa - ob || a.localeCompare(b);
+            });
             stages.forEach(stage => {
                 if (Array.isArray(shaderFiles[stage]) && shaderFiles[stage].length > 0) {
                     result[stage] = shaderFiles[stage].map(f => ({
@@ -1403,6 +2030,11 @@
 
         codeEditor.addEventListener('scroll', () => {
             lineNumbersContainer.scrollTop = codeEditor.scrollTop;
+            const container = codeEditor.parentElement;
+            if (container) {
+                const pre = container.querySelector('.code-highlight');
+                if (pre) pre.scrollTop = codeEditor.scrollTop;
+            }
         });
 
         let debounceTimer = null;
@@ -1512,29 +2144,27 @@
             }
         });
 
+        let requestId = 0;
         codeEditor.addEventListener('input', () => {
             updateLineNumbers();
             saveCurrentFile();
             
             if (debounceTimer !== null) {
                 clearTimeout(debounceTimer);
-                debounceTimer = null;
             }
             
             if (abortController !== null) {
                 abortController.abort();
             }
-            abortController = new AbortController();
             
-            loadingStatus.textContent = 'transpiling...';
-            loadingStatus.style.display = 'inline-block';
+            const currentRequestId = ++requestId;
             
             debounceTimer = setTimeout(() => {
-                const code = codeEditor.value;
+                abortController = new AbortController();
+                loadingStatus.textContent = 'transpiling...';
+                loadingStatus.style.display = 'inline-block';
                 
-                console.log('📤 Sending compile request...');
-                console.log('Code length:', code.length);
-                console.log('Code preview:', code.substring(0, 100));
+                const code = codeEditor.value;
                 
                 fetch(API_ENDPOINT, {
                     method: 'POST',
@@ -1544,12 +2174,9 @@
                     body: JSON.stringify({ Input: code }),
                     signal: abortController.signal
                 })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('✅ Response received:', data);
+                    if (currentRequestId !== requestId) return;
                     
                     let htmlResponse = '';
                     let errorMap = {};
@@ -1576,17 +2203,6 @@
                     
                     if (data.result && data.result.trim()) {
                         let normalizedResult = data.result.replace(/\r\n/g, '\n');
-                        
-                        try {
-                            normalizedResult = js_beautify(normalizedResult, {
-                                indent_size: 1,
-                                indent_char: '  ',
-                                preserve_newlines: true,
-                                max_preserve_newlines: 2
-                            });
-                        } catch (e) {
-                            console.log('Formatierung fehlgeschlagen, verwende Original:', e);
-                        }
                         
                         const lines = normalizedResult.split('\n');
                         
@@ -1617,13 +2233,14 @@
 
                         htmlResponse += `<div class="errors"><div class="errors-header">⚠️ ${data.errors.length} Error while transpiling:</div><ul>${errorItems}</ul></div>`;
                     }
-                    // Fallback wenn kein Ergebnis
+                    
                     if (!data.result && (!data.errors || data.errors.length === 0)) {
                         htmlResponse = '<p style="color: #81c784;">✅ Successfully transpiled to GLSL!</p>';
                     }
                     
                     outputContainer.innerHTML = htmlResponse;
-                    hljs.highlightAll();
+                    const outCode = outputContainer.querySelector('.output-code code');
+                    if (outCode) hljs.highlightElement(outCode);
                     
                     loadingStatus.textContent = '✅ updated';
                     setTimeout(() => {
@@ -1632,10 +2249,7 @@
                     }, 2000);
                 })
                 .catch(error => {
-                    if (error.name === 'AbortError') {
-                        console.log('Compile request aborted due to new input.');
-                        return;
-                    }
+                    if (error.name === 'AbortError') return;
                     console.error('❌ Compile request failed:', error);
                     loadingStatus.textContent = '❌ Error';
                     outputContainer.innerHTML = '<p style="color: #ff6b6b;">❌ Error while compiling!<br>' + error.message + '<br><br>Make sure the backend server is running on port 5264.</p>';
@@ -1647,49 +2261,16 @@
             return {
                 name: 'GLSL',
                 keywords: {
-                    keyword: 'attribute uniform varying break continue do for while switch case default if else in out inout const invariant ' +
-                        'centroid flat smooth ' +
-                        'void discard return mat2 mat3 mat4 dmat2 dmat3 dmat4 mat2x2 mat2x3 mat2x4 mat3x2 mat3x3 mat3x4 mat4x2 mat4x3 mat4x4 ' +
-                        'dmat2x2 dmat2x3 dmat2x4 dmat3x2 dmat3x3 dmat3x4 dmat4x2 dmat4x3 dmat4x4 vec2 vec3 vec4 ivec2 ivec3 ivec4 bvec2 bvec3 bvec4 ' +
-                        'dvec2 dvec3 dvec4 uint uvec2 uvec3 uvec4 sampler1D sampler2D sampler3D samplerCube sampler1DShadow sampler2DShadow ' +
-                        'samplerCubeShadow sampler1DArray sampler2DArray sampler1DArrayShadow sampler2DArrayShadow isampler1D isampler2D isampler3D ' +
-                        'isamplerCube isampler1DArray isampler2DArray usampler1D usampler2D usampler3D usamplerCube usampler1DArray usampler2DArray ' +
-                        'sampler2DRect sampler2DRectShadow isampler2DRect usampler2DRect samplerBuffer isamplerBuffer usamplerBuffer sampler2DMS isampler2DMS ' +
-                        'usampler2DMS samplerCubeArray isamplerCubeArray usamplerCubeArray samplerCubeArrayShadow image1D iimage1D uimage1D image2D iimage2D ' +
-                        'uimage2D image3D iimage3D uimage3D image2DRect iimage2DRect uimage2DRect imageCube iimageCube uimageCube imageBuffer iimageBuffer ' +
-                        'uimageBuffer image2DMS iimage2DMS uimage2DMS imageCubeArray iimageCubeArray uimageCubeArray ' +
-                        'true false',
-                    built_in: 'radians degrees sin cos tan asin acos atan sinh cosh tanh asinh acosh atanh pow exp log exp2 log2 sqrt inversesqrt ' +
-                        'abs sign floor trunc round roundEven ceil fract mod modf min max clamp mix step smoothstep isnan isinf floatBitsToInt floatBitsToUint ' +
-                        'intBitsToFloat uintBitsToFloat fma frexp ldexp packSnorm2x16 unpackSnorm2x16 packUnorm2x16 unpackUnorm2x16 packHalf2x16 unpackHalf2x16 ' +
-                        'packDouble2x32 unpackDouble2x32 packInt2x32 unpackInt2x32 packUint2x32 unpackUint2x32 packSnorm4x8 unpackSnorm4x8 packUnorm4x8 unpackUnorm4x8 ' +
-                        'length distance dot cross normalize faceforward reflect refract matrix matrixCompMult outerProduct transpose determinant inverse ' +
-                        'lessThan lessThanEqual greaterThan greaterThanEqual equal notEqual any all not textureSize texture textureProj textureLod textureOffset ' +
-                        'texelFetch texelFetchOffset textureProjOffset textureLodOffset textureProjLodOffset textureGrad textureGradOffset ' +
-                        'texture1D texture1DProj texture1DLod texture1DProjLod texture2D texture2DProj texture2DLod texture2DProjLod texture3D ' +
-                        'texture3DProj texture3DLod texture3DProjLod textureCube textureCubeLod shadow texture1DArray texture2DArray ' +
-                        'textureBuffer texelFetch textureGather dFdx dFdy fwidth interpolateAtCentroid interpolateAtSample interpolateAtOffset ' +
-                        'noise1 noise2 noise3 noise4 EmitStreamVertex EndStreamPrimitive EmitVertex EndPrimitive barrier memoryBarrier memoryBarrierAtomicCounter ' +
-                        'memoryBarrierBuffer memoryBarrierShared memoryBarrierImage groupMemoryBarrier atomicCounterIncrement atomicCounterDecrement ' +
-                        'atomicCounter atomicAdd atomicMin atomicMax atomicAnd atomicOr atomicXor atomicExchange atomicCompSwap imageSize imageLoad ' +
-                        'imageStore atomicCounterIncrement atomicCounterDecrement atomicCounter atomicAdd atomicMin atomicMax atomicAnd atomicOr atomicXor ' +
-                        'atomicExchange atomicCompSwap imageAtomicCounterIncrement imageAtomicCounterDecrement imageAtomicCounter imageAtomicAdd imageAtomicMin ' +
-                        'imageAtomicMax imageAtomicAnd imageAtomicOr imageAtomicXor imageAtomicExchange imageAtomicCompSwap uaddCarry usubBorrow umulExtended ' +
-                        'imulExtended bitfieldExtract bitfieldInsert bitfieldReverse bitCount findLSB findMSB gl_FragCoord'
+                    keyword: 'attribute uniform varying break continue do for while switch case default if else in out inout const invariant centroid flat smooth void discard return true false layout precision highp mediump lowp',
+                    built_in: 'radians degrees sin cos tan asin acos atan sinh cosh tanh asinh acosh atanh pow exp log exp2 log2 sqrt inversesqrt abs sign floor trunc round roundEven ceil fract mod modf min max clamp mix step smoothstep isnan isinf floatBitsToInt floatBitsToUint intBitsToFloat uintBitsToFloat fma frexp ldexp length distance dot cross normalize faceforward reflect refract matrixCompMult outerProduct transpose determinant inverse lessThan lessThanEqual greaterThan greaterThanEqual equal notEqual any all not textureSize texture textureProj textureLod textureOffset texelFetch texelFetchOffset dFdx dFdy fwidth gl_FragCoord gl_Position gl_PointSize gl_VertexID gl_InstanceID',
+                    type: 'vec2 vec3 vec4 ivec2 ivec3 ivec4 bvec2 bvec3 bvec4 dvec2 dvec3 dvec4 uint uvec2 uvec3 uvec4 mat2 mat3 mat4 dmat2 dmat3 dmat4 sampler1D sampler2D sampler3D samplerCube Screen Local Clip Model View World Projection Color'
                 },
                 contains: [
                     hljs.C_LINE_COMMENT_MODE,
                     hljs.C_BLOCK_COMMENT_MODE,
                     hljs.C_NUMBER_MODE,
-                    {
-                        className: 'string',
-                        begin: '"', end: '"',
-                        contains: [hljs.BACKSLASH_ESCAPE]
-                    },
-                    {
-                        className: 'number',
-                        begin: '\\b[0-9]*\\.[0-9]+([eE][+-]?[0-9]+)?',
-                    }
+                    { className: 'string', begin: '"', end: '"', contains: [hljs.BACKSLASH_ESCAPE] },
+                    { className: 'number', begin: '\\b[0-9]*\\.[0-9]+([eE][+-]?[0-9]+)?' }
                 ]
             };
         });

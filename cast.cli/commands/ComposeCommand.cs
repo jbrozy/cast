@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Linq;
+using System.Text.Json;
 using cast.cli.builder;
 using cast.core.models;
 using cast.core.parser;
@@ -28,7 +29,7 @@ public class ComposeCommand : Command<ComposeSettings>
             return 1;
         }
         List<Node> nodes = new List<Node>();
-        foreach (Stage stage in pipelineManifest.Stages)
+        foreach (Stage stage in pipelineManifest.Stages.OrderBy(s => s.Order).ThenBy(s => s.Id))
         {
             string vertex   = stage.Entry + ".vsh";
             string fragment = stage.Entry + ".fsh";
@@ -75,6 +76,7 @@ public class ComposeCommand : Command<ComposeSettings>
             Node fragmentNode = new Node(stage.Id, fragment, stage.DependsOn, stage.Type);
             fragmentNode.Inputs = fragmentProgram.Inputs;
             fragmentNode.Outputs = fragmentProgram.Outputs;
+            fragmentNode.Textures = fragmentProgram.Textures;
 
             string output = Path.Combine(composeDir.FullName, "output");
             if (!Directory.Exists(output)) Directory.CreateDirectory(output);

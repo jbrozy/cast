@@ -12,6 +12,7 @@ namespace cast.core.models
 
         public List<VariableSymbol> Inputs { get; set; } = new List<VariableSymbol>();
         public List<VariableSymbol> Outputs { get; set; } = new List<VariableSymbol>();
+        public List<VariableSymbol> Textures { get; set; } = new List<VariableSymbol>();
 
         public List<Connection> Incoming { get; set; } = new List<Connection>();
         public List<Connection> Outgoing { get; set; } = new List<Connection>();

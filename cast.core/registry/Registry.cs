@@ -37,6 +37,13 @@ namespace cast.core.registry
                 RegisterFunction("dot", "float", $"{vector}<T>",  $"{vector}<T>");
                 RegisterFunction("normalize", $"{vector}<T>", $"{vector}<T>");
             }
+
+            string[] plainVectors = { "vec2", "vec3", "vec4" };
+            foreach(string vector in plainVectors)
+            {
+                RegisterFunction("dot", "float", vector, vector);
+                RegisterFunction("normalize", vector, vector);
+            }
             
             RegisterFunction("cross", "vec3<T>", "vec3<T>", "vec3<T>");
             RegisterFunction("reflect", "vec3<T>", "vec3<T>", "vec3<T>");
@@ -148,6 +155,10 @@ namespace cast.core.registry
             RegisterFunction("*", "vec3<T>", "vec3<T>", "float");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "float");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4");
+            RegisterFunction("*", "vec2", "vec2", "float");
+            RegisterFunction("*", "vec4", "vec4", "float");
+            RegisterFunction("*", "vec2", "vec2", "vec2");
+            RegisterFunction("*", "vec4", "vec4", "vec4");
             
             RegisterFunction("*", "vec2<T>", "float", "vec2<T>");
             RegisterFunction("*", "vec3<T>", "float", "vec3<T>");
@@ -163,9 +174,23 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2<U>", "mat2<T, U>", "vec2<T>");
             RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
             RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
+            RegisterFunction("*", "vec4", "mat4", "vec4");
+            RegisterFunction("*", "vec2", "mat2", "vec2");
+            RegisterFunction("*", "vec3", "mat3", "vec3");
+
+            RegisterFunction("/", "vec2", "vec2", "float");
             RegisterFunction("/", "vec3", "vec3", "float");
+            RegisterFunction("/", "vec4", "vec4", "float");
+            RegisterFunction("/", "vec2", "vec2", "vec2");
             RegisterFunction("/", "vec3", "vec3", "vec3");
+            RegisterFunction("/", "vec4", "vec4", "vec4");
+
+            RegisterFunction("-", "vec2", "vec2", "vec2");
             RegisterFunction("-", "vec3", "vec3", "vec3");
+            RegisterFunction("-", "vec4", "vec4", "vec4");
+            RegisterFunction("-", "vec2", "vec2", "float");
+            RegisterFunction("-", "vec3", "vec3", "float");
+            RegisterFunction("-", "vec4", "vec4", "float");
 
             RegisterFunction("*", "mat4<T, V>", "mat4<U, V>", "mat4<T, U>");
             
@@ -179,6 +204,8 @@ namespace cast.core.registry
             RegisterFunction("+", "vec2<T>", "vec2<T>", "float");
             RegisterFunction("+", "vec3<T>", "vec3<T>", "float");
             RegisterFunction("+", "vec3", "vec3", "vec3");
+            RegisterFunction("+", "vec2", "vec2", "vec2");
+            RegisterFunction("+", "vec4", "vec4", "vec4");
             RegisterFunction("+", "vec3<T>", "vec3<T>", "vec3");
             RegisterFunction("+", "vec4<T>", "vec4<T>", "float");
             RegisterFunction("+", "vec2<T>", "float", "vec2<T>");
@@ -231,9 +258,30 @@ namespace cast.core.registry
             
             RegisterFunction("<<", "int", "int", "int");
             RegisterFunction(">>", "int", "int", "int");
+
+            RegisterFunction("!", "bool", "bool");
+            RegisterFunction("-", "int", "int");
+            RegisterFunction("-", "float", "float");
+            RegisterFunction("-", "vec2", "vec2");
+            RegisterFunction("-", "vec3", "vec3");
+            RegisterFunction("-", "vec4", "vec4");
+            RegisterFunction("-", "mat2", "mat2");
+            RegisterFunction("-", "mat3", "mat3");
+            RegisterFunction("-", "mat4", "mat4");
+            RegisterFunction("+", "int", "int");
+            RegisterFunction("+", "float", "float");
+            RegisterFunction("+", "vec2", "vec2");
+            RegisterFunction("+", "vec3", "vec3");
+            RegisterFunction("+", "vec4", "vec4");
+            RegisterFunction("+", "mat2", "mat2");
+            RegisterFunction("+", "mat3", "mat3");
+            RegisterFunction("+", "mat4", "mat4");
             
+            RegisterFunction("texture", "T", "sampler2D<T>", "vec2");
             RegisterFunction("texture", "vec4", "sampler2D", "vec2");
+            RegisterFunction("texture", "T", "sampler3D<T>", "vec3");
             RegisterFunction("texture", "vec4", "sampler3D", "vec3");
+            RegisterFunction("texture", "T", "samplerCube<T>", "vec3");
             RegisterFunction("texture", "vec4", "samplerCube", "vec3");
             
             RegisterFunction("vec2", "vec2", "float");
@@ -262,16 +310,38 @@ namespace cast.core.registry
             RegisterFunction("vec4", "vec4", "vec2", "float", "float");
             RegisterFunction("vec4", "vec4", "float", "vec2", "float");
             RegisterFunction("vec4", "vec4", "float", "float", "vec2");
+
+            RegisterFunction("mat3", "mat3", "mat4");
+            RegisterFunction("mat3", "mat3<T, U>", "mat4<T, U>");
+            RegisterFunction("mat3", "mat3<T>", "vec3<T>");
+            RegisterFunction("mat3", "mat3", "vec3");
+            RegisterFunction("mat3", "mat3", "float");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
         {
-            if (!type.Contains("<")) return (type, new  string[] { });
-            string[] lhs = type.Replace(" ", "").Replace(">", "").Split("<");
-            string lhsType = lhs[0];
-            string[] lhsSpaces = lhs[1].Split(",");
-            
-            return (lhsType, lhsSpaces);
+            if (!type.Contains("<")) return (type, new string[] { });
+
+            int angleStart = type.IndexOf('<');
+            string lhsType = type.Substring(0, angleStart).Trim();
+            string inner = type.Substring(angleStart + 1, type.Length - angleStart - 2);
+
+            var parts = new List<string>();
+            int depth = 0;
+            int partStart = 0;
+            for (int i = 0; i < inner.Length; i++)
+            {
+                if (inner[i] == '<') depth++;
+                else if (inner[i] == '>') depth--;
+                else if (inner[i] == ',' && depth == 0)
+                {
+                    parts.Add(inner.Substring(partStart, i - partStart).Trim());
+                    partStart = i + 1;
+                }
+            }
+            parts.Add(inner.Substring(partStart).Trim());
+
+            return (lhsType, parts.ToArray());
         }
 
         public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope)
@@ -291,12 +361,13 @@ namespace cast.core.registry
                     (string expectedType, string[] leftGenerics) = ParseType(fnParams[i]);
                     (string givenType, string[] rightGenerics) = ParseType(parameters[i].ToString());
 
-                    if (leftGenerics.Length != rightGenerics.Length)
+                    if (expectedType != givenType)
                     {
                         valid = false;
                         break;
                     }
-                    for (int j = 0; j < leftGenerics.Length; j++)
+
+                    for (int j = 0; j < leftGenerics.Length && j < rightGenerics.Length; j++)
                     {
                         if (genericParameters.TryGetValue(leftGenerics[j], out var existing))
                         {
@@ -312,29 +383,29 @@ namespace cast.core.registry
                         }
                     }
                     if (!valid) break;
-
-                    if (expectedType != givenType)
-                    {
-                        valid = false;
-                        break;
-                    }
                 }
 
                 if (!valid) continue;
 
                 if (genericParameters.Any())
                 {
-                    (string expected, string [] expectedParams) = ParseType(returnType);
+                    string resolved = genericParameters.ContainsKey(returnType) ? genericParameters[returnType] : returnType;
+                    (string expected, string [] expectedParams) = ParseType(resolved);
                     List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
                     for (int i = 0; i < expectedParams.Length; ++i)
                     {
-                        spaces.Add(scope[genericParameters[expectedParams[i]]] as SpaceSymbol);
+                        if (genericParameters.TryGetValue(expectedParams[i], out var resolvedParam))
+                            spaces.Add(scope[resolvedParam] as SpaceSymbol);
+                        else
+                            spaces.Add(scope[expectedParams[i]] as SpaceSymbol);
                     }
                     TypeSymbol type = scope[expected] as TypeSymbol;
+                    if (type == null) return CastType.ErrorType;
                     return new CastType(type, spaces);
                 }
 
                 TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
+                if (returnTypeSymbol == null) continue;
                 return new CastType(returnTypeSymbol);
             }
 
@@ -361,13 +432,12 @@ namespace cast.core.registry
                 (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);
 
                 if (lhsType != fnLhs || rhsType != fnRhs) continue;
-                if (lhsParams.Length != fnLhsParams.Length || rhsParams.Length != fnRhsParams.Length) continue;
 
-                for (int i = 0; i < lhsParams.Length; i++)
+                for (int i = 0; i < lhsParams.Length && i < fnLhsParams.Length; i++)
                     s[fnLhsParams[i]] = lhsParams[i];
 
                 bool mismatch = false;
-                for (int i = 0; i < rhsParams.Length; i++)
+                for (int i = 0; i < rhsParams.Length && i < fnRhsParams.Length; i++)
                 {
                     if (s.TryGetValue(fnRhsParams[i], out var existing))
                     {
@@ -380,6 +450,13 @@ namespace cast.core.registry
                 }
                 if (mismatch) continue;
 
+                bool allResolved = true;
+                for (int i = 0; i < returnTypeParams.Length; i++)
+                {
+                    if (!s.ContainsKey(returnTypeParams[i])) { allResolved = false; break; }
+                }
+                if (!allResolved) continue;
+
                 var typeSpaces = new List<SpaceSymbol>();
                 for (int i = 0; i < returnTypeParams.Length; i++)
                 {
@@ -390,6 +467,44 @@ namespace cast.core.registry
 
                 var type = scope[returnTypeType] as TypeSymbol;
                 return new CastType(type, typeSpaces);
+            }
+
+            return CastType.ErrorType;
+        }
+
+        public static CastType ResolveUnaryOperator(Scope scope, string op, CastType operand)
+        {
+            if (!functions.ContainsKey(op)) return CastType.ErrorType;
+
+            string operandStr = operand.ToString();
+            (string operandType, string[] operandParams) = ParseType(operandStr);
+
+            var candidates = functions[op];
+            foreach ((string[] fnParams, string returnType) in candidates)
+            {
+                if (fnParams.Length != 1) continue;
+                (string fnParam, string[] fnParamGenerics) = ParseType(fnParams[0]);
+
+                if (operandType != fnParam) continue;
+                if (operandParams.Length != fnParamGenerics.Length) continue;
+
+                var genericMap = new Dictionary<string, string>();
+                for (int i = 0; i < operandParams.Length; i++)
+                    genericMap[fnParamGenerics[i]] = operandParams[i];
+
+                (string retType, string[] retGenerics) = ParseType(returnType);
+                var spaces = new List<SpaceSymbol>();
+                for (int i = 0; i < retGenerics.Length; i++)
+                {
+                    if (genericMap.TryGetValue(retGenerics[i], out var mapped))
+                    {
+                        var space = scope[mapped] as SpaceSymbol;
+                        if (space != null) spaces.Add(space);
+                    }
+                }
+
+                var typeSym = scope[retType] as TypeSymbol;
+                return new CastType(typeSym, spaces);
             }
 
             return CastType.ErrorType;

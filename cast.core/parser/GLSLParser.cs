@@ -37,6 +37,8 @@ namespace cast.core.parser
             _scope.Define(new TypeSymbol("uint", 0, false));
             _scope.Define(new TypeSymbol("float", 0, false));
             _scope.Define(new TypeSymbol("sampler2D", 0, false));
+            _scope.Define(new TypeSymbol("sampler3D", 0, false));
+            _scope.Define(new TypeSymbol("samplerCube", 0, false));
             
             RegisterConstant("gl_Position", "vec4", "Clip");
             RegisterConstant("gl_PointSize",  "float");
@@ -79,7 +81,6 @@ namespace cast.core.parser
             ICharStream rawStream = CharStreams.fromString(castInput);
             CastLexer lexer = new CastLexer(rawStream);
             lexer.RemoveErrorListeners();
-            // lexer.AddErrorListener(new CastErrorListener(_logger));
             CommonTokenStream commonTokenStream = new CommonTokenStream(lexer, CastLexer.DIRECTIVES);
             CastPreParser castPreParser = new CastPreParser(commonTokenStream);
             castPreParser.RemoveErrorListeners();
@@ -94,12 +95,24 @@ namespace cast.core.parser
                 string pattern = $@"\b{Regex.Escape(macro.Key)}\b";
                 castInput = Regex.Replace(castInput, pattern, macro.Value);
             }
+
+            // extract sampler payload types before stripping brackets
+            var samplerPayloads = new Dictionary<string, string>();
+            castInput = Regex.Replace(castInput,
+                @"\b(sampler2D|sampler3D|samplerCube)<([^>]+(?:<[^>]+>)?)>\s+(\w+)",
+                m =>
+                {
+                    string samplerType = m.Groups[1].Value;
+                    string payload = m.Groups[2].Value;
+                    string varName = m.Groups[3].Value;
+                    samplerPayloads[varName] = payload;
+                    return $"{samplerType} {varName}";
+                });
             
             _logger.SetSource(castInput);
             ICharStream mainStream = CharStreams.fromString(castInput);
             CastLexer mainLexer = new CastLexer(mainStream);
             mainLexer.RemoveErrorListeners();
-            // mainLexer.AddErrorListener(new CastErrorListener(_logger));
             
             CommonTokenStream mainTokens = new CommonTokenStream(mainLexer);
 
@@ -108,7 +121,7 @@ namespace cast.core.parser
             mainParser.AddErrorListener(new CastErrorListener(_logger));
             var translationUnit = mainParser.translation_unit();
 
-            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, _logger);
+            DeclarationPassVisitor declarationPassVisitor = new DeclarationPassVisitor(_scope, _logger, samplerPayloads);
             declarationPassVisitor.Visit(translationUnit);
 
             SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(_scope, _logger);
@@ -132,6 +145,7 @@ namespace cast.core.parser
                 Inputs = declarationPassVisitor.Inputs,
                 Outputs = declarationPassVisitor.Outputs,
                 Uniforms = declarationPassVisitor.Uniforms,
+                Textures = declarationPassVisitor.Textures,
             };
         }
     }

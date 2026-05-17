@@ -103,7 +103,7 @@ namespace cast.core.visitor
 
         public string VisitExpression_statement(CastParser.Expression_statementContext context)
         {
-            return Visit(context.expression());
+            return $"{Visit(context.expression())};";
         }
 
         public string VisitSelection_rest_statement(CastParser.Selection_rest_statementContext context)
@@ -130,7 +130,9 @@ namespace cast.core.visitor
 
         public string VisitCondition(CastParser.ConditionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+                return Visit(context.expression());
+            return string.Empty;
         }
 
         public string VisitSwitch_statement(CastParser.Switch_statementContext context)
@@ -145,17 +147,70 @@ namespace cast.core.visitor
 
         public string VisitIteration_statement(CastParser.Iteration_statementContext context)
         {
-            throw new System.NotImplementedException();
+            StringBuilder builder = new StringBuilder();
+
+            if (context.WHILE() != null)
+            {
+                builder.Append($"while ({VisitCondition(context.condition())})");
+                AppendBodyNoNewScope(builder, context.statement_no_new_scope());
+            }
+            else if (context.DO() != null)
+            {
+                builder.AppendLine("do {");
+                _indent++;
+                builder.Append(GetIndentedText(Visit(context.statement())));
+                _indent--;
+                builder.AppendLine();
+                builder.Append(GetIndentedText($"}} while ({Visit(context.expression())});"));
+            }
+            else if (context.FOR() != null)
+            {
+                builder.Append("for (");
+                builder.Append(Visit(context.for_init_statement()));
+                builder.Append(" ");
+                builder.Append(Visit(context.for_rest_statement()));
+                builder.Append(")");
+                AppendBodyNoNewScope(builder, context.statement_no_new_scope());
+            }
+
+            return builder.ToString();
+        }
+
+        private void AppendBodyNoNewScope(StringBuilder builder, CastParser.Statement_no_new_scopeContext body)
+        {
+            if (body.simple_statement() != null)
+            {
+                builder.AppendLine(" {");
+                _indent++;
+                builder.Append(GetIndentedText(Visit(body)));
+                _indent--;
+                builder.AppendLine();
+                builder.Append(GetIndentedText("}"));
+            }
+            else
+            {
+                builder.Append(Visit(body));
+            }
         }
 
         public string VisitFor_init_statement(CastParser.For_init_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression_statement() != null)
+                return Visit(context.expression_statement());
+            if (context.declaration_statement() != null)
+                return Visit(context.declaration_statement());
+            return string.Empty;
         }
 
         public string VisitFor_rest_statement(CastParser.For_rest_statementContext context)
         {
-            throw new System.NotImplementedException();
+            string result = string.Empty;
+            if (context.condition() != null)
+                result += VisitCondition(context.condition());
+            result += ";";
+            if (context.expression() != null)
+                result += $" {Visit(context.expression())}";
+            return result;
         }
 
         public string VisitJump_statement(CastParser.Jump_statementContext context)
@@ -169,6 +224,15 @@ namespace cast.core.visitor
 
                 return "return;";
             }
+
+            if (context.CONTINUE() != null)
+                return "continue;";
+
+            if (context.BREAK() != null)
+                return "break;";
+
+            if (context.DISCARD() != null)
+                return "discard;";
 
             return string.Empty;
         }
@@ -195,12 +259,31 @@ namespace cast.core.visitor
                 return Visit(context.selection_statement());
             }
 
+            if (context.iteration_statement() != null)
+            {
+                return Visit(context.iteration_statement());
+            }
+
+            if (context.switch_statement() != null)
+            {
+                return Visit(context.switch_statement());
+            }
+
+            if (context.case_label() != null)
+            {
+                return Visit(context.case_label());
+            }
+
             return string.Empty;
         }
 
         public string VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.compound_statement_no_new_scope() != null)
+                return Visit(context.compound_statement_no_new_scope());
+            if (context.simple_statement() != null)
+                return Visit(context.simple_statement());
+            return string.Empty;
         }
 
         public string VisitCompound_statement(CastParser.Compound_statementContext context)
@@ -232,8 +315,8 @@ namespace cast.core.visitor
                     statements.Add(GetIndentedText(Visit(statementContext)));
                 }
                 builder.Append(string.Join("\n", statements));
-                builder.Append(GetIndentedText("\n}"));
                 _indent--;
+                builder.Append(GetIndentedText("\n}"));
             }
             else
             {
@@ -295,27 +378,29 @@ namespace cast.core.visitor
 
         public string VisitFunction_call(CastParser.Function_callContext context)
         {
-            throw new System.NotImplementedException();
+            string functionName = Visit(context.function_identifier());
+            string parameters = string.Empty;
+            if (context.function_call_parameters() != null)
+                parameters = Visit(context.function_call_parameters());
+            return $"{functionName}({parameters})";
         }
 
         public string VisitField_selection(CastParser.Field_selectionContext context)
         {
-            return context.variable_identifier().GetText();
+            if (context.function_call() != null)
+                return Visit(context.function_call());
+            if (context.variable_identifier() != null)
+                return Visit(context.variable_identifier());
+            return string.Empty;
         }
 
         public string VisitFunction_identifier(CastParser.Function_identifierContext context)
         {
-            throw new System.NotImplementedException();
-        }
-
-        public string VisitDimension(CastParser.DimensionContext context)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public string VisitArray_specifier(CastParser.Array_specifierContext context)
-        {
-            throw new System.NotImplementedException();
+            if (context.type_specifier() != null)
+                return Visit(context.type_specifier());
+            if (context.postfix_expression() != null)
+                return Visit(context.postfix_expression());
+            return string.Empty;
         }
 
         public string VisitSpace_definition_parameters(CastParser.Space_definition_parametersContext context)
@@ -370,6 +455,15 @@ namespace cast.core.visitor
                 return Visit(context.primary_expression());
             }
 
+            if (context.integer_expression() != null && context.postfix_expression() != null)
+            {
+                builder.Append(Visit(context.postfix_expression()));
+                builder.Append("[");
+                builder.Append(Visit(context.integer_expression()));
+                builder.Append("]");
+                return builder.ToString();
+            }
+
             if (context.DOT() != null)
             {
                 var left = Visit(context.postfix_expression());
@@ -399,17 +493,32 @@ namespace cast.core.visitor
                 builder.Append(Visit(context.field_selection()));
             }
 
+            if (context.INC_OP() != null)
+                return $"{Visit(context.postfix_expression())}++";
+
+            if (context.DEC_OP() != null)
+                return $"{Visit(context.postfix_expression())}--";
+
             return builder.ToString();
         }
 
         public string VisitInteger_expression(CastParser.Integer_expressionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+                return Visit(context.expression());
+            return string.Empty;
         }
 
         public string VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.assignment_expression() != null)
+            {
+                List<string> args = new List<string>();
+                foreach (var expr in context.assignment_expression())
+                    args.Add(Visit(expr));
+                return string.Join(", ", args);
+            }
+            return string.Empty;
         }
 
         public string VisitExpression(CastParser.ExpressionContext context)
@@ -429,40 +538,47 @@ namespace cast.core.visitor
 
         public string VisitUnary_expression(CastParser.Unary_expressionContext context)
         {
+            if (context.INC_OP() != null)
+                return $"++{Visit(context.unary_expression())}";
+
+            if (context.DEC_OP() != null)
+                return $"--{Visit(context.unary_expression())}";
+
+            if (context.unary_operator() != null)
+                return $"{Visit(context.unary_operator())}{Visit(context.unary_expression())}";
+
             if (context.unary_expression() != null)
-            {
                 return Visit(context.unary_expression());
-            }
-            
+
             if (context.postfix_expression() != null)
-            {
                 return Visit(context.postfix_expression());
-            }
 
             return string.Empty;
         }
 
         public string VisitUnary_operator(CastParser.Unary_operatorContext context)
         {
-            throw new System.NotImplementedException();
+            return context.GetText();
         }
 
         public string VisitConstant_expression(CastParser.Constant_expressionContext context)
         {
-            if (context.binary_expression() != null)
+            if (context.QUESTION() != null)
             {
-                return Visit(context.binary_expression());
+                string cond = Visit(context.binary_expression());
+                string trueExpr = Visit(context.expression());
+                string falseExpr = Visit(context.assignment_expression());
+                return $"{cond} ? {trueExpr} : {falseExpr}";
             }
+
+            if (context.binary_expression() != null)
+                return Visit(context.binary_expression());
 
             if (context.assignment_expression() != null)
-            {
                 return Visit(context.assignment_expression());
-            }
 
             if (context.expression() != null)
-            {
                 return Visit(context.expression());
-            }
 
             return string.Empty;
         }
@@ -472,9 +588,10 @@ namespace cast.core.visitor
             if (context.assignment_operator() != null)
             {
                 string left = Visit(context.unary_expression());
+                string op = Visit(context.assignment_operator());
                 string right = Visit(context.assignment_expression());
                 
-                return $"{left} = {right}";
+                return $"{left} {op} {right}";
             }
             if (context.assignment_expression() != null)
             {
@@ -490,15 +607,12 @@ namespace cast.core.visitor
                 return Visit(context.unary_expression());
             }
 
-            if (context.children.Count == 3)
-            {
-                string left = context.children[0].GetText();
-                string right = context.children[2].GetText();
-                string op = context.children[1].GetText();
-                return $"{left} {op} {right};";
-            }
-
             return string.Empty;
+        }
+
+        public string VisitAssignment_operator(CastParser.Assignment_operatorContext context)
+        {
+            return context.GetText();
         }
 
         public string VisitBinary_expression(CastParser.Binary_expressionContext context)
@@ -519,11 +633,6 @@ namespace cast.core.visitor
             }
 
             return string.Empty;
-        }
-
-        public string VisitAssignment_operator(CastParser.Assignment_operatorContext context)
-        {
-            throw new System.NotImplementedException();
         }
 
         public string VisitDeclaration(CastParser.DeclarationContext context)
@@ -688,11 +797,25 @@ namespace cast.core.visitor
             builder.Append(context.IDENTIFIER().GetText());
 
             if (context.array_specifier() != null)
-            {
-                builder.Append("[]");
-            }
+                builder.Append(Visit(context.array_specifier()));
 
             return builder.ToString();
+        }
+
+        public string VisitArray_specifier(CastParser.Array_specifierContext context)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var dim in context.dimension())
+                builder.Append(Visit(dim));
+            return builder.ToString();
+        }
+
+        public string VisitDimension(CastParser.DimensionContext context)
+        {
+            string size = string.Empty;
+            if (context.constant_expression() != null)
+                size = Visit(context.constant_expression());
+            return $"[{size}]";
         }
 
         public string VisitFully_specified_type(CastParser.Fully_specified_typeContext context)

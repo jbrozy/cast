@@ -3,7 +3,7 @@ using cast.core.registry;
 using Spectre.Console.Cli;
 
 var app = new CommandApp();
-// Registry.Setup();
+Registry.Setup();
 app.Configure(config =>
 {
     config.SetApplicationName("cast");

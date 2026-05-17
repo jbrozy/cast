@@ -104,7 +104,9 @@ namespace cast.core.visitor
 
         public CastType VisitCondition(CastParser.ConditionContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression() != null)
+                return Visit(context.expression());
+            return default;
         }
 
         public CastType VisitSwitch_statement(CastParser.Switch_statementContext context)
@@ -119,17 +121,55 @@ namespace cast.core.visitor
 
         public CastType VisitIteration_statement(CastParser.Iteration_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.WHILE() != null)
+            {
+                CastType conditionType = Visit(context.condition());
+                if (conditionType != null && !conditionType.Type.Name.Equals("bool"))
+                    _logger.Log(context.Start, "While condition must be boolean");
+                if (context.statement_no_new_scope() != null)
+                    Visit(context.statement_no_new_scope());
+            }
+            else if (context.DO() != null)
+            {
+                if (context.statement() != null)
+                    Visit(context.statement());
+                CastType expressionType = Visit(context.expression());
+                if (expressionType != null && !expressionType.Type.Name.Equals("bool"))
+                    _logger.Log(context.Start, "Do-while condition must be boolean");
+            }
+            else if (context.FOR() != null)
+            {
+                if (context.for_init_statement() != null)
+                    Visit(context.for_init_statement());
+                if (context.for_rest_statement() != null)
+                    Visit(context.for_rest_statement());
+                if (context.statement_no_new_scope() != null)
+                    Visit(context.statement_no_new_scope());
+            }
+
+            return default;
         }
 
         public CastType VisitFor_init_statement(CastParser.For_init_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.expression_statement() != null)
+                return Visit(context.expression_statement());
+            if (context.declaration_statement() != null)
+                return Visit(context.declaration_statement());
+            return default;
         }
 
         public CastType VisitFor_rest_statement(CastParser.For_rest_statementContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.condition() != null)
+            {
+                CastType condType = Visit(context.condition());
+                if (condType != null && !condType.Type.Name.Equals("bool"))
+                    _logger.Log(context.Start, "For condition must be boolean");
+            }
+            if (context.expression() != null)
+                Visit(context.expression());
+            return default;
         }
 
         public CastType VisitJump_statement(CastParser.Jump_statementContext context)
@@ -179,7 +219,11 @@ namespace cast.core.visitor
 
         public CastType VisitStatement_no_new_scope(CastParser.Statement_no_new_scopeContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.compound_statement_no_new_scope() != null)
+                return Visit(context.compound_statement_no_new_scope());
+            if (context.simple_statement() != null)
+                return Visit(context.simple_statement());
+            return default;
         }
 
         public CastType VisitCompound_statement(CastParser.Compound_statementContext context)
@@ -303,11 +347,39 @@ namespace cast.core.visitor
 
         public CastType VisitFunction_call(CastParser.Function_callContext context)
         {
-            throw new System.NotImplementedException();
+            string functionName = null;
+            if (context.function_identifier().type_specifier() != null)
+                functionName = context.function_identifier().type_specifier().GetText();
+            else if (context.function_identifier().postfix_expression() != null)
+                functionName = context.function_identifier().postfix_expression().GetText();
+
+            List<CastType> parameters = new List<CastType>();
+            if (context.function_call_parameters() != null)
+            {
+                foreach (var expr in context.function_call_parameters().assignment_expression())
+                    parameters.Add(Visit(expr));
+            }
+
+            if (functionName != null && _scope[functionName] is FunctionSymbol function)
+                return function.ReturnType();
+
+            return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+        }
+
+        public CastType VisitFunction_identifier(CastParser.Function_identifierContext context)
+        {
+            if (context.type_specifier() != null)
+                return Visit(context.type_specifier());
+            if (context.postfix_expression() != null)
+                return Visit(context.postfix_expression());
+            return default;
         }
 
         public CastType VisitField_selection(CastParser.Field_selectionContext context)
         {
+            if (context.function_call() != null)
+                return Visit(context.function_call());
+
             CastParser.Postfix_expressionContext parent = context.Parent as CastParser.Postfix_expressionContext;
             CastType left = CastType.ErrorType;
             if (parent.postfix_expression() != null)
@@ -351,11 +423,6 @@ namespace cast.core.visitor
             }
             
             return CastType.ErrorType;
-        }
-
-        public CastType VisitFunction_identifier(CastParser.Function_identifierContext context)
-        {
-            throw new System.NotImplementedException();
         }
 
         public CastType VisitDimension(CastParser.DimensionContext context)
@@ -438,25 +505,30 @@ namespace cast.core.visitor
 
         public CastType VisitPostfix_expression(CastParser.Postfix_expressionContext context)
         {
-            if (context.field_selection() != null)
-            {
-                return Visit(context.field_selection());
-            }
-            
             if (context.primary_expression() != null)
             {
                 return Visit(context.primary_expression());
             }
 
-            if (context.integer_expression() != null)
+            if (context.integer_expression() != null && context.postfix_expression() != null)
             {
-                return Visit(context.integer_expression());
+                CastType arrayType = Visit(context.postfix_expression());
+                CastType indexType = Visit(context.integer_expression());
+
+                if (indexType != null && indexType.Type.Name != "int" && indexType.Type.Name != "uint")
+                    _logger.Log(context.Start, "Array index must be integer type");
+
+                return arrayType;
+            }
+
+            if (context.field_selection() != null)
+            {
+                return Visit(context.field_selection());
             }
 
             if (context.function_call_parameters() != null)
             {
                 string functionName = context.type_specifier()?.type_specifier_nonarray()?.GetText();
-                // interpret functionName as expression, since its not a type
                 if (string.IsNullOrEmpty(functionName))
                 {
                     functionName = context.postfix_expression().GetText();
@@ -474,6 +546,16 @@ namespace cast.core.visitor
                 }
                 
                 return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+            }
+
+            if (context.INC_OP() != null || context.DEC_OP() != null)
+            {
+                CastType operand = Visit(context.postfix_expression());
+                if (operand == null || operand.Type == null)
+                    return default;
+                if (operand.Type.Name == "bool" || operand.Type.Name == "void" || operand.Type.Name == "ERROR_TYPE")
+                    _logger.Log(context.Start, $"Cannot apply '{context.GetText()}' to type '{operand.Type.Name}'");
+                return operand;
             }
 
             if (context.postfix_expression() != null)
@@ -496,7 +578,12 @@ namespace cast.core.visitor
 
         public CastType VisitFunction_call_parameters(CastParser.Function_call_parametersContext context)
         {
-            throw new System.NotImplementedException();
+            if (context.assignment_expression() != null)
+            {
+                foreach (var expr in context.assignment_expression())
+                    Visit(expr);
+            }
+            return default;
         }
 
         public CastType VisitExpression(CastParser.ExpressionContext context)
@@ -517,45 +604,60 @@ namespace cast.core.visitor
         public CastType VisitUnary_expression(CastParser.Unary_expressionContext context)
         {
             if (context.postfix_expression() != null)
-            {
                 return Visit(context.postfix_expression());
+
+            if (context.INC_OP() != null || context.DEC_OP() != null)
+            {
+                CastType operand = Visit(context.unary_expression());
+                if (operand == null || operand.Type == null)
+                    return default;
+                if (operand.Type.Name == "bool" || operand.Type.Name == "void" || operand.Type.Name == "ERROR_TYPE")
+                    _logger.Log(context.Start, $"Cannot apply '{context.GetText()}' to type '{operand.Type.Name}'");
+                return operand;
             }
 
             if (context.unary_expression() != null)
-            {
                 return Visit(context.unary_expression());
-            }
 
             if (context.unary_operator() != null)
-            {
                 return Visit(context.unary_operator());
-            }
 
             return default;
         }
 
         public CastType VisitUnary_operator(CastParser.Unary_operatorContext context)
         {
-            throw new System.NotImplementedException();
+            string op = context.GetText();
+            CastParser.Unary_expressionContext parent = context.Parent as CastParser.Unary_expressionContext;
+            if (parent != null && parent.unary_expression() != null)
+            {
+                CastType operand = Visit(parent.unary_expression());
+                return Registry.ResolveUnaryOperator(_scope, op, operand);
+            }
+            return CastType.ErrorType;
         }
 
         public CastType VisitConstant_expression(CastParser.Constant_expressionContext context)
         {
-            if (context.expression() != null)
+            if (context.QUESTION() != null)
             {
-                return Visit(context.expression());
-            }
-            
-            if (context.binary_expression() != null)
-            {
-                return Visit(context.binary_expression());
+                CastType condType = Visit(context.binary_expression());
+                if (condType != null && !condType.Type.Name.Equals("bool"))
+                    _logger.Log(context.Start, "Ternary condition must be boolean");
+                CastType trueType = Visit(context.expression());
+                CastType falseType = Visit(context.assignment_expression());
+                return trueType ?? falseType;
             }
 
+            if (context.expression() != null)
+                return Visit(context.expression());
+
+            if (context.binary_expression() != null)
+                return Visit(context.binary_expression());
+
             if (context.assignment_expression() != null)
-            {
                 return Visit(context.assignment_expression());
-            }
-            
+
             return default;
         }
 

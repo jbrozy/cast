@@ -15,6 +15,7 @@ namespace cast.api.core
         public string Stage { get; set; }
         public List<GraphPort> Inputs { get; set; }
         public List<GraphPort> Outputs { get; set; }
+        public List<GraphPort> Textures { get; set; }
     }
 
     public class GraphEdge
@@ -43,5 +44,6 @@ namespace cast.api.core
     public class GraphRequest
     {
         public Dictionary<string, List<ShaderFile>> Files { get; set; }
+        public Dictionary<string, int> StageOrder { get; set; }
     }
 }

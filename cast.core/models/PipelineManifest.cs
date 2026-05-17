@@ -38,6 +38,9 @@ namespace cast.core.models
     
         [JsonPropertyName("depends_on")]
         public string[] DependsOn { get; set; }
+    
+        [JsonPropertyName("order")]
+        public int Order { get; set; }
     }
 
     public class PipelineManifest
