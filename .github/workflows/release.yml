@@ -35,13 +35,14 @@ jobs:
           dotnet-version: '10.0.x'
 
       # Publish creates the actual executable
-      - name: Publish Binary
+      - name: Publish cast.cli
         run: |
-          dotnet publish --configuration Release \
-          --runtime ${{ matrix.rid }} \
-          --self-contained true \
-          -p:PublishSingleFile=true \
-          --output ./publish_output
+          dotnet publish ./cast.cli/cast.cli.csproj \
+            -c Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -o ./publish_output
 
       # Zip/Tar the binary to make it a nice download
       - name: Archive Release (Windows)
