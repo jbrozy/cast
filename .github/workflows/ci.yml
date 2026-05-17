@@ -48,6 +48,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Publish cast.cli as AoT
+        shell: bash
         run: |
           dotnet publish ./cast.cli/cast.cli.csproj \
             -c Release \

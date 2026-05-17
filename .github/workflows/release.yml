@@ -36,6 +36,7 @@ jobs:
 
       # Publish creates the actual executable
       - name: Publish cast.cli
+        shell: bash
         run: |
           dotnet publish ./cast.cli/cast.cli.csproj \
             -c Release \
