@@ -61,8 +61,8 @@ jobs:
       - name: Upload AoT artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cast-cli-linux-x64
-          path: ./aot-output/cast*
+          name: castc-linux-x64
+          path: ./aot-output/castc*
 
   docker:
     name: Docker Image (cast.api)

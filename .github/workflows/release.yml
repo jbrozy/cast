@@ -18,13 +18,13 @@ jobs:
         include:
           - os: ubuntu-latest
             rid: linux-x64
-            archive_name: cast-linux-x64.tar.gz
+            archive_name: castc-linux-x64.tar.gz
           - os: windows-latest
             rid: win-x64
-            archive_name: cast-windows-x64.zip
+            archive_name: castc-windows-x64.zip
           - os: macos-latest
-            rid: osx-x64 # Compatible with Intel & Apple Silicon (via Rosetta)
-            archive_name: cast-macos-x64.tar.gz
+            rid: osx-x64
+            archive_name: castc-macos-x64.tar.gz
 
     steps:
       - uses: actions/checkout@v4

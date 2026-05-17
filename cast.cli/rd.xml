@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="cast.cli">
+    <type fullname="cast.cli.commands.BuildCommand" />
+    <type fullname="cast.cli.commands.BuildSettings" />
+    <type fullname="cast.cli.commands.ComposeCommand" />
+    <type fullname="cast.cli.commands.ComposeSettings" />
+    <type fullname="cast.cli.commands.WatchCommand" />
+  </assembly>
+</linker>

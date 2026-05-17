@@ -5,8 +5,14 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>castc</AssemblyName>
         <PublishAot>true</PublishAot>
+        <IlcTrimMetadata>false</IlcTrimMetadata>
     </PropertyGroup>
+
+    <ItemGroup>
+      <TrimmerRootDescriptor Include="rd.xml" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\cast.core\cast.core.csproj" />
