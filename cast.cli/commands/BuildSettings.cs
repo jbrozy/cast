@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 
 namespace cast.cli.commands;
 
-public abstract class BuildSettings : CommandSettings
+public class BuildSettings : CommandSettings
 {
     [CommandArgument(0, "<INPUT_FILE>")]
     [Description("Input file to be transpiled from Cast to GLSL.")]
