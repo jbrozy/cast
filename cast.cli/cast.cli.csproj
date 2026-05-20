@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AssemblyName>castc</AssemblyName>
-        <PublishAot>true</PublishAot>
+        <PublishAot>false</PublishAot>
         <IlcTrimMetadata>false</IlcTrimMetadata>
     </PropertyGroup>
 
