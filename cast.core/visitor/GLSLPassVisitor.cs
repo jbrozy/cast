@@ -317,8 +317,9 @@ namespace cast.core.visitor
                     statements.Add(GetIndentedText(Visit(statementContext)));
                 }
                 builder.Append(string.Join("\n", statements));
+                builder.AppendLine();
                 _indent--;
-                builder.Append(GetIndentedText("\n}"));
+                builder.Append(GetIndentedText("}"));
             }
             else
             {
