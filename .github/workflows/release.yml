@@ -41,8 +41,6 @@ jobs:
           dotnet publish ./cast.cli/cast.cli.csproj \
             -c Release \
             --runtime ${{ matrix.rid }} \
-            --self-contained true \
-            -p:PublishSingleFile=true \
             -o ./publish_output
 
       # Zip/Tar the binary to make it a nice download
