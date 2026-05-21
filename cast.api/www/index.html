@@ -26,7 +26,7 @@
         .container {
             display: flex;
             height: 100vh;
-            gap: 1px;
+            gap: 0;
             background-color: #2d2d2d;
         }
 
@@ -34,11 +34,29 @@
             background-color: #252526;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #3e3e42;
+            border-right: none;
+            min-width: 100px;
+            flex: 1;
         }
 
         .pane:last-child {
             border-right: none;
+        }
+
+        .pane-divider {
+            width: 5px;
+            background-color: #3e3e42;
+            cursor: col-resize;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .pane-divider:hover {
+            background-color: #007acc;
+        }
+
+        .pane-divider.dragging {
+            background-color: #007acc;
         }
 
         .overlay {
@@ -688,7 +706,7 @@
     <div class="container">
         
         <!-- Linkes Fenster: File Explorer -->
-        <div class="pane file-explorer">
+        <div class="pane file-explorer" style="flex: 0 0 250px;">
             <div class="pane-header">
                 <span>Shader Files</span>
                 <div>
@@ -710,7 +728,7 @@
                 <button id="reset-btn" type="button" style="padding: 4px 8px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Reset Storage</button>
             </div>
         </div>
-
+        <div class="pane-divider" data-divider="0"></div>
         <!-- Mittleres Fenster: Code Editor -->
         <div class="pane editor-pane">
             <div class="pane-header">
@@ -730,6 +748,7 @@
                 </div>
             </div>
         </div>
+        <div class="pane-divider" data-divider="1"></div>
         <div class="pane output-pane">
             <div class="pane-header">
                 <span>Compiled Result <span class="loading-indicator" id="loading-status"></span></span>
@@ -763,6 +782,48 @@
     </div>
 
     <script>
+        // Vim-style resizable panes
+        const container = document.querySelector('.container');
+        const dividers = document.querySelectorAll('.pane-divider');
+        const panes = document.querySelectorAll('.pane');
+
+        dividers.forEach((divider, index) => {
+            let isResizing = false;
+            let startX = 0;
+            let startWidths = [];
+
+            divider.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startX = e.clientX;
+                startWidths = Array.from(panes).map(p => p.offsetWidth);
+                divider.classList.add('dragging');
+                document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'col-resize';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+
+                const diff = e.clientX - startX;
+                const leftPane = panes[index];
+                const rightPane = panes[index + 1];
+
+                const newLeftWidth = Math.max(100, startWidths[index] + diff);
+                const newRightWidth = Math.max(100, startWidths[index + 1] - diff);
+
+                leftPane.style.flex = `0 0 ${newLeftWidth}px`;
+                rightPane.style.flex = `0 0 ${newRightWidth}px`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
+                isResizing = false;
+                divider.classList.remove('dragging');
+                document.body.style.userSelect = '';
+                document.body.style.cursor = '';
+            });
+        });
+
         let shaderFiles = {};
         let stageOrder = {};
         try {

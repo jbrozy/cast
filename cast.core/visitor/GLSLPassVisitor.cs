@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using cast.core.models;
 using cast.core.models.symbols;
+using cast.core.utils;
 
 namespace cast.core.visitor
 {
@@ -743,8 +745,19 @@ namespace cast.core.visitor
             {
                 initializers.Add(Visit(initializer));
             }
+
+            IEnumerable<List<string>> initBlocks = initializers.Partition(3);
+
+            List<string> initBlockStrings = new List<string>();
             
-            return "{ " +  string.Join(", ", initializers) + "}";
+            _indent++;
+            foreach (var initBlock in initBlocks)
+            {
+                initBlockStrings.Add(string.Join(", ", initBlock.Select(GetIndentedText)));
+            }
+            _indent--;
+            
+            return "{ \n" + GetIndentedText(string.Join("\n", initBlockStrings.Select(GetIndentedText))) + "}";
         }
 
         public string VisitInitializer(CastParser.InitializerContext context)
