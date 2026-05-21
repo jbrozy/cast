@@ -10,10 +10,6 @@ public class BuildCommand : Command<BuildSettings>
     protected override int Execute(CommandContext context, BuildSettings settings, CancellationToken cancellationToken)
     {
         bool directory = false;
-        settings.InputFile =
-            "C:\\Users\\jannik\\AppData\\Roaming\\ModrinthApp\\profiles\\Fabulously Optimized (1)\\shaderpacks\\ssao\\cast\\";
-        settings.OutputFile =
-            "C:\\Users\\jannik\\AppData\\Roaming\\ModrinthApp\\profiles\\Fabulously Optimized (1)\\shaderpacks\\ssao\\shaders\\";
         if (Directory.Exists(settings.InputFile))
         {
             AnsiConsole.MarkupLine($"[Green]Info:[/] Input {settings.InputFile} is a directory.");
