@@ -35,7 +35,7 @@ namespace cast.core.models
         {
             if (obj is CastType other)
             {
-                if (this.Type.Name != other.Type.Name) return false;
+                if (this.Type?.Name != other.Type?.Name) return false;
                 if (this.Spaces.Count != other.Spaces.Count) return false;
 
                 for (int i = 0; i < this.Spaces.Count; i++)

@@ -738,7 +738,13 @@ namespace cast.core.visitor
 
         public string VisitInitializer_list(CastParser.Initializer_listContext context)
         {
-            throw new System.NotImplementedException();
+            List<string> initializers = new List<string>();
+            foreach (var initializer in context.initializer())
+            {
+                initializers.Add(Visit(initializer));
+            }
+            
+            return "{ " +  string.Join(", ", initializers) + "}";
         }
 
         public string VisitInitializer(CastParser.InitializerContext context)

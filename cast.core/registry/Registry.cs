@@ -316,6 +316,7 @@ namespace cast.core.registry
             RegisterFunction("mat3", "mat3<T>", "vec3<T>");
             RegisterFunction("mat3", "mat3", "vec3");
             RegisterFunction("mat3", "mat3", "float");
+            RegisterFunction("mat3", "mat3", "vec3", "vec3", "vec3");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -428,8 +429,17 @@ namespace cast.core.registry
             {
                 s.Clear();
                 (string fnLhs, string[] fnLhsParams) = ParseType(fnParams[0]);
-                (string fnRhs, string[] fnRhsParams) = ParseType(fnParams[1]);
+                (string fnRhs, string[] fnRhsParams) = (string.Empty, null);
                 (string returnTypeType, string[] returnTypeParams) = ParseType(returnType);
+                if (fnParams.Length == 1)
+                {
+                    (fnRhs, fnRhsParams) = (fnLhs, fnLhsParams);
+                }
+
+                if (fnParams.Length == 2)
+                {
+                    (fnRhs, fnRhsParams) = ParseType(fnParams[1]);
+                }
 
                 if (lhsType != fnLhs || rhsType != fnRhs) continue;
 

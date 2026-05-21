@@ -689,6 +689,10 @@ namespace cast.core.visitor
                 CastType? right = Visit(context.binary_expression(1));
                 
                 string op = context.children[1].ToString();
+                if (left == null || right == null)
+                {
+                    throw new Exception("what the fuck");
+                }
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (Equals(eval, CastType.ErrorType))
                 {
@@ -730,10 +734,26 @@ namespace cast.core.visitor
                     {
                         initializerType = Visit(initializer);
                     }
-                    if (!initializerType.IsAssignable(type))
+
+                    if (initializer.initializer_list() != null)
                     {
-                        _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
-                        type = CastType.ErrorType;
+                        foreach (var subInitializer in initializer.initializer_list().initializer())
+                        {
+                            CastType subType = Visit(subInitializer);
+                            if (!subType.IsAssignable(type))
+                            {
+                                _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
+                                type = CastType.ErrorType;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!initializerType.IsAssignable(type))
+                        {
+                            _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
+                            type = CastType.ErrorType;
+                        }
                     }
                 }
 

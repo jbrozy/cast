@@ -32,6 +32,7 @@ namespace cast.core.parser
             _scope.Define(new TypeSymbol("vec3", 1, true));
             _scope.Define(new TypeSymbol("vec2", 1, true));
             _scope.Define(new TypeSymbol("mat4", 2, true));
+            _scope.Define(new TypeSymbol("mat3", 1, true));
             _scope.Define(new TypeSymbol("void", 0, false));
             _scope.Define(new TypeSymbol("int", 0, false));
             _scope.Define(new TypeSymbol("uint", 0, false));
