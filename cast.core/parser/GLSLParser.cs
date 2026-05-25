@@ -16,6 +16,8 @@ namespace cast.core.parser
         private readonly ErrorLogger _logger;
         private readonly Scope _scope;
 
+        public bool PreserveLineBreaks { get; set; } = true;
+
         public GlslParser()
         {
             _scope = new Scope();
@@ -33,10 +35,15 @@ namespace cast.core.parser
             _scope.Define(new TypeSymbol("vec2", 1, true));
             _scope.Define(new TypeSymbol("mat4", 2, true));
             _scope.Define(new TypeSymbol("mat3", 1, true));
+            _scope.Define(new TypeSymbol("mat2", 0, true));
             _scope.Define(new TypeSymbol("void", 0, false));
+            _scope.Define(new TypeSymbol("bool", 0, false));
             _scope.Define(new TypeSymbol("int", 0, false));
             _scope.Define(new TypeSymbol("uint", 0, false));
             _scope.Define(new TypeSymbol("float", 0, false));
+            _scope.Define(new TypeSymbol("bvec2", 0, true));
+            _scope.Define(new TypeSymbol("bvec3", 0, true));
+            _scope.Define(new TypeSymbol("bvec4", 0, true));
             _scope.Define(new TypeSymbol("sampler2D", 0, false));
             _scope.Define(new TypeSymbol("sampler3D", 0, false));
             _scope.Define(new TypeSymbol("samplerCube", 0, false));
@@ -56,15 +63,15 @@ namespace cast.core.parser
 
         private void RegisterConstant(string name, string type, params string[] spaces)
         {
-            List<SpaceSymbol> _spaces = new List<SpaceSymbol>();
             TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
-            CastType internalType = new CastType(typeSymbol, _spaces);
+            List<SpaceSymbol> spaceSymbols = new List<SpaceSymbol>();
             
             foreach (string space in spaces)
             {
-                _spaces.Add(_scope[space] as SpaceSymbol);
+                spaceSymbols.Add(_scope[space] as SpaceSymbol);
             }
 
+            CastType internalType = new CastType(typeSymbol, spaceSymbols);
             _scope.Define(new VariableSymbol(name, internalType));
         }
 
@@ -128,17 +135,14 @@ namespace cast.core.parser
             SemanticPassVisitor semanticPassVisitor = new SemanticPassVisitor(_scope, _logger);
             semanticPassVisitor.Visit(translationUnit);
 
-            if (_logger.HasErrors)
-            {
-                _logger.Print();
-            }
-
             GLSLShaderConfiguration configuration = new GLSLShaderConfiguration
             {
-                Version = int.Parse(glslMacroPreProcessor.Version)
+                Version = int.Parse(glslMacroPreProcessor.Version),
+                Profile = glslMacroPreProcessor.Profile,
+                PreserveLineBreaks = PreserveLineBreaks
             };
             
-            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope, mainTokens);
+            GlslPassVisitor glslPassVisitor = new GlslPassVisitor(_scope, mainTokens, configuration);
             return new GlslShaderProgram()
             {
                 Configuration = configuration,

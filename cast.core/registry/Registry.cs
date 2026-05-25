@@ -237,6 +237,7 @@ namespace cast.core.registry
 
             RegisterFunction("==", "bool", "float", "float");
             RegisterFunction("==", "bool", "int", "int");
+            RegisterFunction("==", "bool", "uint", "uint");
             RegisterFunction("==", "bool", "bool", "bool");
             RegisterFunction("==", "bool", "vec2<T>", "vec2<T>");
             RegisterFunction("==", "bool", "vec3<T>", "vec3<T>");
@@ -244,7 +245,11 @@ namespace cast.core.registry
 
             RegisterFunction("!=", "bool", "float", "float");
             RegisterFunction("!=", "bool", "int", "int");
+            RegisterFunction("!=", "bool", "uint", "uint");
+            RegisterFunction("!=", "bool", "bool", "bool");
+            RegisterFunction("!=", "bool", "vec2<T>", "vec2<T>");
             RegisterFunction("!=", "bool", "vec3<T>", "vec3<T>");
+            RegisterFunction("!=", "bool", "vec4<T>", "vec4<T>");
 
             RegisterFunction("<", "bool", "float", "float");
             RegisterFunction(">", "bool", "float", "float");
@@ -252,6 +257,12 @@ namespace cast.core.registry
             RegisterFunction(">=", "bool", "float", "float");
             RegisterFunction("<", "bool", "int", "int");
             RegisterFunction(">", "bool", "int", "int");
+            RegisterFunction("<=", "bool", "int", "int");
+            RegisterFunction(">=", "bool", "int", "int");
+            RegisterFunction("<", "bool", "uint", "uint");
+            RegisterFunction(">", "bool", "uint", "uint");
+            RegisterFunction("<=", "bool", "uint", "uint");
+            RegisterFunction(">=", "bool", "uint", "uint");
 
             RegisterFunction("&&", "bool", "bool", "bool");
             RegisterFunction("||", "bool", "bool", "bool");
@@ -415,7 +426,11 @@ namespace cast.core.registry
 
         public static CastType? ResolveOperator(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)
         {
-            if (!functions.ContainsKey(op)) return CastType.ErrorType;
+            if (!functions.ContainsKey(op))
+            {
+                logger.Log(token, $"Operator '{op}' is not defined.");
+                return CastType.ErrorType;
+            }
 
             string left = parameters[0].ToString();
             string right = parameters[1].ToString();
@@ -476,9 +491,11 @@ namespace cast.core.registry
                 }
 
                 var type = scope[returnTypeType] as TypeSymbol;
+                if (type == null) continue;
                 return new CastType(type, typeSpaces);
             }
 
+            logger.Log(token, $"No matching overload for operator '{op}' with types '{parameters[0]}' and '{parameters[1]}'.");
             return CastType.ErrorType;
         }
 
@@ -514,6 +531,7 @@ namespace cast.core.registry
                 }
 
                 var typeSym = scope[retType] as TypeSymbol;
+                if (typeSym == null) continue;
                 return new CastType(typeSym, spaces);
             }
 

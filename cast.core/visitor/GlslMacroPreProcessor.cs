@@ -234,17 +234,11 @@ namespace cast.core.visitor
 
         public object VisitVersion_directive(CastPreParser.Version_directiveContext context)
         {
+            Version = context.number().GetText();
             if (context.profile() != null)
-            {
-                Version = context.number().GetText();
                 Profile = context.profile().GetText();
-            }
-            else
-            {
-                Version = $"{context.number().GetText()}";
-            }
 
-            _rewriter.InsertAfter(context.number().Stop, "\n");
+            _rewriter.Delete(context.Start, context.Stop);
             return default;
         }
     }

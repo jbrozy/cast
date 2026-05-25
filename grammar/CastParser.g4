@@ -208,7 +208,7 @@ binary_expression
 	| binary_expression (STAR | SLASH | PERCENT) binary_expression
 	| binary_expression (PLUS | DASH) binary_expression
 	| binary_expression (LEFT_OP | RIGHT_OP) binary_expression
-	| binary_expression (LEFT_ANGLE | RIGHT_ANGLE) binary_expression
+	| binary_expression (LEFT_ANGLE | RIGHT_ANGLE | LE_OP | GE_OP) binary_expression
 	| binary_expression (EQ_OP | NE_OP) binary_expression
 	| binary_expression AMPERSAND binary_expression
 	| binary_expression CARET binary_expression

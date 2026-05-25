@@ -49,7 +49,10 @@ namespace cast.core.models
         
         public override int GetHashCode()
         {
-            return Type.Name.GetHashCode();
+            int hash = Type.Name.GetHashCode();
+            foreach (var space in Spaces)
+                hash = unchecked(hash * 23 + space.GetHashCode());
+            return hash;
         }
 
         public bool IsAssignable(CastType rhs)

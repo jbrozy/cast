@@ -337,11 +337,12 @@ namespace cast.core.visitor
         public CastType VisitVariable_identifier(CastParser.Variable_identifierContext context)
         {
             string identifier = context.GetChild(0).GetText();
-            AbstractSymbol symbol = _scope[identifier];
+            AbstractSymbol? symbol = _scope[identifier];
 
             if (symbol is VariableSymbol variable) return variable.Type;
             if (symbol is FunctionSymbol function) return function.ReturnType();
-            
+
+            _logger.Log(context.Start, $"Variable '{identifier}' not found.");
             return CastType.ErrorType;
         }
 
@@ -363,7 +364,10 @@ namespace cast.core.visitor
             if (functionName != null && _scope[functionName] is FunctionSymbol function)
                 return function.ReturnType();
 
-            return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+            CastType resolved = Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+            if (Equals(resolved, CastType.ErrorType))
+                _logger.Log(context.Start, $"Function '{functionName}' not found.");
+            return resolved;
         }
 
         public CastType VisitFunction_identifier(CastParser.Function_identifierContext context)
@@ -500,6 +504,12 @@ namespace cast.core.visitor
                 return new CastType(s);
             }
 
+            if (context.TRUE() != null || context.FALSE() != null)
+            {
+                TypeSymbol s = _scope["bool"] as TypeSymbol;
+                return new CastType(s);
+            }
+
             return null;
         }
 
@@ -632,7 +642,10 @@ namespace cast.core.visitor
             if (parent != null && parent.unary_expression() != null)
             {
                 CastType operand = Visit(parent.unary_expression());
-                return Registry.ResolveUnaryOperator(_scope, op, operand);
+                CastType resolved = Registry.ResolveUnaryOperator(_scope, op, operand);
+                if (Equals(resolved, CastType.ErrorType))
+                    _logger.Log(context.Start, $"No matching operator '{op}' for type '{operand}'.");
+                return resolved;
             }
             return CastType.ErrorType;
         }
@@ -695,9 +708,7 @@ namespace cast.core.visitor
                 }
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (Equals(eval, CastType.ErrorType))
-                {
                     return CastType.ErrorType;
-                }
                 return eval;
             }
 

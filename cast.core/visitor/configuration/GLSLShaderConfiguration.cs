@@ -6,12 +6,11 @@ namespace cast.core.visitor.configuration
     public class GLSLShaderConfiguration : BaseConfiguration
     {
         public int Version { get; set; }
-        public bool Core { get; set; }
-        public bool Compatibility { get; set; }
+        public string Profile { get; set; } = string.Empty;
         
         public string GetVersion()
         {
-            return Version.ToString();
+            return string.IsNullOrEmpty(Profile) ? Version.ToString() : $"{Version} {Profile}";
         }
     }
 }

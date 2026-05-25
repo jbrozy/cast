@@ -2,6 +2,6 @@
 {
     public abstract class BaseConfiguration
     {
-        
+        public bool PreserveLineBreaks { get; set; }
     }
 }

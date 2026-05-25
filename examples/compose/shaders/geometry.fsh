@@ -2,4 +2,5 @@
 
 in vec3 vPos;
 
-void main() {}
+void main() {
+}

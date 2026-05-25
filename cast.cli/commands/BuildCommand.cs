@@ -33,6 +33,13 @@ public class BuildCommand : Command<BuildSettings>
                     GlslParser parser = new GlslParser();
                     string fileContent = File.ReadAllText(file);
                     GlslShaderProgram result = parser.Parse(fileContent);
+
+                    if (parser.GetLogs().Count > 0)
+                    {
+                        foreach (var log in parser.GetLogs())
+                            AnsiConsole.MarkupLine($"[yellow]  {Markup.Escape(log)}[/]");
+                    }
+
                     string newFileContent = result.GetShaderCode();
 
                     FileInfo fileInfo = new FileInfo(file);
@@ -46,7 +53,7 @@ public class BuildCommand : Command<BuildSettings>
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.StackTrace);
+                    AnsiConsole.MarkupLine($"[red]Error:[/] {file}: {e.Message}");
                 }
             }
         }

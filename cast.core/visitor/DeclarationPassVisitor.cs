@@ -307,6 +307,14 @@ namespace cast.core.visitor
                 return Visit(context.variable_identifier());
             if (context.expression() != null)
                 return Visit(context.expression());
+            if (context.UINTCONSTANT() != null)
+                return _scope["uint"] as TypeSymbol;
+            if (context.INTCONSTANT() != null)
+                return _scope["int"] as TypeSymbol;
+            if (context.FLOATCONSTANT() != null)
+                return _scope["float"] as TypeSymbol;
+            if (context.TRUE() != null || context.FALSE() != null)
+                return _scope["bool"] as TypeSymbol;
             return default;
         }
 
@@ -539,7 +547,11 @@ namespace cast.core.visitor
         public AbstractSymbol VisitSingle_declaration(CastParser.Single_declarationContext context)
         {
             var typeSymbol = Visit(context.fully_specified_type()) as TypeSymbol;
-            if (typeSymbol == null) return null;
+            if (typeSymbol == null)
+            {
+                _logger.Log(context.Start, $"Type not found in declaration.");
+                return null;
+            }
 
             if (context.typeless_declaration() == null)
             {

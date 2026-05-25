@@ -7,19 +7,66 @@ using Antlr4.Runtime.Tree;
 using cast.core.models;
 using cast.core.models.symbols;
 using cast.core.utils;
+using cast.core.visitor.configuration;
 
 namespace cast.core.visitor
 {
     public class GlslPassVisitor : ICastParserVisitor<string>
     {
+        private const int CommentsChannel = 2;
+
         private int _indent = 0;
         private readonly Scope _scope;
         private readonly CommonTokenStream _tokenStream;
+        private readonly HashSet<int> _emittedComments = new HashSet<int>();
+        private readonly BaseConfiguration _configuration;
+        private int _lastEmittedLine = 1;
 
-        public GlslPassVisitor(Scope scope, CommonTokenStream tokenStream)
+        public GlslPassVisitor(Scope scope, CommonTokenStream tokenStream, BaseConfiguration configuration)
         {
             _scope = scope;
             _tokenStream = tokenStream;
+            _configuration = configuration;
+        }
+
+        private string ConsumeComments(int upToTokenIndex)
+        {
+            StringBuilder sb = new StringBuilder();
+            int size = _tokenStream.Size;
+            int limit = Math.Min(upToTokenIndex, size);
+            for (int i = 0; i < limit; i++)
+            {
+                var token = _tokenStream.Get(i);
+                if (token.Channel == CommentsChannel && _emittedComments.Add(i))
+                {
+                    sb.Append(token.Text);
+                    // preserve newline after comment before next default-channel token
+                    for (int j = i + 1; j < limit; j++)
+                    {
+                        var next = _tokenStream.Get(j);
+                        if (next.Channel == 0)
+                            break;
+                        if (next.Channel == 1 && next.Text.IndexOf('\n') >= 0)
+                        {
+                            sb.Append('\n');
+                            break;
+                        }
+                    }
+                }
+            }
+            return sb.ToString();
+        }
+
+        private void PreserveLineBreaks(StringBuilder builder, int currentLine)
+        {
+            if (!_configuration.PreserveLineBreaks) return;
+            if (currentLine > _lastEmittedLine + 1)
+            {
+                int blankLines = currentLine - _lastEmittedLine - 1;
+                for (int i = 0; i < blankLines; i++)
+                    builder.AppendLine();
+            }
+            _lastEmittedLine = currentLine;
         }
 
         private string GetIndentedText(string text)
@@ -46,7 +93,8 @@ namespace cast.core.visitor
 
         public string VisitTerminal(ITerminalNode node)
         {
-            return node.GetText();
+            string comments = ConsumeComments(node.Symbol.TokenIndex);
+            return comments + node.GetText();
         }
 
         public string VisitErrorNode(IErrorNode node)
@@ -61,23 +109,11 @@ namespace cast.core.visitor
 
             for (int i = 0; i < declarations.Length; i++)
             {
+                int startIdx = declarations[i].Start.TokenIndex;
+                builder.Append(ConsumeComments(startIdx));
+                PreserveLineBreaks(builder, declarations[i].Start.Line);
                 builder.AppendLine(Visit(declarations[i]));
-
-                if (i < declarations.Length - 1)
-                {
-                    int startIdx = declarations[i].Stop.TokenIndex + 1;
-                    int endIdx = declarations[i + 1].Start.TokenIndex - 1;
-                    int newlines = 0;
-                    for (int t = startIdx; t <= endIdx; t++)
-                    {
-                        string text = _tokenStream.Get(t).Text;
-                        foreach (char c in text)
-                            if (c == '\n') newlines++;
-                    }
-                    newlines--;
-                    for (int j = 0; j < newlines; j++)
-                        builder.AppendLine();
-                }
+                _lastEmittedLine = declarations[i].Stop.Line;
             }
 
             return builder.ToString();
@@ -127,6 +163,12 @@ namespace cast.core.visitor
             builder.Append(Visit(context.selection_rest_statement()));
             _indent--;
             builder.Append(GetIndentedText("}"));
+            if (_configuration.PreserveLineBreaks)
+            {
+                var stmts = context.selection_rest_statement().statement();
+                if (stmts.Length > 0 && stmts[0].compound_statement() != null)
+                    _lastEmittedLine = stmts[0].compound_statement().RIGHT_BRACE().Symbol.Line;
+            }
             return builder.ToString();
         }
 
@@ -188,6 +230,8 @@ namespace cast.core.visitor
                 _indent--;
                 builder.AppendLine();
                 builder.Append(GetIndentedText("}"));
+                if (_configuration.PreserveLineBreaks)
+                    _lastEmittedLine = body.Stop.Line;
             }
             else
             {
@@ -296,10 +340,17 @@ namespace cast.core.visitor
                 _indent++;
                 foreach (var statementContext in context.statement_list().statement())
                 {
+                    PreserveLineBreaks(builder, statementContext.Start.Line);
+                    int startIdx = statementContext.Start.TokenIndex;
+                    builder.Append(ConsumeComments(startIdx));
                     builder.Append(GetIndentedText($"{Visit(statementContext)}\n"));
+                    _lastEmittedLine = statementContext.Stop.Line;
                 } 
                 _indent--;
             }
+
+            if (_configuration.PreserveLineBreaks)
+                _lastEmittedLine = context.RIGHT_BRACE().Symbol.Line;
 
             return builder.ToString();
         }
@@ -314,12 +365,30 @@ namespace cast.core.visitor
                 _indent++;
                 foreach (var statementContext in context.statement_list().statement())
                 {
+                    if (_configuration.PreserveLineBreaks)
+                    {
+                        int curLine = statementContext.Start.Line;
+                        if (curLine > _lastEmittedLine + 1)
+                        {
+                            for (int j = _lastEmittedLine + 1; j < curLine; j++)
+                                statements.Add("");
+                        }
+                        _lastEmittedLine = statementContext.Stop.Line;
+                    }
+
+                    int startIdx = statementContext.Start.TokenIndex;
+                    string comments = ConsumeComments(startIdx);
+                    if (!string.IsNullOrEmpty(comments))
+                        statements.Add(GetIndentedText(comments));
+
                     statements.Add(GetIndentedText(Visit(statementContext)));
                 }
                 builder.Append(string.Join("\n", statements));
                 builder.AppendLine();
                 _indent--;
                 builder.Append(GetIndentedText("}"));
+                if (_configuration.PreserveLineBreaks)
+                    _lastEmittedLine = context.RIGHT_BRACE().Symbol.Line;
             }
             else
             {
@@ -437,6 +506,11 @@ namespace cast.core.visitor
                 return Visit(context.INTCONSTANT());
             }
 
+            if (context.UINTCONSTANT() != null)
+            {
+                return Visit(context.UINTCONSTANT());
+            }
+
             if (context.FLOATCONSTANT() != null)
             {
                 return Visit(context.FLOATCONSTANT());
@@ -446,6 +520,9 @@ namespace cast.core.visitor
             {
                 return Visit(context.variable_identifier());
             }
+
+            if (context.TRUE() != null) return "true";
+            if (context.FALSE() != null) return "false";
 
             return string.Empty;
         }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using cast.core.models.symbols;
 
 namespace cast.core.models
@@ -8,19 +7,16 @@ namespace cast.core.models
     {
         public Scope? Parent { get; }
         
-        private readonly HashSet<AbstractSymbol> _symbols = new HashSet<AbstractSymbol>();
+        private readonly Dictionary<string, AbstractSymbol> _symbols = new Dictionary<string, AbstractSymbol>();
 
         public AbstractSymbol? this[string name]
         {
             get
             {
-                if  (_symbols.Any(s => s.Name == name))
-                    return _symbols.FirstOrDefault(s => s.Name == name);
+                if (_symbols.TryGetValue(name, out var symbol))
+                    return symbol;
 
-                if (Parent == null)
-                    return null;
-                
-                return Parent[name];
+                return Parent?[name];
             }
         }
 
@@ -31,7 +27,7 @@ namespace cast.core.models
 
         public bool Define(AbstractSymbol symbol)
         {
-            return _symbols.Add(symbol);
+            return _symbols.TryAdd(symbol.Name, symbol);
         }
     }
 }

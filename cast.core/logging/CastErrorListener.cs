@@ -11,11 +11,11 @@ namespace cast.core.logging
         {
             _errorLogger = errorLogger;
         }
-        
+
         public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine,
             string msg, RecognitionException e)
         {
-            _errorLogger.Log(line, offendingSymbol, msg);
+            _errorLogger.Log(line, charPositionInLine, msg);
         }
 
         public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine,
