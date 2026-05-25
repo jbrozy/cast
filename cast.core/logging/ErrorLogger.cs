@@ -28,9 +28,11 @@ namespace cast.core.logging
                     src = src.Substring(0, 57) + "...";
             }
 
-            errors.Add($"[Line {line}:{column}] Error: {message}");
-            if (!string.IsNullOrEmpty(src))
-                errors.Add($"  -> {src}");
+            errors.Add(!string.IsNullOrEmpty(src)
+                ? $"[Line {line + 1}:{column}] Error: {message} \n  -> {src}"
+                : $"[Line {line + 1}:{column}] Error: {message}");
+            
+            // Console.WriteLine($"[Line {line + 1}:{column}] Error: {message} \n  -> {src}");
         }
 
         public void Log(int line, int column, string message)
@@ -44,7 +46,7 @@ namespace cast.core.logging
                     src = src.Substring(0, 57) + "...";
             }
 
-            errors.Add($"[Line {line}:{column}] Error: {message}");
+            errors.Add($"[Line {line + 1}:{column}] Error: {message}");
             if (!string.IsNullOrEmpty(src))
                 errors.Add($"  -> {src}");
         }

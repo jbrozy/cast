@@ -549,13 +549,29 @@ namespace cast.core.visitor
                     parameters.Add(Visit(parameterContext));
                 }
 
-                if (_scope[functionName] != null)
+                CastType returnType;
+                if (_scope[functionName] is FunctionSymbol function)
                 {
-                    if (_scope[functionName] is FunctionSymbol function)
-                        return function.ReturnType();
+                    returnType = function.ReturnType();
                 }
-                
-                return Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+                else
+                {
+                    returnType = Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+                }
+
+                // Apply space specifiers from constructor calls like vec4<Model>(...)
+                if (context.type_specifier()?.space_specifier() != null)
+                {
+                    List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+                    foreach (var space in context.type_specifier().space_specifier().space_definition_parameters().children)
+                    {
+                        SpaceSymbol? ss = _scope[space.GetText()] as SpaceSymbol;
+                        if (ss != null) spaces.Add(ss);
+                    }
+                    returnType = new CastType(returnType.Type, spaces);
+                }
+
+                return returnType;
             }
 
             if (context.INC_OP() != null || context.DEC_OP() != null)
@@ -676,6 +692,22 @@ namespace cast.core.visitor
 
         public CastType VisitAssignment_expression(CastParser.Assignment_expressionContext context)
         {
+            if (context.unary_expression() != null && context.assignment_expression() != null)
+            {
+                CastType left = Visit(context.unary_expression());
+                CastType right = Visit(context.assignment_expression());
+
+                if (left != null && right != null
+                    && !Equals(left, CastType.ErrorType)
+                    && !Equals(right, CastType.ErrorType)
+                    && !right.IsAssignable(left))
+                {
+                    _logger.Log(context.Start, $"Cannot assign type '{right}' to '{left}'");
+                }
+
+                return right ?? CastType.ErrorType;
+            }
+
             if (context.assignment_expression() != null)
             {
                 return Visit(context.assignment_expression());

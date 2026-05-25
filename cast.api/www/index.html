@@ -1149,7 +1149,7 @@ uniform sampler2D u_MetallicRoughnessMap;
 
 void main() {
     vec4 albedo = texture(u_AlbedoMap, v_TexCoord);
-    gbuf_albedo = albedo;
+    gbuf_albedo = vec3(1.0);
     gbuf_normal = vec4(normalize(v_Normal), 0.0);
     gbuf_metallicRoughness = texture(u_MetallicRoughnessMap, v_TexCoord);
     gbuf_depth = gl_FragCoord.z;
@@ -2284,10 +2284,11 @@ void main() {
                     
                     if (data.errors && data.errors.length > 0) {
                         const errorItems = data.errors.map(err => {
-                            const match = err.match(/\[Line (\d+):(\d+)\]\s*(.*)/);
+                            const match = err.match(/\[Line (\d+):(\d+)]\s*([\s\S]*)/);
                             if (match) {
                                 const [, line, column, rest] = match;
-                                return `<li><strong>Line Nr: ${(parseInt(line))}:${column}</strong><br>${htmlEscape(rest)}</li>`;
+                                const formatted = htmlEscape(rest.trim()).replace(/\r?\n/g, '<br>');
+                                return `<li><strong>Line Nr: ${(parseInt(line))}:${column}</strong><br>${formatted}</li>`;
                             }
                             return `<li>${err}</li>`;
                         }).join('');
