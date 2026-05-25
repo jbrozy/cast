@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Antlr4.Runtime.Atn;
 using cast.core.models.symbols;
 
 namespace cast.core.models
@@ -70,7 +72,10 @@ namespace cast.core.models
             if (this.Spaces.Count != rhs.Spaces.Count) return false;
             for (int i = 0; i < this.Spaces.Count; i++)
             {
-                if (this.Spaces[i] != rhs.Spaces[i]) return false;
+                if (this.Spaces[i].Name != rhs.Spaces[i].Name)
+                {
+                    Console.WriteLine($"Error while comparing spaces.");
+                }
             }
 
             return true;

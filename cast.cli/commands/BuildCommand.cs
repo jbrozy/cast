@@ -53,20 +53,12 @@ public class BuildCommand : Command<BuildSettings>
                 }
                 catch (Exception e)
                 {
-                    AnsiConsole.MarkupLine($"[red]Error:[/] {file}: {e.Message}");
+                    AnsiConsole.MarkupLine($"[red]Error:[/] {file}: {Markup.Escape(e.StackTrace)}");
+                    return 1;
                 }
             }
         }
-        
-        try
-        {
-            string output = settings.OutputFile;
-            return 0;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            return 1;
-        }
+
+        return 0;
     }
 }

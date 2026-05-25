@@ -831,7 +831,7 @@ namespace cast.core.visitor
             _indent++;
             foreach (var initBlock in initBlocks)
             {
-                initBlockStrings.Add(string.Join(", ", initBlock.Select(GetIndentedText)));
+                initBlockStrings.Add(string.Join(", ", initBlock.Select(GetIndentedText)) + ", ");
             }
             _indent--;
             

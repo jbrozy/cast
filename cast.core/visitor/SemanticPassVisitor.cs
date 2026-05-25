@@ -318,7 +318,7 @@ namespace cast.core.visitor
                             CastType? type = Visit(statementContext);
                             if (type != null && type.IsReturn)
                             {
-                                if (!type.Equals(function.ReturnType()))
+                                if (!type.IsAssignable(function.ReturnType()))
                                 {
                                     string message = $"Invalid return type '{type}', must be '{function.ReturnType()}'";
                                     _logger.Log(context.Start, message);
