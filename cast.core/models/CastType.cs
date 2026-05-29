@@ -74,7 +74,7 @@ namespace cast.core.models
             {
                 if (this.Spaces[i].Name != rhs.Spaces[i].Name)
                 {
-                    Console.WriteLine($"Error while comparing spaces.");
+                    return false;
                 }
             }
 

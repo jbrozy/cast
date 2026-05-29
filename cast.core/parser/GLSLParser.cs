@@ -21,14 +21,17 @@ namespace cast.core.parser
         public GlslParser()
         {
             _scope = new Scope();
-            _scope.Define(new SpaceSymbol("Screen"));
             _scope.Define(new SpaceSymbol("Local"));
-            _scope.Define(new SpaceSymbol("Clip"));
             _scope.Define(new SpaceSymbol("Model"));
-            _scope.Define(new SpaceSymbol("View"));
             _scope.Define(new SpaceSymbol("World"));
-            _scope.Define(new SpaceSymbol("Projection"));
+            _scope.Define(new SpaceSymbol("View"));
+            _scope.Define(new SpaceSymbol("Tangent"));
+            _scope.Define(new SpaceSymbol("Clip"));
+            _scope.Define(new SpaceSymbol("NDC"));
+            _scope.Define(new SpaceSymbol("Screen"));
+            
             _scope.Define(new SpaceSymbol("Color"));
+            _scope.Define(new SpaceSymbol("UV"));
             
             _scope.Define(new TypeSymbol("vec4", 1, true));
             _scope.Define(new TypeSymbol("vec3", 1, true));
@@ -55,7 +58,7 @@ namespace cast.core.parser
             
             RegisterConstant("gl_FragCoord",  "vec4",  "Screen");
             RegisterConstant("gl_FrontFacing","bool");
-            RegisterConstant("gl_PointCoord", "vec2");
+            RegisterConstant("gl_PointCoord", "vec2", "Local");
             RegisterConstant("gl_FragDepth",  "float");
             
             _logger = new ErrorLogger();

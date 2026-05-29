@@ -22,6 +22,8 @@ namespace cast.core.visitor
 
         public CastType Visit(IParseTree tree)
         {
+            if (tree == null)
+                return CastType.ErrorType;
             return tree.Accept(this);
         }
 
@@ -316,7 +318,7 @@ namespace cast.core.visitor
                         foreach (var statementContext in statementList.statement())
                         {
                             CastType? type = Visit(statementContext);
-                            if (type != null && type.IsReturn)
+                            if (type is { IsReturn: true })
                             {
                                 if (!type.IsAssignable(function.ReturnType()))
                                 {
@@ -563,12 +565,23 @@ namespace cast.core.visitor
                 if (context.type_specifier()?.space_specifier() != null)
                 {
                     List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+                    string spaceSpecifier = context.type_specifier().space_specifier().GetText();
                     foreach (var space in context.type_specifier().space_specifier().space_definition_parameters().children)
                     {
                         SpaceSymbol? ss = _scope[space.GetText()] as SpaceSymbol;
                         if (ss != null) spaces.Add(ss);
                     }
-                    returnType = new CastType(returnType.Type, spaces);
+
+                    CastType tempReturnType = new CastType(returnType.Type, spaces);
+                    if (!returnType.IsAssignable(tempReturnType))
+                    {
+                        _logger.Log(context.Start, $"Cannot apply '{tempReturnType}' to type '{returnType}'");
+                        returnType = CastType.ErrorType;
+                    }
+                    else
+                    {
+                        returnType = tempReturnType;
+                    }
                 }
 
                 return returnType;
@@ -697,9 +710,18 @@ namespace cast.core.visitor
                 CastType left = Visit(context.unary_expression());
                 CastType right = Visit(context.assignment_expression());
 
+                // This is a placeholder fix for missing spaces in function resolve
+                // sometimes it finds a non-generic function in the registry
+                // so whenever left type is equal to right type and left has spaces, and right doesnt
+                // we simply copy them over, since the expected return type of the expression is corerect
+                // but the spaces aren't set
+                if (left.Type.Name == right.Type.Name)
+                {
+                    bool copy = left.Spaces.Count > 0 && right.Spaces.Count == 0;
+                    if (copy) right.Spaces.AddRange(left.Spaces);
+                }
+
                 if (left != null && right != null
-                    && !Equals(left, CastType.ErrorType)
-                    && !Equals(right, CastType.ErrorType)
                     && !right.IsAssignable(left))
                 {
                     _logger.Log(context.Start, $"Cannot assign type '{right}' to '{left}'");
@@ -740,7 +762,10 @@ namespace cast.core.visitor
                 }
                 CastType? eval = Registry.ResolveOperator(context.Start, _scope, _logger, op, new List<CastType>(new[] { left, right }));
                 if (Equals(eval, CastType.ErrorType))
+                {
+                    _logger.Log(context.Start, $"No matching operator '{op}' for {left} {op} {right}");
                     return CastType.ErrorType;
+                }
                 return eval;
             }
 
