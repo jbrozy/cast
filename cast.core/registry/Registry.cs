@@ -437,7 +437,6 @@ namespace cast.core.registry
                     }
                 }
 
-                Console.WriteLine("");
                 // check if the index of the parameters from the keys of the elements in the generics-Dictionary match
                 // this will be from left to right, if its vec4<World> * vec4<Model>
                 // the first occurrence of vec4<World> will result in T being World
