@@ -10,6 +10,7 @@ namespace cast.core.registry
 {
     public class Registry
     {
+        private static HashSet<InternalFunction> _internalFunctions = new HashSet<InternalFunction>();
         private static Dictionary<string, List<(string[] Params, string returnType)>> functions = new Dictionary<string, List<(string[], string)>>();
 
         public static bool HasCandidates(string functionName)
@@ -25,6 +26,7 @@ namespace cast.core.registry
             }
             
             functions[name].Add((parameters, returnType));
+            _internalFunctions.Add(new InternalFunction(name, returnType, parameters.ToList()));
         }
         
         public static void Setup()
@@ -356,72 +358,173 @@ namespace cast.core.registry
             return (lhsType, parts.ToArray());
         }
 
-        public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope)
+        public static CastType ResolveFunction(string name, List<CastType> parameters, ErrorLogger logger, Scope scope, IToken token)
         {
-            if (!functions.ContainsKey(name)) return CastType.ErrorType;
-            List<(string[] Params, string returnType)> candidates = functions[name];
-
-            foreach ((string[] fnParams, string returnType) in candidates)
+            if (!functions.ContainsKey(name))
             {
-                if (fnParams.Length != parameters.Count) continue;
+                logger.Log(token, $"Function '{token.Text}' not found.");
+                return CastType.ErrorType;
+            }
 
-                Dictionary<string, string> genericParameters = new Dictionary<string, string>();
+            // we have to prefer generic functions before non generics
+            IEnumerable<InternalFunction> candidates = _internalFunctions
+                .Where(f => f.Name == name)
+                .OrderByDescending(f => f.Parameters.Count);
+            
+            foreach (InternalFunction internalFunction in candidates)
+            {
+                // this will give us things like vec4<T>, mat4<T, U> the generic parameters
+                var internalParameters = internalFunction.Parameters;
                 bool valid = true;
-
-                for (int i = 0; i < fnParams.Length; ++i)
+                for (int i = 0; i < internalParameters.Count; i++)
                 {
-                    (string expectedType, string[] leftGenerics) = ParseType(fnParams[i]);
-                    (string givenType, string[] rightGenerics) = ParseType(parameters[i].ToString());
-
-                    if (expectedType != givenType)
+                    var internalParam = internalParameters[i];
+                    (string type, string[] genericParams) = ParseType(internalParam);
+                    
+                    // if the base type is unequal to the given type or the amount of spaces is incorrect,
+                    // break the inner loop and proceed with other candidates
+                    if (i >= parameters.Count)
                     {
                         valid = false;
                         break;
                     }
-
-                    for (int j = 0; j < leftGenerics.Length && j < rightGenerics.Length; j++)
+                    
+                    if (type != parameters[i].Type.Name || genericParams.Count() != parameters[i].Spaces.Count)
                     {
-                        if (genericParameters.TryGetValue(leftGenerics[j], out var existing))
-                        {
-                            if (existing != rightGenerics[j])
-                            {
-                                valid = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            genericParameters.Add(leftGenerics[j], rightGenerics[j]);
-                        }
+                        valid = false;
+                        break;
                     }
-                    if (!valid) break;
                 }
 
                 if (!valid) continue;
-
-                if (genericParameters.Any())
+                // all parameters should have matched here
+                // add the generic parameters to a dictionary
+                // so we can keep track of them
+                Dictionary<string, string> generics = new Dictionary<string, string>();
+                foreach (var internalParam in internalFunction.Parameters)
                 {
-                    string resolved = genericParameters.ContainsKey(returnType) ? genericParameters[returnType] : returnType;
-                    (string expected, string [] expectedParams) = ParseType(resolved);
-                    List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
-                    for (int i = 0; i < expectedParams.Length; ++i)
+                    // parse the parameter since its form is f. e. vec4<T>
+                    (_, string[] genericParams) = ParseType(internalParam);
+                    foreach (var genericParam in genericParams)
                     {
-                        if (genericParameters.TryGetValue(expectedParams[i], out var resolvedParam))
-                            spaces.Add(scope[resolvedParam] as SpaceSymbol);
-                        else
-                            spaces.Add(scope[expectedParams[i]] as SpaceSymbol);
+                        // we do not have an actual value for the generic yet
+                        // its possible that one generic param has already been added
+                        generics.TryAdd(genericParam, string.Empty);
                     }
-                    TypeSymbol type = scope[expected] as TypeSymbol;
-                    if (type == null) return CastType.ErrorType;
-                    return new CastType(type, spaces);
                 }
 
-                TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
-                if (returnTypeSymbol == null) continue;
-                return new CastType(returnTypeSymbol);
-            }
+                for (int i = 0; i < parameters.Count; i++)
+                {
+                    CastType externalParam = parameters[i];
+                    string sig = externalParam.ToString();
+                    (_,  string[] genericParams) = ParseType(sig);
+                    
+                    for (int j = 0; j < genericParams.Length; j++)
+                    {
+                        for(int k = 0; k < generics.Count; k++)
+                        {
+                            string key = generics.ElementAt(k).Key;
+                            if (generics[key] == string.Empty)
+                            {
+                                generics[key] = genericParams[k];
+                            }
+                            else if (generics[key] != genericParams[k])
+                            {
+                                logger.Log(token, $"Expected: {key} == {genericParams[j]}");
+                                return  CastType.ErrorType;
+                            }
+                        }
+                    }
+                }
 
+                Console.WriteLine("");
+                // check if the index of the parameters from the keys of the elements in the generics-Dictionary match
+                // this will be from left to right, if its vec4<World> * vec4<Model>
+                // the first occurrence of vec4<World> will result in T being World
+                // this means a variant of the function with matching generics has been validated
+                (string expectedReturnType, _) = ParseType(internalFunction.ReturnType);
+                TypeSymbol returnType = scope[expectedReturnType] as TypeSymbol;
+                if (generics.Any() && generics.All(c => c.Value != string.Empty))
+                {
+                    List<SpaceSymbol> spaces = new List<SpaceSymbol>();
+                    if (returnType.HasSpaces())
+                    {
+                        foreach ((_, string space) in generics)
+                        {
+                            SpaceSymbol s = scope[space] as SpaceSymbol;
+                            spaces.Add(s);
+                        }
+                    }
+                    return new CastType(returnType, spaces);
+                }
+                return new CastType(returnType);
+            }
+            
             return CastType.ErrorType;
+            // if (!functions.ContainsKey(name)) return CastType.ErrorType;
+            // List<(string[] Params, string returnType)> candidates = functions[name];
+
+            // foreach ((string[] fnParams, string returnType) in candidates)
+            // {
+            //     if (fnParams.Length != parameters.Count) continue;
+
+            //     Dictionary<string, string> genericParameters = new Dictionary<string, string>();
+            //     bool valid = true;
+
+            //     for (int i = 0; i < fnParams.Length; ++i)
+            //     {
+            //         (string expectedType, string[] leftGenerics) = ParseType(fnParams[i]);
+            //         (string givenType, string[] rightGenerics) = ParseType(parameters[i].ToString());
+
+            //         if (expectedType != givenType)
+            //         {
+            //             valid = false;
+            //             break;
+            //         }
+
+            //         for (int j = 0; j < leftGenerics.Length && j < rightGenerics.Length; j++)
+            //         {
+            //             if (genericParameters.TryGetValue(leftGenerics[j], out var existing))
+            //             {
+            //                 if (existing != rightGenerics[j])
+            //                 {
+            //                     valid = false;
+            //                     break;
+            //                 }
+            //             }
+            //             else
+            //             {
+            //                 genericParameters.Add(leftGenerics[j], rightGenerics[j]);
+            //             }
+            //         }
+            //         if (!valid) break;
+            //     }
+
+            //     if (!valid) continue;
+
+            //     if (genericParameters.Any())
+            //     {
+            //         string resolved = genericParameters.ContainsKey(returnType) ? genericParameters[returnType] : returnType;
+            //         (string expected, string [] expectedParams) = ParseType(resolved);
+            //         List<SpaceSymbol> spaces = new  List<SpaceSymbol>();
+            //         for (int i = 0; i < expectedParams.Length; ++i)
+            //         {
+            //             if (genericParameters.TryGetValue(expectedParams[i], out var resolvedParam))
+            //                 spaces.Add(scope[resolvedParam] as SpaceSymbol);
+            //             else
+            //                 spaces.Add(scope[expectedParams[i]] as SpaceSymbol);
+            //         }
+            //         TypeSymbol type = scope[expected] as TypeSymbol;
+            //         if (type == null) return CastType.ErrorType;
+            //         return new CastType(type, spaces);
+            //     }
+
+            //     TypeSymbol? returnTypeSymbol = scope[returnType] as TypeSymbol;
+            //     if (returnTypeSymbol == null) continue;
+            //     return new CastType(returnTypeSymbol);
+            // }
+
+            // return CastType.ErrorType;
         }
 
         public static CastType? ResolveOperator(IToken token, Scope scope, ErrorLogger logger, string op, List<CastType> parameters)

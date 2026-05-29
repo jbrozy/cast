@@ -29,7 +29,7 @@ namespace cast.core.models
                 return Type?.Name ?? "ErrorType";
             
             // otherwise return base type and spaces
-            string spaceNames = string.Join(", ", Spaces.Select(s => s.ToString()));
+            string spaceNames = string.Join(", ", Spaces?.Select(s => s.ToString()));
             return $"{Type.Name}<{spaceNames}>";
         }
 

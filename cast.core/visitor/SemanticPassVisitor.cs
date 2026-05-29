@@ -366,7 +366,7 @@ namespace cast.core.visitor
             if (functionName != null && _scope[functionName] is FunctionSymbol function)
                 return function.ReturnType();
 
-            CastType resolved = Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+            CastType resolved = Registry.ResolveFunction(functionName, parameters, _logger, _scope, context.Start);
             if (Equals(resolved, CastType.ErrorType))
                 _logger.Log(context.Start, $"Function '{functionName}' not found.");
             return resolved;
@@ -558,14 +558,13 @@ namespace cast.core.visitor
                 }
                 else
                 {
-                    returnType = Registry.ResolveFunction(functionName, parameters, _logger, _scope);
+                    returnType = Registry.ResolveFunction(functionName, parameters, _logger, _scope, context.Start);
                 }
 
                 // Apply space specifiers from constructor calls like vec4<Model>(...)
                 if (context.type_specifier()?.space_specifier() != null)
                 {
                     List<SpaceSymbol> spaces = new List<SpaceSymbol>();
-                    string spaceSpecifier = context.type_specifier().space_specifier().GetText();
                     foreach (var space in context.type_specifier().space_specifier().space_definition_parameters().children)
                     {
                         SpaceSymbol? ss = _scope[space.GetText()] as SpaceSymbol;
