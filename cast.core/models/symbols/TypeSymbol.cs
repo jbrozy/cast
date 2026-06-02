@@ -41,7 +41,13 @@ namespace cast.core.models.symbols
     {
         private int RequiredSpaces { get; }
         private bool OptionalSpaces { get; }
-        
+        public string? ResultType { get; }
+
+        public TypeSymbol(string name, string resultType, int requiredSpaces, bool optionalSpaces = true) : this(name, requiredSpaces, optionalSpaces)
+        {
+            ResultType = resultType;
+        }
+            
         public TypeSymbol(string name, int requiredSpaces, bool optionalSpaces = true) : base(name)
         {
             if (requiredSpaces > 2)

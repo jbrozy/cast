@@ -392,6 +392,9 @@ type_specifier_nonarray
     | VEC2
     | VEC3
     | VEC4
+    | POINT2
+    | POINT3
+    | POINT4
     | DVEC2
     | DVEC3
     | DVEC4

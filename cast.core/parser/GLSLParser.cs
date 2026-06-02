@@ -33,9 +33,14 @@ namespace cast.core.parser
             _scope.Define(new SpaceSymbol("Color"));
             _scope.Define(new SpaceSymbol("UV"));
             
+            _scope.Define(new TypeSymbol("point2", "vec2", 1, true));
+            _scope.Define(new TypeSymbol("point3", "vec3", 1, true));
+            _scope.Define(new TypeSymbol("point4", "vec4", 1, true));
+            
             _scope.Define(new TypeSymbol("vec4", 1, true));
             _scope.Define(new TypeSymbol("vec3", 1, true));
             _scope.Define(new TypeSymbol("vec2", 1, true));
+            
             _scope.Define(new TypeSymbol("mat4", 2, true));
             _scope.Define(new TypeSymbol("mat3", 1, true));
             _scope.Define(new TypeSymbol("mat2", 0, true));

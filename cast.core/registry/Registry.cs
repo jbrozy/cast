@@ -172,10 +172,19 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2<T>", "vec2<T>", "vec2<T>");
             RegisterFunction("*", "vec3<T>", "vec3<T>", "vec3<T>");
             RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4<T>");
+            
+            RegisterFunction("*", "point2", "point2", "point2");
+            RegisterFunction("*", "point3", "point3", "point3");
+            RegisterFunction("*", "point4", "point4", "point4");
+            
+            RegisterFunction("*", "point2<T>", "point2<T>", "point2<T>");
+            RegisterFunction("*", "point3<T>", "point3<T>", "point3<T>");
+            RegisterFunction("*", "point4<T>", "point4<T>", "point4<T>");
 
-            RegisterFunction("*", "vec2<U>", "mat2<T, U>", "vec2<T>");
-            RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
-            RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
+            RegisterFunction("*", "point2<U>", "mat2<T, U>", "point2<T>");
+            RegisterFunction("*", "point3<U>", "mat3<T, U>", "point3<T>");
+            RegisterFunction("*", "point4<U>", "mat4<T, U>", "point4<T>");
+            
             RegisterFunction("*", "vec4", "mat4", "vec4");
             RegisterFunction("*", "vec2", "mat2", "vec2");
             RegisterFunction("*", "vec3", "mat3", "vec3");

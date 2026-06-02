@@ -16,7 +16,7 @@ namespace cast.core.visitor
         private const int CommentsChannel = 2;
 
         private int _indent = 0;
-        private readonly Scope _scope;
+        private Scope _scope;
         private readonly CommonTokenStream _tokenStream;
         private readonly HashSet<int> _emittedComments = new HashSet<int>();
         private readonly BaseConfiguration _configuration;
@@ -431,6 +431,8 @@ namespace cast.core.visitor
             }
             
             builder.Append($"{type} {functionName}({parameters})");
+            
+            _scope = function.GetFunctionScope();
             if (context.compound_statement_no_new_scope() != null)
             {
                 builder.Append(Visit(context.compound_statement_no_new_scope()));
@@ -439,6 +441,8 @@ namespace cast.core.visitor
             {
                 builder.Append(";");
             }
+
+            _scope = function.GetFunctionScope().Parent;
             
             return builder.ToString();
         }
@@ -743,6 +747,14 @@ namespace cast.core.visitor
             {
                 var singleDecl = context.init_declarator_list().single_declaration();
                 string type = Visit(singleDecl.fully_specified_type());
+                TypeSymbol? typeSymbol = _scope[type] as TypeSymbol;
+
+                if (typeSymbol == null) return string.Empty;
+
+                if (!string.IsNullOrEmpty(typeSymbol.ResultType))
+                {
+                    type = typeSymbol.ResultType;
+                }
 
                 if (singleDecl.typeless_declaration() != null)
                 {
@@ -871,6 +883,12 @@ namespace cast.core.visitor
             if (qualifier != null) builder.Append($"{qualifier} ");
 
             string variableType = Visit(context.fully_specified_type().type_specifier().type_specifier_nonarray());
+            TypeSymbol? type = _scope[variableType] as TypeSymbol;
+
+            if (!string.IsNullOrEmpty(type.ResultType))
+            {
+                variableType = type.ResultType;
+            }
 
             if (context.typeless_declaration() != null)
             {
@@ -891,8 +909,9 @@ namespace cast.core.visitor
         public string VisitTypeless_declaration(CastParser.Typeless_declarationContext context)
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(context.IDENTIFIER().GetText());
-
+            string typelessDecl = context.IDENTIFIER().GetText();
+            builder.Append(typelessDecl);
+            
             if (context.array_specifier() != null)
                 builder.Append(Visit(context.array_specifier()));
 
