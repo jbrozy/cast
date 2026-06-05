@@ -747,25 +747,12 @@ namespace cast.core.visitor
             {
                 var singleDecl = context.init_declarator_list().single_declaration();
                 string type = Visit(singleDecl.fully_specified_type());
-                TypeSymbol? typeSymbol = _scope[type] as TypeSymbol;
-
-                if (typeSymbol == null) return string.Empty;
-
-                if (!string.IsNullOrEmpty(typeSymbol.ResultType))
-                {
-                    type = typeSymbol.ResultType;
-                }
-
                 if (singleDecl.typeless_declaration() != null)
                 {
                     string identifier = Visit(singleDecl.typeless_declaration());
                     builder.Append($"{type} {identifier}");
                     if (singleDecl.typeless_declaration().initializer() != null)
                         builder.Append($" = {Visit(singleDecl.typeless_declaration().initializer())}");
-                }
-                else
-                {
-                    builder.Append(type);
                 }
 
                 return builder + ";";
@@ -943,6 +930,11 @@ namespace cast.core.visitor
             }
             
             string type = Visit(context.type_specifier().type_specifier_nonarray());
+            TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
+            if (!string.IsNullOrEmpty(typeSymbol.ResultType))
+            {
+                type = typeSymbol.ResultType;
+            }
             builder.Append($"{type}");
             return builder.ToString();
         }
