@@ -100,7 +100,7 @@ public class WatchCommand : Command<WatchSettings>
                     if (Console.KeyAvailable)
                     {
                         var key = Console.ReadKey(intercept: true);
-                        if (key.KeyChar == 'q' || key.KeyChar == 'Q')
+                        if (key.KeyChar is 'q' or 'Q')
                             break;
                     }
                 }
@@ -142,13 +142,30 @@ public class WatchCommand : Command<WatchSettings>
         }
     }
 
+    private static string ReadFileWithRetry(string filePath, int maxRetries = 5)
+    {
+        for (var i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                return File.ReadAllText(filePath);
+            }
+            catch (IOException) when (i < maxRetries - 1)
+            {
+                Thread.Sleep(200 * (i + 1));
+            }
+        }
+
+        return File.ReadAllText(filePath);
+    }
+
     private static void CompileFile(string filePath, string inputDir, string outputDir)
     {
         if (Path.GetExtension(filePath) is not ".vsh" and not ".fsh") return;
 
         try
         {
-            string fileContent = File.ReadAllText(filePath);
+            string fileContent = ReadFileWithRetry(filePath);
 
             var parser = new GlslParser();
             GlslShaderProgram result = parser.Parse(fileContent);
