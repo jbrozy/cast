@@ -6,10 +6,62 @@
     <title>Cast Editor</title>
     
     <link rel="stylesheet" id="hljs-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.css">
 
     <style>
+        :root {
+            --bg: #3f3f3f;
+            --bg-pane: #474747;
+            --bg-header: #4a4a4a;
+            --bg-raised: #525252;
+            --border: #5a5a5a;
+            --border-light: #626262;
+            --text: #dcdccc;
+            --text-dim: #8f8f8f;
+            --text-bright: #f5f5e8;
+            --accent: #cfbfaf;
+            --accent-hover: #bfaf9f;
+            --accent-dim: #4a4a3a;
+            --success: #8fbf8f;
+            --success-bg: #3a4a3a;
+            --danger: #df8f8f;
+            --danger-bg: #4a3a3a;
+            --warning: #dfbf8f;
+            --warning-bg: #4a4a3a;
+            --btn-bg: #525252;
+            --btn-hover: #5f5f5f;
+            --btn-text: #dcdccc;
+            --scrollbar-thumb: #5a5a5a;
+            --scrollbar-track: transparent;
+        }
+
+        body.light-mode {
+            --bg: #f5f0e8;
+            --bg-pane: #faf5ee;
+            --bg-header: #ede8df;
+            --bg-raised: #e5e0d6;
+            --border: #d5d0c6;
+            --border-light: #c5c0b6;
+            --text: #3a3a33;
+            --text-dim: #9a958b;
+            --text-bright: #1a1a15;
+            --accent: #8a7a6a;
+            --accent-hover: #7a6a5a;
+            --accent-dim: #e8e0d6;
+            --success: #5a8a5a;
+            --success-bg: #e0f0e0;
+            --danger: #b05a5a;
+            --danger-bg: #fce8e8;
+            --warning: #a08040;
+            --warning-bg: #f8f0d0;
+            --btn-bg: #d5d0c6;
+            --btn-hover: #c5c0b6;
+            --btn-text: #3a3a33;
+            --scrollbar-thumb: #c5c0b6;
+            --scrollbar-track: transparent;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -18,45 +70,71 @@
 
         body, html {
             height: 100%;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        body, .container, .pane, .pane-header, .pane-footer,
+        .overlay, .overlay-content, .graph-legend {
+            transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
         }
 
         .container {
             display: flex;
             height: 100vh;
             gap: 0;
-            background-color: #2d2d2d;
+            background-color: var(--bg);
         }
 
         .pane {
-            background-color: #252526;
+            background-color: var(--bg-pane);
             display: flex;
             flex-direction: column;
-            border-right: none;
             min-width: 100px;
             flex: 1;
         }
 
-        .pane:last-child {
-            border-right: none;
-        }
-
         .pane-divider {
             width: 5px;
-            background-color: #3e3e42;
+            background-color: var(--border);
             cursor: col-resize;
             transition: background-color 0.2s ease;
             flex-shrink: 0;
         }
 
-        .pane-divider:hover {
-            background-color: #007acc;
+        .pane-divider:hover,
+        .pane-divider.dragging {
+            background-color: var(--accent);
         }
 
-        .pane-divider.dragging {
-            background-color: #007acc;
+        .pane-header {
+            background-color: var(--bg-header);
+            padding: 10px 14px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 42px;
+            user-select: none;
+        }
+
+        .pane-header-actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pane-footer {
+            padding: 6px;
+            border-top: 1px solid var(--border);
+            background-color: var(--bg-header);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
         }
 
         .overlay {
@@ -69,23 +147,23 @@
             justify-content: center;
             align-items: center;
             opacity: 0;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.2s ease;
         }
         .overlay.open {
             display: flex;
             opacity: 1;
         }
         .overlay-content {
-            background: #1e1e1e;
-            border: 1px solid #3e3e42;
-            border-radius: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
             width: 90vw;
             height: 85vh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             transform: scale(0.95) translateY(8px);
-            transition: transform 0.25s ease;
+            transition: transform 0.2s ease;
         }
         .overlay.open .overlay-content {
             transform: scale(1) translateY(0);
@@ -94,27 +172,27 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid #3e3e42;
-            font-size: 14px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
             font-weight: 600;
         }
-        .overlay-header button {
+        .overlay-close {
             background: none;
             border: none;
-            color: #888;
-            font-size: 24px;
+            color: var(--text-dim);
+            font-size: 20px;
             cursor: pointer;
             padding: 0 4px;
             line-height: 1;
         }
-        .overlay-header button:hover {
-            color: #fff;
+        .overlay-close:hover {
+            color: var(--text-bright);
         }
         #overlay-body {
             flex: 1;
             overflow: hidden;
-            padding: 16px;
+            padding: 14px;
             position: relative;
         }
         .graph-controls {
@@ -124,13 +202,13 @@
             margin-left: auto;
         }
         .graph-controls button {
-            background: #3e3e42;
-            border: 1px solid #555;
-            color: #d4d4d4;
+            background: var(--btn-bg);
+            border: 1px solid var(--border-light);
+            color: var(--text);
             cursor: pointer;
-            font-size: 16px;
-            width: 28px;
-            height: 28px;
+            font-size: 14px;
+            width: 26px;
+            height: 26px;
             border-radius: 3px;
             display: flex;
             align-items: center;
@@ -139,14 +217,13 @@
             padding: 0;
         }
         .graph-controls button:hover {
-            background: #555;
+            background: var(--btn-hover);
         }
         .zoom-level {
             font-size: 11px;
-            color: #888;
+            color: var(--text-dim);
             min-width: 40px;
             text-align: center;
-            font-weight: normal;
             font-variant-numeric: tabular-nums;
         }
         .graph-zoom-container {
@@ -163,11 +240,11 @@
             gap: 16px;
             flex-wrap: wrap;
             font-size: 11px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             padding: 8px 12px;
-            background: #2d2d30;
-            border: 1px solid #3e3e42;
-            border-radius: 4px;
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 3px;
         }
         .graph-legend-item {
             display: flex;
@@ -181,7 +258,7 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
         #overlay-body .errors {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             font-size: 12px;
         }
 
@@ -190,14 +267,6 @@
             flex-shrink: 0;
         }
 
-        .editor-pane {
-            flex: 1;
-        }
-
-        .output-pane {
-            flex: 1;
-        }
-
         .editor-wrapper {
             flex: 1;
             overflow: hidden;
@@ -205,202 +274,131 @@
             position: relative;
         }
 
-        .pane-header {
-            background-color: #2d2d30;
-            padding: 12px 16px;
-            font-weight: 600;
-            border-bottom: 1px solid #3e3e42;
-            color: #cccccc;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 44px;
-            box-sizing: border-box;
-        }
-
-        .pane-footer {
-            padding: 8px;
-            border-top: 1px solid #3e3e42;
-            background-color: #2d2d30;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        #graph-btn {
-            padding: 4px 12px !important;
-            background: #1e88e5 !important;
-            color: white !important;
-            border: none !important;
-            cursor: pointer !important;
-            border-radius: 3px !important;
-            font-size: 11px !important;
-            font-weight: 500 !important;
-            flex-shrink: 0;
-            margin-left: auto;
-        }
-        
-        #test-btn {
-            padding: 4px 12px !important;
-            background: #1e88e5 !important;
-            color: white !important;
-            border: none !important;
-            cursor: pointer !important;
-            border-radius: 3px !important;
-            font-size: 11px !important;
-            font-weight: 500 !important;
-            flex-shrink: 0;
-            margin-left: auto;
-        }
-
-        #test-btn:hover {
-            background: #1565c0 !important;
-        }
-
-        #test-btn:disabled {
-            background: #999 !important;
-            cursor: not-allowed !important;
-        }
-
-        .editor-wrapper {
+        #code-editor {
             flex: 1;
             overflow: hidden;
-            display: flex;
-            position: relative;
         }
 
-        .code-editor-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .code-editor-container .code-highlight {
-            display: none;
-        }
-
-        .code-editor-container .code-highlight code {
-            background: transparent !important;
-            padding: 0;
-        }
-
-        .code-editor-container .code-editor {
-            position: absolute;
-            inset: 0;
-            background: transparent;
-            color: #d4d4d4;
-            caret-color: #d4d4d4;
-            border: none;
-            resize: none;
+        /* CodeMirror */
+        .CodeMirror {
+            height: 100%;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 13px;
             line-height: 1.5;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            outline: none;
-            padding: 8px 12px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #464647 transparent;
+            background: var(--bg);
+            color: var(--text);
         }
-
-        body.light-mode .code-editor-container .code-editor {
-            color: #333;
-            -webkit-text-fill-color: #333;
-            caret-color: #333;
+        .CodeMirror-gutters {
+            background: var(--bg);
+            border-right: 1px solid var(--border);
         }
-
-        .line-numbers {
-            background-color: #1e1e1e;
-            color: #6a9955;
-            padding: 8px 12px;
-            text-align: right;
-            user-select: none;
-            border-right: 1px solid #3e3e42;
-            overflow: hidden;
+        .CodeMirror-linenumber {
+            color: var(--text-dim);
+            padding: 0 12px;
             font-size: 13px;
             line-height: 1.5;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            min-width: 28px;
         }
-
-        .line-number {
-            display: block;
-            height: 1.5em;
-            position: relative;
+        .CodeMirror-cursor {
+            border-left: 2px solid var(--text);
         }
+        .CodeMirror-selected {
+            background: var(--accent-dim) !important;
+        }
+        .CodeMirror-activeline-background {
+            background: var(--bg-raised);
+        }
+        .cm-s-default .cm-keyword { color: #e0e0e0; font-weight: bold; }
+        .cm-s-default .cm-atom { color: #e0e0e0; }
+        .cm-s-default .cm-number { color: #cfbfaf; }
+        .cm-s-default .cm-def { color: #efdcbc; }
+        .cm-s-default .cm-variable { color: #dcdccc; }
+        .cm-s-default .cm-variable-2 { color: #dcdccc; }
+        .cm-s-default .cm-variable-3 { color: #dcdccc; }
+        .cm-s-default .cm-type { color: #dcdccc; }
+        .cm-s-default .cm-property { color: #dcdccc; }
+        .cm-s-default .cm-operator { color: #dcdccc; }
+        .cm-s-default .cm-comment { color: #8f8f8f; }
+        .cm-s-default .cm-string { color: #cfbfaf; }
+        .cm-s-default .cm-meta { color: #dcdccc; }
+        .cm-s-default .cm-builtin { color: #efdcbc; }
+        .cm-s-default .cm-attribute { color: #dcdccc; }
 
-        .line-number.error {
-            background-color: #5c2525;
-            color: #ff6b6b;
+        body.light-mode .cm-s-default .cm-keyword { color: #5a4a3a; font-weight: bold; }
+        body.light-mode .cm-s-default .cm-atom { color: #5a4a3a; }
+        body.light-mode .cm-s-default .cm-number { color: #8a7a6a; }
+        body.light-mode .cm-s-default .cm-def { color: #6a5a4a; }
+        body.light-mode .cm-s-default .cm-variable { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-variable-2 { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-variable-3 { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-type { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-property { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-operator { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-comment { color: #9a958b; }
+        body.light-mode .cm-s-default .cm-string { color: #8a7a6a; }
+        body.light-mode .cm-s-default .cm-meta { color: #3a3a33; }
+        body.light-mode .cm-s-default .cm-builtin { color: #6a5a4a; }
+        body.light-mode .cm-s-default .cm-attribute { color: #3a3a33; }
+
+        .CodeMirror .error-line {
+            background: var(--danger-bg) !important;
+        }
+        .error-marker {
+            color: var(--danger);
             font-weight: bold;
+            font-size: 12px;
+            padding: 0 4px;
             cursor: help;
-            position: relative;
+            line-height: 1.5;
+            text-align: center;
+            width: 20px;
         }
-
-        .line-number.error:hover::after {
-            content: attr(data-tooltip);
+        .error-marker:hover::after {
+            content: attr(data-tip);
             position: absolute;
-            left: 50px;
-            top: -5px;
-            padding: 8px 12px;
-            background-color: #d32f2f;
-            color: white;
+            left: 24px;
+            top: 0;
+            padding: 6px 10px;
+            background: var(--danger);
+            color: #fff;
             font-size: 11px;
             border-radius: 3px;
             font-weight: normal;
             z-index: 1000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             white-space: pre-wrap;
             max-width: 500px;
             word-wrap: break-word;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        .line-number.error:hover {
-            z-index: 999;
+        /* Dialog (Vim : commands) */
+        .CodeMirror-dialog {
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 4px 8px;
         }
-
-        .code-editor {
-            flex: 1;
-            overflow: auto;
-            padding: 8px 12px;
-            background-color: #1e1e1e;
-            font-size: 13px;
-            line-height: 1.5;
-            color: #d4d4d4;
-            border: none;
-            resize: none;
+        .CodeMirror-dialog input {
+            background: var(--bg-pane);
+            color: var(--text);
+            border: 1px solid var(--border-light);
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            padding: 2px 4px;
             outline: none;
-            scrollbar-width: thin;
-            scrollbar-color: #464647 #1e1e1e;
         }
-
-        .code-editor::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-
-        .code-editor::-webkit-scrollbar-track {
-            background: #1e1e1e;
-        }
-
-        .code-editor::-webkit-scrollbar-thumb {
-            background: #464647;
-            border-radius: 5px;
-        }
-
-        .code-editor::-webkit-scrollbar-thumb:hover {
-            background: #6a6a6a;
+        .CodeMirror-dialog input:focus {
+            border-color: var(--accent);
         }
 
         #output-container {
             flex: 1;
             overflow-y: auto;
             padding: 0;
-            background-color: #1e1e1e;
+            background-color: var(--bg);
             display: flex;
             flex-direction: column;
         }
@@ -413,11 +411,11 @@
         }
 
         .output-line-numbers {
-            background-color: #1e1e1e;
-            color: #6a9955;
+            background-color: var(--bg);
+            color: var(--text-dim);
             text-align: right;
             user-select: none;
-            border-right: 1px solid #3e3e42;
+            border-right: 1px solid var(--border);
             font-size: 13px;
             line-height: 1.5;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -439,9 +437,9 @@
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             overflow: auto;
             white-space: pre;
-            color: #d4d4d4;
+            color: var(--text);
             padding: 8px 12px;
-            background-color: #1e1e1e;
+            background-color: var(--bg);
             margin: 0;
         }
 
@@ -455,23 +453,23 @@
         }
 
         .hljs {
-            background: #1e1e1e !important;
-            color: #d4d4d4 !important;
+            background: var(--bg) !important;
+            color: var(--text) !important;
         }
 
         .errors {
             margin-top: 12px;
-            border: 1px solid #e57373;
-            border-radius: 4px;
-            background-color: #3c2525;
+            border: 1px solid var(--danger);
+            border-radius: 3px;
+            background-color: var(--danger-bg);
             overflow: scroll;
         }
 
         .errors-header {
-            background-color: #d32f2f;
+            background-color: var(--danger);
             color: white;
-            padding: 8px 12px;
-            font-weight: bold;
+            padding: 7px 12px;
+            font-weight: 600;
             font-size: 12px;
         }
 
@@ -482,9 +480,9 @@
         }
 
         .errors li {
-            padding: 8px 12px;
-            border-bottom: 1px solid #5c2525;
-            color: #f1b3b3;
+            padding: 7px 12px;
+            border-bottom: 1px solid var(--danger-bg);
+            color: var(--text);
             font-size: 12px;
         }
 
@@ -494,65 +492,142 @@
 
         .success-message {
             padding: 8px 12px;
-            background-color: #1b5e20;
-            color: #81c784;
-            border-radius: 4px;
+            background-color: var(--success-bg);
+            color: var(--success);
+            border-radius: 3px;
             margin-bottom: 8px;
             font-size: 12px;
         }
 
         .loading-indicator {
             display: inline-block;
-            padding: 4px 8px;
-            background-color: #1e3a8a;
-            color: #60a5fa;
+            padding: 3px 8px;
+            background-color: var(--accent-dim);
+            color: var(--accent);
             border-radius: 3px;
             font-size: 11px;
             margin-left: 8px;
             font-weight: 500;
         }
 
-        /* GLSL Syntax Highlighting anpassen */
-        .hljs-keyword { color: #569cd6; }
-        .hljs-literal { color: #569cd6; }
-        .hljs-built_in { color: #c8e6c9; }
-        .hljs-type { color: #4fc3f7; }
-        .hljs-number { color: #b5cea8; }
-        .hljs-string { color: #ce9178; }
-        .hljs-comment { color: #6a9955; }
-        .hljs-attr { color: #9cdcfe; }
-        .hljs-function { color: #dcdcaa; }
+        /* GLSL Syntax Highlighting (highlight.js, for output) */
+        .hljs-keyword { color: #e0e0e0; }
+        .hljs-literal { color: #e0e0e0; }
+        .hljs-built_in { color: #efdcbc; }
+        .hljs-type { color: #dcdccc; }
+        .hljs-number { color: #cfbfaf; }
+        .hljs-string { color: #cfbfaf; }
+        .hljs-comment { color: #8f8f8f; }
+        .hljs-attr { color: #dcdccc; }
+        .hljs-function { color: #efdcbc; }
 
-        /* File Explorer Styles */
+        body.light-mode .hljs-keyword { color: #5a4a3a; }
+        body.light-mode .hljs-literal { color: #5a4a3a; }
+        body.light-mode .hljs-built_in { color: #6a5a4a; }
+        body.light-mode .hljs-type { color: #3a3a33; }
+        body.light-mode .hljs-number { color: #8a7a6a; }
+        body.light-mode .hljs-string { color: #8a7a6a; }
+        body.light-mode .hljs-comment { color: #9a958b; }
+        body.light-mode .hljs-attr { color: #3a3a33; }
+        body.light-mode .hljs-function { color: #6a5a4a; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.4;
+            transition: background 0.15s ease, opacity 0.15s ease;
+        }
+        .btn:hover {
+            background: var(--btn-hover);
+        }
+        .btn:active {
+            opacity: 0.8;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #3d9a41;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #c03020;
+        }
+        .btn-sm {
+            padding: 3px 7px;
+            font-size: 10px;
+        }
+        .btn-active {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-active:hover {
+            background: var(--accent-hover);
+        }
+
+        /* File Explorer */
         #file-list {
             font-size: 12px;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .file-item {
-            padding: 4px 8px;
+            padding: 3px 8px;
             cursor: pointer;
-            border-radius: 3px;
-            margin: 2px 0;
+            margin: 1px 0;
             display: flex;
             align-items: center;
-            color: #cccccc;
+            color: var(--text);
+            border-radius: 2px;
         }
 
         .file-item:hover {
-            background-color: #37373d;
+            background-color: var(--bg-raised);
         }
 
         .file-item.active {
-            background-color: #094771;
-            color: #ffffff;
+            background-color: var(--accent-dim);
+            color: var(--text-bright);
         }
 
-        .file-item .file-icon {
+        .file-icon {
             margin-right: 6px;
-            font-size: 11px;
+            font-size: 10px;
+            opacity: 0.7;
+            width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .file-item.active .file-icon {
+            opacity: 1;
         }
 
-        .file-item .file-name {
+        .file-name {
             flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -564,45 +639,48 @@
             margin-left: 4px;
             background: none;
             border: none;
-            color: #ff6b6b;
+            color: var(--danger);
             cursor: pointer;
-            font-size: 10px;
-            padding: 2px;
+            font-size: 12px;
+            padding: 0 2px;
             border-radius: 2px;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             text-align: center;
-            line-height: 12px;
+            line-height: 16px;
+            flex-shrink: 0;
         }
 
         .file-item:hover .delete-btn {
-            opacity: 1;
+            opacity: 0.6;
         }
 
         .file-item .delete-btn:hover {
-            background-color: #ff6b6b;
+            opacity: 1;
+            background-color: var(--danger);
             color: white;
         }
 
         .file-item .move-btn {
-            opacity: 0.5;
-            margin-left: 2px;
-            margin-right: 2px;
+            opacity: 0;
+            margin: 0 1px;
             background: none;
-            border: 1px solid #555;
-            color: #aaa;
+            border: 1px solid var(--border-light);
+            color: var(--text-dim);
             cursor: pointer;
-            font-size: 9px;
+            font-size: 8px;
             padding: 0 3px;
             border-radius: 2px;
-            line-height: 1.2;
+            line-height: 1.4;
+            flex-shrink: 0;
         }
         .file-item:hover .move-btn {
-            opacity: 1;
+            opacity: 0.6;
         }
         .file-item .move-btn:hover {
-            background-color: #555;
-            color: #fff;
+            opacity: 1;
+            background: var(--btn-bg);
+            color: var(--text);
         }
 
         .file-item .add-fragment-btn {
@@ -610,179 +688,180 @@
             margin-left: 4px;
             background: none;
             border: none;
-            color: #4caf50;
+            color: var(--success);
             cursor: pointer;
-            font-size: 10px;
-            padding: 2px;
+            font-size: 11px;
+            padding: 0 2px;
             border-radius: 2px;
             font-weight: bold;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             text-align: center;
-            line-height: 12px;
+            line-height: 16px;
+            flex-shrink: 0;
         }
 
         .file-item:hover .add-fragment-btn {
-            opacity: 1;
+            opacity: 0.6;
         }
 
         .file-item .add-fragment-btn:hover {
-            background-color: #4caf50;
+            opacity: 1;
+            background-color: var(--success);
             color: white;
         }
 
-        /* Modal Styles */
+        /* Modal / Inline Forms */
         .modal-container {
             padding: 8px;
-            background: #2d2d30;
-            border: 1px solid #3e3e42;
+            background: var(--bg-header);
+            border: 1px solid var(--border);
             margin: 4px 0;
+            border-radius: 3px;
         }
         .modal-input {
             width: 100%;
-            padding: 4px;
-            margin-bottom: 4px;
-            background: #37373d;
-            color: #cccccc;
-            border: 1px solid #569cd6;
+            padding: 5px 6px;
+            margin-bottom: 5px;
+            background: var(--bg-pane);
+            color: var(--text);
+            border: 1px solid var(--border-light);
             border-radius: 3px;
             font-size: 12px;
+            font-family: inherit;
+            outline: none;
         }
-        .modal-btn-primary {
-            padding: 4px 8px; background: #1e88e5; color: white; border: none; border-radius: 3px; cursor: pointer;
-        }
-        .modal-btn-secondary {
-            padding: 4px 8px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;
-        }
-
-        /* Theme Transitions */
-        body, .container, .pane, .pane-header, .pane-footer, .line-numbers, .code-editor, 
-        #output-container, .output-line-numbers, .output-code, .file-item, .modal-container, 
-        .modal-input, .hljs, [class^="hljs-"] {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        .modal-input:focus {
+            border-color: var(--accent);
         }
 
-        /* Light Mode Styles */
-        body.light-mode { background-color: #f3f3f3; color: #333333; }
-        body.light-mode .container { background-color: #e0e0e0; }
-        body.light-mode .pane { background-color: #ffffff; border-right: 1px solid #cccccc; }
-        body.light-mode .pane-header { background-color: #f3f3f3; border-bottom: 1px solid #cccccc; color: #333333; }
-        body.light-mode .pane-footer { border-top: 1px solid #cccccc; background-color: #f3f3f3; }
-        body.light-mode .line-numbers { background-color: #f9f9f9; color: #2b91af; border-right: 1px solid #cccccc; }
-        body.light-mode .code-editor { background-color: #ffffff; color: #333333; scrollbar-color: #c1c1c1 #ffffff; }
-        body.light-mode .code-editor::-webkit-scrollbar-track { background: #ffffff; }
-        body.light-mode .code-editor::-webkit-scrollbar-thumb { background: #c1c1c1; }
-        body.light-mode .code-editor::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        body.light-mode #output-container { background-color: #ffffff; }
-        body.light-mode .output-line-numbers { background-color: #f9f9f9; color: #2b91af; border-right: 1px solid #cccccc; }
-        body.light-mode .output-code { color: #333333; background-color: #ffffff; }
-        body.light-mode .hljs { background: #ffffff !important; color: #333333 !important; }
-        body.light-mode .code-highlight,
-        body.light-mode .code-highlight code,
-        body.light-mode .code-highlight code * { color: #333333 !important; }
-        body.light-mode .file-item { color: #333333; }
-        body.light-mode .file-item:hover { background-color: #e8e8e8; }
-        body.light-mode .file-item.active { background-color: #007acc; color: #ffffff; }
-        body.light-mode .errors { border: 1px solid #ffbaba; background-color: #ffeded; }
-        body.light-mode .errors-header { background-color: #d8000c; color: white; }
-        body.light-mode .errors li { border-bottom: 1px solid #ffbaba; color: #d8000c; }
-        body.light-mode .hljs-keyword { color: #0000ff; }
-        body.light-mode .hljs-literal { color: #0000ff; }
-        body.light-mode .hljs-built_in { color: #795e26; }
-        body.light-mode .hljs-type { color: #267f99; }
-        body.light-mode .hljs-number { color: #098658; }
-        body.light-mode .hljs-string { color: #a31515; }
-        body.light-mode .hljs-comment { color: #008000; }
-        body.light-mode .hljs-attr { color: #001080; }
-        body.light-mode .hljs-function { color: #795e26; }
-        
-        body.light-mode .modal-container { background: #f3f3f3; border-color: #cccccc; }
-        body.light-mode .modal-input { background: #ffffff; color: #333333; border-color: #007acc; }
-        body.light-mode .graph-legend { background: #f3f3f3; border-color: #cccccc; color: #333333; }
+        /* Empty state */
+        .empty-state {
+            color: var(--text-dim);
+            font-size: 12px;
+            padding: 20px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+
+        select.btn {
+            -webkit-appearance: none;
+            appearance: none;
+            padding-right: 20px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%23d4d4d4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+        }
+        body.light-mode select.btn {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%23333'/%3E%3C/svg%3E");
+        }
+        select.btn option {
+            background: var(--bg-pane);
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        
-        <!-- Linkes Fenster: File Explorer -->
-        <div class="pane file-explorer" style="flex: 0 0 250px;">
+        <!-- Linke Seitenleiste: Datei-Explorer -->
+        <div class="pane file-explorer">
             <div class="pane-header">
-                <span>Shader Files</span>
-                <div>
-                    <button id="new-pass-btn" type="button" style="padding: 4px 8px; background: #1e88e5; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">New Pass</button>
-                    <button id="new-file-btn" type="button" style="padding: 4px 8px; background: #1e88e5; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">+</button>
+                <span>Shader-Dateien</span>
+                <div class="pane-header-actions">
+                    <button id="new-pass-btn" class="btn btn-primary btn-sm">Pass</button>
+                    <button id="new-file-btn" class="btn btn-primary btn-sm">+</button>
                 </div>
             </div>
-            <div id="file-list" style="flex: 1; overflow-y: auto; padding: 8px;">
-                <!-- Dateien werden hier dynamisch eingefügt -->
+            <div id="file-list">
+                <!-- Dateien werden dynamisch eingefugt -->
             </div>
             <div class="pane-footer">
-                <button id="export-btn" type="button" style="padding: 4px 8px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Export</button>
-                <button id="import-btn" type="button" style="padding: 4px 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">Import</button>
-                <select id="example-select" style="padding: 4px 8px; background: #7c4dff; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;">
-                    <option value="">Examples</option>
+                <button id="export-btn" class="btn btn-success btn-sm">Export</button>
+                <button id="import-btn" class="btn btn-primary btn-sm">Import</button>
+                <select id="example-select" class="btn btn-sm">
+                    <option value="">Beispiele</option>
                     <option value="deferred">Simple Deferred</option>
                     <option value="ssao">Deferred + SSAO</option>
                 </select>
-                <button id="reset-btn" type="button" style="padding: 4px 8px; background: #f44336; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px;">Reset Storage</button>
+                <button id="reset-btn" class="btn btn-danger btn-sm">Zurucksetzen</button>
             </div>
         </div>
         <div class="pane-divider" data-divider="0"></div>
-        <!-- Mittleres Fenster: Code Editor -->
+
+        <!-- Mittleres Fenster: Editor -->
         <div class="pane editor-pane">
             <div class="pane-header">
-                <span id="current-file-name">Cast Code</span>
+                <span id="current-file-name">Keine Datei</span>
+                <div class="pane-header-actions">
+                    <button id="vim-toggle-btn" class="btn btn-sm">Vim</button>
+                </div>
             </div>
             <div class="editor-wrapper">
-                <div class="line-numbers" id="editor-line-numbers"></div>
-                <div class="code-editor-container">
-                    <pre class="code-highlight"><code id="editor-highlight" class="language-glsl hljs"></code></pre>
-                    <textarea 
-                        id="code-editor" 
-                        class="code-editor" 
-                        spellcheck="false"
-                        autocomplete="off"
-                        autocorrect="off"
-                        autocapitalize="off"></textarea>
-                </div>
+                <div id="code-editor"></div>
             </div>
         </div>
         <div class="pane-divider" data-divider="1"></div>
+
+        <!-- Rechtes Fenster: Ausgabe -->
         <div class="pane output-pane">
             <div class="pane-header">
-                <span>Compiled Result <span class="loading-indicator" id="loading-status"></span></span>
-                <div>
-                    <button id="theme-toggle-btn" type="button" style="padding: 4px 8px; background: #555; color: white; border: none; cursor: pointer; border-radius: 3px; font-size: 11px; margin-right: 4px;" title="Toggle Light/Dark Mode">☀️</button>
-                    <button id="graph-btn">Visualize</button>
-                    <button id="test-btn">Test</button>
+                <span>Ubersetztes Ergebnis <span class="loading-indicator" id="loading-status"></span></span>
+                <div class="pane-header-actions">
+                    <button id="theme-toggle-btn" class="btn btn-sm" title="Helles/Dunkles Design umschalten">&#9790;</button>
+                    <button id="graph-btn" class="btn btn-primary btn-sm">Graph</button>
                 </div>
             </div>
             <div id="output-container">
-                <p style="color: #888;">The compilation result will be displayed here. Start by entering code in the left window.</p>
+                <div class="empty-state">Das Ergebnis der Ubersetzung erscheint hier.<br>Offne eine Shader-Datei zum Bearbeiten.</div>
             </div>
         </div>
-
     </div>
 
     <div id="graph-overlay" class="overlay">
         <div class="overlay-content">
             <div class="overlay-header">
-                <span>Pipeline Graph</span>
+                <span>Pipeline-Graph</span>
                 <div class="graph-controls">
                     <span id="zoom-level" class="zoom-level">100%</span>
-                    <button id="zoom-out-btn" title="Rauszoomen">−</button>
-                    <button id="zoom-reset-btn" title="Zurücksetzen">⟲</button>
-                    <button id="zoom-in-btn" title="Reinzoomen">+</button>
-                    <button id="overlay-close" style="margin-left:8px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:0 4px;line-height:1;">&times;</button>
+                    <button id="zoom-out-btn" title="Verkleinern">&minus;</button>
+                    <button id="zoom-reset-btn" title="Zurucksetzen">&olarr;</button>
+                    <button id="zoom-in-btn" title="Vergrossern">+</button>
+                    <button id="overlay-close" class="overlay-close">&times;</button>
                 </div>
             </div>
             <div id="overlay-body"></div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/keymap/vim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+
     <script>
-        // Vim-style resizable panes
+        // Groessenveraenderbare Fenster
         const container = document.querySelector('.container');
         const dividers = document.querySelectorAll('.pane-divider');
         const panes = document.querySelectorAll('.pane');
@@ -803,14 +882,11 @@
 
             document.addEventListener('mousemove', (e) => {
                 if (!isResizing) return;
-
                 const diff = e.clientX - startX;
                 const leftPane = panes[index];
                 const rightPane = panes[index + 1];
-
                 const newLeftWidth = Math.max(100, startWidths[index] + diff);
                 const newRightWidth = Math.max(100, startWidths[index + 1] - diff);
-
                 leftPane.style.flex = `0 0 ${newLeftWidth}px`;
                 rightPane.style.flex = `0 0 ${newRightWidth}px`;
             });
@@ -833,20 +909,19 @@
                 shaderFiles = parsed.files || parsed;
                 stageOrder = parsed.order || {};
             } else {
-                // legacy flat format
                 const legacy = localStorage.getItem('shaderFiles_legacy');
                 if (legacy) {
                     shaderFiles = JSON.parse(legacy);
                 }
             }
         } catch (e) {
-            console.warn('Error loading shader files from localStorage:', e);
+            console.warn('Fehler beim Laden von localStorage:', e);
             shaderFiles = {};
             stageOrder = {};
         }
         let currentPath = null;
-
-        let fileList, newFileBtn, newPassBtn, currentFileNameEl;
+        let fileList, currentFileNameEl;
+        let vimMode = true;
 
         function getFileByPath(path) {
             if (!path || path.length === 0) return null;
@@ -867,16 +942,12 @@
 
         function updateCurrentFileName() {
             const file = getFileByPath(currentPath);
-            if (file) {
-                currentFileNameEl.textContent = file.name;
-            } else {
-                currentFileNameEl.textContent = 'Cast Code';
-            }
+            currentFileNameEl.textContent = file ? file.name : 'Keine Datei';
         }
 
-        function renderFileList(container = fileList, level = 0) {
+        function renderFileList(containerEl = fileList, level = 0) {
             if (level === 0) {
-                container.innerHTML = '';
+                containerEl.innerHTML = '';
             }
             const stages = Object.keys(shaderFiles).sort((a, b) => {
                 const oa = stageOrder[a] || 0;
@@ -891,36 +962,35 @@
                 const stageItem = document.createElement('div');
                 stageItem.className = 'file-item';
                 stageItem.style.paddingLeft = `${level * 20 + 8}px`;
-                const upBtn = idx > 0 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', -1)" title="nach oben">▲</button>` : '';
-                const dnBtn = idx < stages.length - 1 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', 1)" title="nach unten">▼</button>` : '';
-                stageItem.innerHTML = `<span class="file-icon">📁</span>${upBtn}${dnBtn}<span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
-                container.appendChild(stageItem);
-
-                renderStage(container, shaderFiles[stage], [stage], level + 1);
+                const upBtn = idx > 0 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', -1)">▲</button>` : '';
+                const dnBtn = idx < stages.length - 1 ? `<button class="move-btn" onclick="event.stopPropagation();moveStage('${stage}', 1)">▼</button>` : '';
+                stageItem.innerHTML = `<span class="file-icon">▶</span>${upBtn}${dnBtn}<span class="file-name">${stage.replace('_', ' ').toUpperCase()}</span>`;
+                containerEl.appendChild(stageItem);
+                renderStage(containerEl, shaderFiles[stage], [stage], level + 1);
             });
             if (level === 0) {
                 updateCurrentFileName();
             }
         }
 
-        function renderStage(container, files, path, level) {
+        function renderStage(containerEl, files, path, level) {
             files.forEach((file, index) => {
                 const itemPath = path.concat(index);
                 const isActive = JSON.stringify(itemPath) === JSON.stringify(currentPath);
                 const fileItem = document.createElement('div');
                 fileItem.className = `file-item ${isActive ? 'active' : ''}`;
                 fileItem.style.paddingLeft = `${level * 20 + 8}px`;
-                let buttons = `<button class="delete-btn" onclick="deleteFile('${itemPath.join(',')}')">×</button>`;
+                let buttons = `<button class="delete-btn" onclick="deleteFile('${itemPath.join(',')}')">✕</button>`;
                 if (file.name.endsWith('.vsh')) {
-                    buttons += `<button class="add-fragment-btn" title="Fragment Shader hinzufügen" onclick="addFragmentShader('${itemPath.join(',')}')">F</button>`;
+                    buttons += `<button class="add-fragment-btn" onclick="addFragmentShader('${itemPath.join(',')}')">+</button>`;
                 }
-                let icon = '📄';
+                let icon = '·';
                 if (file.name.endsWith('.vsh')) {
-                    icon = '🔺'; // Vertex Shader Icon
+                    icon = '▲';
                 } else if (file.name.endsWith('.fsh')) {
-                    icon = '🎨'; // Fragment Shader Icon
+                    icon = '◆';
                 } else if (file.children && file.children.length > 0) {
-                    icon = '📁';
+                    icon = '▶';
                 }
                 fileItem.innerHTML = `
                     <span class="file-icon">${icon}</span>
@@ -928,10 +998,10 @@
                     ${buttons}
                 `;
                 fileItem.onclick = () => selectFile(itemPath);
-                container.appendChild(fileItem);
+                containerEl.appendChild(fileItem);
 
                 if (file.children && file.children.length > 0) {
-                    renderStage(container, file.children, itemPath, level + 1);
+                    renderStage(containerEl, file.children, itemPath, level + 1);
                 }
             });
         }
@@ -943,24 +1013,24 @@
             const vertexPath = [stage, ...indices];
             const vertexFile = getFileByPath(vertexPath);
             if (!vertexFile || !vertexFile.name.endsWith('.vsh')) return;
-            
+
             const baseName = vertexFile.name.replace('.vsh', '');
             const fragmentName = baseName + '.fsh';
-            
+
             if (vertexFile.children && vertexFile.children.some(child => child.name === fragmentName)) {
-                alert('Fragment Shader already exists for this vertex shader.');
+                alert('Fragment-Shader existiert bereits fur diesen Vertex-Shader.');
                 return;
             }
-            
+
             const newFragment = {
                 name: fragmentName,
                 content: '#version 330\n\nvoid main() {\n    // Fragment shader code for ' + baseName + '\n}',
                 children: undefined
             };
-            
+
             if (!vertexFile.children) vertexFile.children = [];
             vertexFile.children.push(newFragment);
-            
+
             saveFiles();
             renderFileList();
         }
@@ -987,7 +1057,6 @@
                             }
                             saveFiles();
                             renderFileList();
-                            // Setze currentPath auf erste verfügbare Datei
                             const stages = Object.keys(shaderFiles).sort();
                             if (stages.length > 0) {
                                 const firstStage = stages[0];
@@ -997,7 +1066,7 @@
                             }
                             loadCurrentFile();
                         } catch (error) {
-                            alert('Error importing: ' + error.message);
+                            alert('Fehler beim Import: ' + error.message);
                         }
                     };
                     reader.readAsText(file);
@@ -1308,7 +1377,6 @@ void main() {
             loadCurrentFile();
         }
 
-        // Projekt exportieren
         function exportProject() {
             const exportData = { files: {}, order: {} };
             Object.keys(shaderFiles).sort((a, b) => {
@@ -1323,7 +1391,7 @@ void main() {
             });
             const dataStr = JSON.stringify(exportData, null, 2);
             if (dataStr === '{}' || dataStr.length < 10) {
-                alert('No data to export found. Add files first.');
+                alert('Keine Daten zum Exportieren vorhanden. Erstelle zuerst Shader-Dateien.');
                 return;
             }
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
@@ -1339,18 +1407,18 @@ void main() {
 
         function createNewFile(e) {
             if (e) e.preventDefault();
-            const container = document.createElement('div');
-            container.className = 'modal-container';
-            
+            const containerEl = document.createElement('div');
+            containerEl.className = 'modal-container';
+
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = 'Dateiname eingeben...';
             nameInput.className = 'modal-input';
-            
+
             const typeSelect = document.createElement('select');
             typeSelect.className = 'modal-input';
-            typeSelect.innerHTML = '<option value="vertex">Vertex Shader</option><option value="fragment">Fragment Shader</option>';
-            
+            typeSelect.innerHTML = '<option value="vertex">Vertex-Shader</option><option value="fragment">Fragment-Shader</option>';
+
             const stageSelect = document.createElement('select');
             stageSelect.className = 'modal-input';
             function populateStages() {
@@ -1363,14 +1431,14 @@ void main() {
                 });
             }
             populateStages();
-            
+
             const parentSelect = document.createElement('select');
             parentSelect.className = 'modal-input';
-            parentSelect.innerHTML = '<option value="">Kein Parent (Root)</option>';
-            
+            parentSelect.innerHTML = '<option value="">Kein ubergeordneter (direkt)</option>';
+
             function populateParents() {
                 const selectedStage = stageSelect.value;
-                parentSelect.innerHTML = '<option value="">Kein Parent (Root)</option>';
+                parentSelect.innerHTML = '<option value="">Kein ubergeordneter (direkt)</option>';
                 if (shaderFiles[selectedStage]) {
                     function addOptions(files, path = []) {
                         files.forEach((file, index) => {
@@ -1388,39 +1456,39 @@ void main() {
             }
             stageSelect.addEventListener('change', populateParents);
             populateParents();
-            
-            container.appendChild(nameInput);
-            container.appendChild(typeSelect);
-            container.appendChild(stageSelect);
-            container.appendChild(parentSelect);
-            
+
+            containerEl.appendChild(nameInput);
+            containerEl.appendChild(typeSelect);
+            containerEl.appendChild(stageSelect);
+            containerEl.appendChild(parentSelect);
+
             const buttons = document.createElement('div');
             buttons.style.cssText = 'display: flex; gap: 4px;';
             const okBtn = document.createElement('button');
             okBtn.textContent = 'Erstellen';
-            okBtn.className = 'modal-btn-primary';
+            okBtn.className = 'btn btn-primary btn-sm';
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Abbrechen';
-            cancelBtn.className = 'modal-btn-secondary';
+            cancelBtn.className = 'btn';
             buttons.appendChild(okBtn);
             buttons.appendChild(cancelBtn);
-            container.appendChild(buttons);
-            
-            fileList.appendChild(container);
+            containerEl.appendChild(buttons);
+
+            fileList.appendChild(containerEl);
             nameInput.focus();
-            
+
             const removeContainer = () => {
-                if (fileList.contains(container)) {
-                    fileList.removeChild(container);
+                if (fileList.contains(containerEl)) {
+                    fileList.removeChild(containerEl);
                 }
             };
-            
+
             okBtn.onclick = () => {
                 let fileName = nameInput.value.trim();
                 const type = typeSelect.value;
                 const stage = stageSelect.value;
                 const parentPath = parentSelect.value ? parentSelect.value.split(',').map(Number) : null;
-                
+
                 if (fileName && stage) {
                     fileName = fileName.replace(/\.(vsh|fsh)$/i, '');
                     const extension = type === 'vertex' ? '.vsh' : '.fsh';
@@ -1431,32 +1499,32 @@ void main() {
                         const maxOrder = Object.keys(stageOrder).reduce((max, k) => Math.max(max, stageOrder[k] || 0), 0);
                         stageOrder[stage] = maxOrder + 1;
                     }
-                    
+
                     const newFile = {
                         name: finalName,
                         content: type === 'vertex' ? '#version 330\n\nvoid main() {\n    // Vertex shader code for ' + stage + '\n}' : '#version 330\n\nvoid main() {\n    // Fragment shader code for ' + stage + '\n}',
                         children: type === 'vertex' ? [] : undefined
                     };
-                    
+
                     if (parentPath) {
                         const parent = getFileByPath([stage, ...parentPath]);
                         if (parent && parent.children) {
                             parent.children.push(newFile);
                         } else {
-                            shaderFiles[stage].push(newFile); // Fallback
+                            shaderFiles[stage].push(newFile);
                         }
                     } else {
                         shaderFiles[stage].push(newFile);
                     }
-                    
+
                     saveFiles();
                     renderFileList();
                     removeContainer();
                 }
             };
-            
+
             cancelBtn.onclick = removeContainer;
-            
+
             nameInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') okBtn.click();
                 if (e.key === 'Escape') cancelBtn.click();
@@ -1464,14 +1532,14 @@ void main() {
         }
 
         function createNewPass() {
-            const container = document.createElement('div');
-            container.className = 'modal-container';
-            
+            const containerEl = document.createElement('div');
+            containerEl.className = 'modal-container';
+
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = 'Pass-Name eingeben...';
             nameInput.className = 'modal-input';
-            
+
             const typeSelect = document.createElement('select');
             typeSelect.className = 'modal-input';
             typeSelect.innerHTML = `
@@ -1483,31 +1551,31 @@ void main() {
                 <option value="post_process">Post Process Pass</option>
                 <option value="custom">Custom Pass</option>
             `;
-            
-            container.appendChild(nameInput);
-            container.appendChild(typeSelect);
-            
+
+            containerEl.appendChild(nameInput);
+            containerEl.appendChild(typeSelect);
+
             const buttons = document.createElement('div');
             buttons.style.cssText = 'display: flex; gap: 4px;';
             const okBtn = document.createElement('button');
             okBtn.textContent = 'Erstellen';
-            okBtn.className = 'modal-btn-primary';
+            okBtn.className = 'btn btn-primary btn-sm';
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Abbrechen';
-            cancelBtn.className = 'modal-btn-secondary';
+            cancelBtn.className = 'btn';
             buttons.appendChild(okBtn);
             buttons.appendChild(cancelBtn);
-            container.appendChild(buttons);
-            
-            fileList.appendChild(container);
+            containerEl.appendChild(buttons);
+
+            fileList.appendChild(containerEl);
             nameInput.focus();
-            
+
             const removeContainer = () => {
-                if (fileList.contains(container)) {
-                    fileList.removeChild(container);
+                if (fileList.contains(containerEl)) {
+                    fileList.removeChild(containerEl);
                 }
             };
-            
+
             okBtn.onclick = () => {
                 const passName = nameInput.value.trim();
                 const passType = typeSelect.value;
@@ -1520,32 +1588,31 @@ void main() {
                     renderFileList();
                     removeContainer();
                 } else if (shaderFiles[passName]) {
-                    alert('Pass name already exists.');
+                    alert('Dieser Pass-Name existiert bereits.');
                 }
             };
-            
+
             cancelBtn.onclick = removeContainer;
-            
+
             nameInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') okBtn.click();
                 if (e.key === 'Escape') cancelBtn.click();
             });
         }
 
-        // Datei auswählen
         function selectFile(path) {
             try {
                 saveCurrentFile();
                 currentPath = path;
                 const file = getFileByPath(currentPath);
                 if (!file) {
-                    console.error('File not found at path:', currentPath);
+                    console.error('Datei nicht gefunden:', currentPath);
                     return;
                 }
                 renderFileList();
                 loadCurrentFile();
             } catch (error) {
-                console.error('Error selecting file:', error);
+                console.error('Fehler beim Auswahlen der Datei:', error);
             }
         }
 
@@ -1553,44 +1620,40 @@ void main() {
             try {
                 const file = getFileByPath(currentPath);
                 if (file) {
-                    codeEditor.value = file.content;
-                    updateLineNumbers();
-                    codeEditor.dispatchEvent(new Event('input'));
+                    editor.setValue(file.content);
                 } else {
-                    console.warn('File not found for currentPath:', currentPath);
-                    codeEditor.value = '';
+                    console.warn('Datei nicht gefunden:', currentPath);
+                    editor.setValue('');
                 }
                 updateCurrentFileName();
+                editor.focus();
             } catch (error) {
-                console.error('Error loading current file:', error);
+                console.error('Fehler beim Laden der Datei:', error);
             }
         }
 
-        // Datei löschen
         function deleteFile(pathStr) {
             const path = pathStr.split(',');
             const stage = path[0];
             const rest = path.slice(1).map(Number);
             const file = getFileByPath(path);
-            if (confirm(`Delete "${file ? file.name : 'file'}"?`)) {
-                // Entferne aus der Struktur
-                function removeFrom(files, path) {
-                    if (path.length === 1) {
-                        files.splice(path[0], 1);
+            if (confirm('"' + (file ? file.name : 'Datei') + '" loschen?')) {
+                function removeFrom(files, p) {
+                    if (p.length === 1) {
+                        files.splice(p[0], 1);
                     } else {
-                        const parent = files[path[0]];
+                        const parent = files[p[0]];
                         if (parent && parent.children) {
-                            removeFrom(parent.children, path.slice(1));
+                            removeFrom(parent.children, p.slice(1));
                         }
                     }
                 }
                 removeFrom(shaderFiles[stage], rest);
-                
-                // Passe currentPath an
+
                 if (JSON.stringify(currentPath.slice(0, path.length)) === JSON.stringify(path)) {
-                    currentPath = ['shadow', 0]; // Fallback
+                    currentPath = ['shadow', 0];
                 }
-                
+
                 saveFiles();
                 renderFileList();
                 loadCurrentFile();
@@ -1614,64 +1677,42 @@ void main() {
             renderFileList();
         }
 
-        // Dateien speichern
         function saveFiles() {
             localStorage.setItem('shaderFiles', JSON.stringify({ files: shaderFiles, order: stageOrder }));
         }
 
-        // Aktuelle Datei speichern (beim Bearbeiten)
         function saveCurrentFile() {
             const file = getFileByPath(currentPath);
             if (file) {
-                file.content = codeEditor.value;
+                file.content = editor.getValue();
                 saveFiles();
             }
         }
-
-        // Event Listener für neue Datei
-        // onclick im HTML
-
-        // Event Listener für neuen Pass
-        // onclick im HTML
-
-        // Tastatur-Shortcuts für Dateiwechsel
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Tab') {
-                e.preventDefault();
-                const nextIndex = (currentFileIndex + 1) % shaderFiles.length;
-                selectFile(nextIndex);
-            } else if (e.ctrlKey && e.shiftKey && e.key === 'Tab') {
-                e.preventDefault();
-                const prevIndex = (currentFileIndex - 1 + shaderFiles.length) % shaderFiles.length;
-                selectFile(prevIndex);
-            }
-        });
 
         window.onload = function() {
             fileList = document.getElementById('file-list');
             currentFileNameEl = document.getElementById('current-file-name');
 
-            // Theme setup
+            // Theme-Setup
             const themeToggleBtn = document.getElementById('theme-toggle-btn');
             const currentTheme = localStorage.getItem('theme') || 'dark';
-            
+
             if (currentTheme === 'light') {
                 document.body.classList.add('light-mode');
-                if (themeToggleBtn) themeToggleBtn.textContent = '🌙';
+                if (themeToggleBtn) themeToggleBtn.innerHTML = '&#9788;';
             }
-            
+
             if (themeToggleBtn) {
                 themeToggleBtn.addEventListener('click', () => {
                     document.body.classList.toggle('light-mode');
                     const isLight = document.body.classList.contains('light-mode');
                     localStorage.setItem('theme', isLight ? 'light' : 'dark');
-                    themeToggleBtn.textContent = isLight ? '🌙' : '☀️';
+                    themeToggleBtn.innerHTML = isLight ? '&#9788;' : '&#9790;';
                     const outCode = document.querySelector('.output-code code');
                     if (outCode) hljs.highlightElement(outCode);
                 });
             }
 
-            // Setze onclick für Buttons
             const newFileBtn = document.getElementById('new-file-btn');
             const newPassBtn = document.getElementById('new-pass-btn');
             const exportBtn = document.getElementById('export-btn');
@@ -1684,22 +1725,19 @@ void main() {
             if (importBtn) importBtn.onclick = importProject;
             if (exampleSelect) exampleSelect.onchange = () => loadExample(exampleSelect.value);
             if (resetBtn) resetBtn.onclick = () => {
-                if (confirm('Are you sure you want to reset all stored data? This cannot be undone.')) {
+                if (confirm('Alle gespeicherten Daten zurucksetzen? Diese Aktion kann nicht ruckgangig gemacht werden.')) {
                     localStorage.clear();
                     location.reload();
                 }
             };
 
-            // Initialisierung: Falls keine Dateien vorhanden, erstelle eine Standarddatei
-            // assign order numbers if missing
             if (Object.keys(stageOrder).length === 0 && Object.keys(shaderFiles).length > 0) {
                 let n = 1;
                 Object.keys(shaderFiles).sort().forEach(s => { stageOrder[s] = n++; });
                 saveFiles();
             }
-            // Stelle sicher, dass currentPath gültig ist
+
             if (Object.keys(shaderFiles).length > 0) {
-                // Wenn Dateien vorhanden, setze currentPath auf die erste verfügbare Datei
                 const stages = Object.keys(shaderFiles).sort();
                 if (stages.length > 0) {
                     const firstStage = stages[0];
@@ -1709,56 +1747,69 @@ void main() {
                 }
             }
 
-            // Render initial file list
             renderFileList();
             if (currentPath) {
                 loadCurrentFile();
             }
         };
 
-        const DEBOUNCE_TIME_MS = 300;
-        const API_ENDPOINT = '/api/compile';
-        const TEST_ENDPOINT = '/api/test';
+        // CodeMirror Editor initialisieren
+        const editor = CodeMirror(document.getElementById('code-editor'), {
+            value: '',
+            mode: 'text/x-csrc',
+            theme: 'default',
+            keyMap: 'vim',
+            lineNumbers: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: true,
+            styleActiveLine: true,
+            showCursorWhenSelecting: true,
+            viewportMargin: Infinity,
+            gutters: ['error-gutter', 'CodeMirror-linenumbers']
+        });
 
-        const codeEditor = document.getElementById('code-editor');
-        const lineNumbersContainer = document.getElementById('editor-line-numbers');
-        const outputContainer = document.getElementById('output-container');
-        const loadingStatus = document.getElementById('loading-status');
-        const testBtn = document.getElementById('test-btn');
-        const visualizeButton = document.getElementById('graph-btn');
+        editor.focus();
 
-        // Test-Button Funktionalität
-        testBtn.addEventListener('click', async () => {
-            console.log('🔧 Testing backend connection...');
-            testBtn.disabled = true;
-            testBtn.textContent = 'Testing...';
-            
-            try {
-                const response = await fetch(TEST_ENDPOINT);
-                const data = await response.json();
-                console.log('✅ Backend test successful:', data);
-                alert('✅ Backend is running and reachable!\n\n' + JSON.stringify(data, null, 2));
-                testBtn.textContent = 'Test';
-                testBtn.disabled = false;
-            } catch (error) {
-                console.error('❌ Backend test failed:', error);
-                alert('❌ Error! Backend is not reachable.\n\nError: ' + error.message);
-                testBtn.textContent = 'Test';
-                testBtn.disabled = false;
+        // Vim-Toggle
+        const vimToggleBtn = document.getElementById('vim-toggle-btn');
+        vimToggleBtn.classList.add('btn-active');
+        vimToggleBtn.addEventListener('click', () => {
+            vimMode = !vimMode;
+            editor.setOption('keyMap', vimMode ? 'vim' : 'default');
+            vimToggleBtn.classList.toggle('btn-active', vimMode);
+            vimToggleBtn.textContent = vimMode ? 'Vim' : 'Default';
+            editor.focus();
+        });
+
+        // Ctrl+S zum Speichern
+        editor.getInputField().addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveCurrentFile();
             }
         });
+
+        const DEBOUNCE_TIME_MS = 300;
+        const API_ENDPOINT = '/api/compile';
+
+        const outputContainer = document.getElementById('output-container');
+        const loadingStatus = document.getElementById('loading-status');
+        const visualizeButton = document.getElementById('graph-btn');
 
         mermaid.initialize({
             startOnLoad: false,
             theme: 'base',
             themeVariables: {
-                background: '#1e1e1e',
-                primaryColor: '#2d2d2d',
-                primaryBorderColor: '#3e3e42',
-                primaryTextColor: '#d4d4d4',
-                lineColor: '#569cd6',
-                secondaryColor: '#1e1e1e',
-                tertiaryColor: '#252526',
+                background: '#3f3f3f',
+                primaryColor: '#474747',
+                primaryBorderColor: '#5a5a5a',
+                primaryTextColor: '#dcdccc',
+                lineColor: '#cfbfaf',
+                secondaryColor: '#3f3f3f',
+                tertiaryColor: '#474747',
                 fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace'
             },
             flowchart: { htmlLabels: true, curve: 'basis', padding: 16 }
@@ -1767,13 +1818,13 @@ void main() {
         visualizeButton.addEventListener('click', async () => {
             const fileTree = getShaderFilesForGraph();
             if (!fileTree || Object.keys(fileTree).length === 0) {
-                outputContainer.innerHTML = '<p style="color: #888;">No shader files to visualize. Create some shader files first.</p>';
+                outputContainer.innerHTML = '<div class="empty-state">Keine Shader-Dateien zum Visualisieren vorhanden.</div>';
                 return;
             }
 
             visualizeButton.disabled = true;
-            visualizeButton.textContent = 'Visualizing...';
-            loadingStatus.textContent = 'visualizing...';
+            visualizeButton.textContent = 'Visualisieren...';
+            loadingStatus.textContent = 'visualisieren...';
             loadingStatus.style.display = 'inline-block';
 
             try {
@@ -1786,7 +1837,7 @@ void main() {
 
                 let html = '';
                 if (data.errors && data.errors.length > 0) {
-                    html += '<div class="errors"><div class="errors-header">⚠️ Parser Warnings/Errors:</div><ul>';
+                    html += '<div class="errors"><div class="errors-header">Parser-Warnungen/-Fehler:</div><ul>';
                     data.errors.forEach(err => {
                         html += `<li>${htmlEscape(err)}</li>`;
                     });
@@ -1828,13 +1879,13 @@ void main() {
                     let mermaidDef = '%%{init: {\n' +
                         "  'theme': 'base',\n" +
                         "  'themeVariables': {\n" +
-                        "    'background': '#1e1e1e',\n" +
-                        "    'primaryColor': '#2d2d2d',\n" +
-                        "    'primaryBorderColor': '#3e3e42',\n" +
-                        "    'primaryTextColor': '#d4d4d4',\n" +
-                        "    'lineColor': '#888',\n" +
-                        "    'secondaryColor': '#1e1e1e',\n" +
-                        "    'tertiaryColor': '#252526',\n" +
+                        "    'background': '#3f3f3f',\n" +
+                        "    'primaryColor': '#474747',\n" +
+                        "    'primaryBorderColor': '#5a5a5a',\n" +
+                        "    'primaryTextColor': '#dcdccc',\n" +
+                        "    'lineColor': '#8f8f8f',\n" +
+                        "    'secondaryColor': '#3f3f3f',\n" +
+                        "    'tertiaryColor': '#474747',\n" +
                         "    'fontFamily': 'Monaco, Menlo, Ubuntu Mono, monospace',\n" +
                         "    'fontSize': '12px'\n" +
                         "  },\n" +
@@ -1925,24 +1976,23 @@ void main() {
                         }
                     });
 
-                    mermaidDef += 'classDef match fill:#1a3a2a,stroke:#4caf50,stroke-width:2px,color:#81c784;\n';
-                    mermaidDef += 'classDef typeMis fill:#3d2e0a,stroke:#ff9800,stroke-width:2px,color:#ffb74d;\n';
-                    mermaidDef += 'classDef miss fill:#3d1b1b,stroke:#f44336,stroke-width:2px,color:#e57373;\n';
-                    mermaidDef += 'classDef texture fill:#0a2a3d,stroke:#2196f3,stroke-width:2px,color:#64b5f6;\n';
+                    mermaidDef += 'classDef match fill:#3a4a3a,stroke:#8fbf8f,stroke-width:2px,color:#afcfaf;\n';
+                    mermaidDef += 'classDef typeMis fill:#4a4a3a,stroke:#dfbf8f,stroke-width:2px,color:#dfcfaf;\n';
+                    mermaidDef += 'classDef miss fill:#4a3a3a,stroke:#df8f8f,stroke-width:2px,color:#dfafaf;\n';
+                    mermaidDef += 'classDef texture fill:#3a3a4a,stroke:#8fafbf,stroke-width:2px,color:#afbfcf;\n';
                     mermaidDef += 'classDef orderNode fill:none,stroke:none,color:transparent,width:0,height:0;\n';
 
                     const graphId = 'mermaid-graph-' + Date.now();
                     const { svg } = await mermaid.render(graphId, mermaidDef);
                     const body = document.getElementById('overlay-body');
 
-                    // Legend
                     const legend = document.createElement('div');
                     legend.className = 'graph-legend';
                     legend.innerHTML = `
-                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#1a3a2a;border-color:#4caf50;"></span> Connected</div>
-                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3d1b1b;border-color:#f44336;"></span> Missing</div>
-                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3d2e0a;border-color:#ff9800;"></span> Type Mismatch</div>
-                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#0a2a3d;border-color:#2196f3;"></span> Texture</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3a4a3a;border-color:#8fbf8f;"></span> Verbunden</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#4a3a3a;border-color:#df8f8f;"></span> Fehlt</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#4a4a3a;border-color:#dfbf8f;"></span> Typkonflikt</div>
+                        <div class="graph-legend-item"><span class="graph-legend-dot" style="background:#3a3a4a;border-color:#8fafbf;"></span> Textur</div>
                     `;
 
                     const zoomContainer = document.createElement('div');
@@ -2016,16 +2066,16 @@ void main() {
 
                     return;
                 } else {
-                    html += '<p style="color:#888;">No graph data available.</p>';
+                    html += '<p style="color: var(--text-dim);">Keine Graph-Daten vorhanden.</p>';
                 }
 
                 outputContainer.innerHTML = html;
             } catch (error) {
-                console.error('Visualization error:', error);
-                outputContainer.innerHTML = `<p style="color:#ff6b6b;">❌ Visualization failed: ${htmlEscape(error.message)}</p>`;
+                console.error('Visualisierungsfehler:', error);
+                outputContainer.innerHTML = `<p style="color: var(--danger);">Visualisierung fehlgeschlagen: ${htmlEscape(error.message)}</p>`;
             } finally {
                 visualizeButton.disabled = false;
-                visualizeButton.textContent = 'Visualize';
+                visualizeButton.textContent = 'Graph';
                 loadingStatus.textContent = '';
                 loadingStatus.style.display = 'none';
             }
@@ -2076,157 +2126,55 @@ void main() {
                 .replaceAll("'", "&#39;");
         }
 
-        function updateLineNumbers() {
-            const lines = codeEditor.value.split('\n').length;
-            lineNumbersContainer.innerHTML = '';
-            for (let i = 1; i <= lines; i++) {
-                const lineNum = document.createElement('div');
-                lineNum.className = 'line-number';
-                lineNum.textContent = i;
-                lineNumbersContainer.appendChild(lineNum);
+        function clearErrorMarkers() {
+            editor.clearGutter('error-gutter');
+            for (let i = 0; i < editor.lineCount(); i++) {
+                editor.removeLineClass(i, 'background', 'error-line');
             }
         }
 
-        updateLineNumbers();
-
-        codeEditor.addEventListener('scroll', () => {
-            lineNumbersContainer.scrollTop = codeEditor.scrollTop;
-            const container = codeEditor.parentElement;
-            if (container) {
-                const pre = container.querySelector('.code-highlight');
-                if (pre) pre.scrollTop = codeEditor.scrollTop;
+        function applyErrorMarkers(errorMap) {
+            clearErrorMarkers();
+            for (const lineNumStr of Object.keys(errorMap)) {
+                const lineNum = parseInt(lineNumStr);
+                const errMsg = errorMap[lineNum];
+                const lineIndex = lineNum - 1;
+                if (lineIndex < 0) continue;
+                editor.addLineClass(lineIndex, 'background', 'error-line');
+                const marker = document.createElement('div');
+                marker.className = 'error-marker';
+                marker.textContent = '!';
+                marker.setAttribute('data-tip', errMsg);
+                editor.setGutterMarker(lineIndex, 'error-gutter', marker);
             }
-        });
+        }
 
         let debounceTimer = null;
         let abortController = null;
-        codeEditor.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                
-                if (start !== end) {
-                    const beforeSelection = value.substring(0, start);
-                    const selectedText = value.substring(start, end);
-                    const afterSelection = value.substring(end);
-                    
-                    let lineStart = beforeSelection.lastIndexOf('\n') + 1;
-                    const linesInSelection = selectedText.split('\n');
-                    const indentedLines = linesInSelection.map((line, i) => {
-                        return '\t' + line;
-                    }).join('\n');
-                    
-                    codeEditor.value = beforeSelection + indentedLines + afterSelection;
-                    codeEditor.selectionStart = start + 1;
-                    codeEditor.selectionEnd = end + linesInSelection.length;
-                } else {
-                    codeEditor.value = value.substring(0, start) + '\t' + value.substring(end);
-                    codeEditor.selectionStart = codeEditor.selectionEnd = start + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            } else if (e.key === '(') {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                const selectedText = value.substring(start, end);
-                
-                codeEditor.value = value.substring(0, start) + '(' + selectedText + ')' + value.substring(end);
-                codeEditor.selectionStart = start + 1;
-                if (start === end) {
-                    codeEditor.selectionEnd = start + 1;
-                } else {
-                    codeEditor.selectionEnd = end + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            } else if (e.key === '{') {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                const selectedText = value.substring(start, end);
-                
-                codeEditor.value = value.substring(0, start) + '{' + selectedText + '}' + value.substring(end);
-                codeEditor.selectionStart = start + 1;
-                if (start === end) {
-                    codeEditor.selectionEnd = start + 1;
-                } else {
-                    codeEditor.selectionEnd = end + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            } else if (e.key === '[') {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                const selectedText = value.substring(start, end);
-                
-                codeEditor.value = value.substring(0, start) + '[' + selectedText + ']' + value.substring(end);
-                codeEditor.selectionStart = start + 1;
-                if (start === end) {
-                    codeEditor.selectionEnd = start + 1;
-                } else {
-                    codeEditor.selectionEnd = end + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            } else if (e.key === '"') {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                const selectedText = value.substring(start, end);
-                
-                codeEditor.value = value.substring(0, start) + '"' + selectedText + '"' + value.substring(end);
-                codeEditor.selectionStart = start + 1;
-                if (start === end) {
-                    codeEditor.selectionEnd = start + 1;
-                } else {
-                    codeEditor.selectionEnd = end + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            } else if (e.key === "'") {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                const value = codeEditor.value;
-                const selectedText = value.substring(start, end);
-                
-                codeEditor.value = value.substring(0, start) + "'" + selectedText + "'" + value.substring(end);
-                codeEditor.selectionStart = start + 1;
-                if (start === end) {
-                    codeEditor.selectionEnd = start + 1;
-                } else {
-                    codeEditor.selectionEnd = end + 1;
-                }
-                codeEditor.dispatchEvent(new Event('input'));
-            }
-        });
-
         let requestId = 0;
-        codeEditor.addEventListener('input', () => {
-            updateLineNumbers();
+        let suppressChange = false;
+
+        editor.on('change', () => {
+            if (suppressChange) return;
             saveCurrentFile();
-            
+
             if (debounceTimer !== null) {
                 clearTimeout(debounceTimer);
             }
-            
+
             if (abortController !== null) {
                 abortController.abort();
             }
-            
+
             const currentRequestId = ++requestId;
-            
+
             debounceTimer = setTimeout(() => {
                 abortController = new AbortController();
-                loadingStatus.textContent = 'transpiling...';
+                loadingStatus.textContent = 'ubersetze...';
                 loadingStatus.style.display = 'inline-block';
-                
-                const code = codeEditor.value;
-                
+
+                const code = editor.getValue();
+
                 fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
@@ -2238,7 +2186,7 @@ void main() {
                 .then(response => response.json())
                 .then(data => {
                     if (currentRequestId !== requestId) return;
-                    
+
                     let htmlResponse = '';
                     let errorMap = {};
                     if (data.errors && data.errors.length > 0) {
@@ -2250,27 +2198,16 @@ void main() {
                             }
                         });
                     }
-                    
-                    document.querySelectorAll('.line-number').forEach((lineEl, index) => {
-                        const lineNum = index + 1;
-                        if (errorMap[lineNum]) {
-                            lineEl.classList.add('error');
-                            lineEl.setAttribute('data-tooltip', errorMap[lineNum]);
-                        } else {
-                            lineEl.classList.remove('error');
-                            lineEl.removeAttribute('data-tooltip');
-                        }
-                    });
-                    
+
+                    applyErrorMarkers(errorMap);
+
                     if (data.result && data.result.trim()) {
                         let normalizedResult = data.result.replace(/\r\n/g, '\n');
-                        
                         const lines = normalizedResult.split('\n');
-                        
                         const lineNumbersHtml = lines.map((_, i) => `<div class="output-line-number">${i + 1}</div>`).join('');
                         const escapedResult = normalizedResult.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         htmlResponse += `<div class="output-wrapper"><div class="output-line-numbers">${lineNumbersHtml}</div><div class="output-code"><code class="language-glsl hljs">${escapedResult}</code></div></div>`;
-                        
+
                         setTimeout(() => {
                             const outputCode = outputContainer.querySelector('.output-code');
                             const outputLineNumbers = outputContainer.querySelector('.output-line-numbers');
@@ -2281,30 +2218,30 @@ void main() {
                             }
                         }, 0);
                     }
-                    
+
                     if (data.errors && data.errors.length > 0) {
                         const errorItems = data.errors.map(err => {
                             const match = err.match(/\[Line (\d+):(\d+)]\s*([\s\S]*)/);
                             if (match) {
                                 const [, line, column, rest] = match;
                                 const formatted = htmlEscape(rest.trim()).replace(/\r?\n/g, '<br>');
-                                return `<li><strong>Line Nr: ${(parseInt(line))}:${column}</strong><br>${formatted}</li>`;
+                                return `<li><strong>Zeile ${parseInt(line)}:${column}</strong><br>${formatted}</li>`;
                             }
                             return `<li>${err}</li>`;
                         }).join('');
 
-                        htmlResponse += `<div class="errors"><div class="errors-header">⚠️ ${data.errors.length} Error while transpiling:</div><ul>${errorItems}</ul></div>`;
+                        htmlResponse += `<div class="errors"><div class="errors-header">${data.errors.length} Fehler beim Ubersetzen:</div><ul>${errorItems}</ul></div>`;
                     }
-                    
+
                     if (!data.result && (!data.errors || data.errors.length === 0)) {
-                        htmlResponse = '<p style="color: #81c784;">✅ Successfully transpiled to GLSL!</p>';
+                        htmlResponse = '<p style="color: var(--success);">Erfolgreich nach GLSL ubersetzt.</p>';
                     }
-                    
+
                     outputContainer.innerHTML = htmlResponse;
                     const outCode = outputContainer.querySelector('.output-code code');
                     if (outCode) hljs.highlightElement(outCode);
-                    
-                    loadingStatus.textContent = '✅ updated';
+
+                    loadingStatus.textContent = 'aktualisiert';
                     setTimeout(() => {
                         loadingStatus.textContent = '';
                         loadingStatus.style.display = 'none';
@@ -2312,9 +2249,9 @@ void main() {
                 })
                 .catch(error => {
                     if (error.name === 'AbortError') return;
-                    console.error('❌ Compile request failed:', error);
-                    loadingStatus.textContent = '❌ Error';
-                    outputContainer.innerHTML = '<p style="color: #ff6b6b;">❌ Error while compiling!<br>' + error.message + '<br><br>Make sure the backend server is running on port 5264.</p>';
+                    console.error('Ubersetzungsfehler:', error);
+                    loadingStatus.textContent = 'Fehler';
+                    outputContainer.innerHTML = '<p style="color: var(--danger);">Fehler beim Ubersetzen.<br>' + htmlEscape(error.message) + '<br><br>Stelle sicher, dass der Backend-Server lauft.</p>';
                 });
             }, DEBOUNCE_TIME_MS);
         });
