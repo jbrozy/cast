@@ -29,6 +29,7 @@ namespace cast.core.parser
             _scope.Define(new SpaceSymbol("Clip"));
             _scope.Define(new SpaceSymbol("NDC"));
             _scope.Define(new SpaceSymbol("Screen"));
+            _scope.Define(new SpaceSymbol("Projection"));
             
             _scope.Define(new SpaceSymbol("Color"));
             _scope.Define(new SpaceSymbol("UV"));

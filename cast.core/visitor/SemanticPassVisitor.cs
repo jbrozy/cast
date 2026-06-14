@@ -714,7 +714,7 @@ namespace cast.core.visitor
                 // so whenever left type is equal to right type and left has spaces, and right doesnt
                 // we simply copy them over, since the expected return type of the expression is corerect
                 // but the spaces aren't set
-                if (left.Type.Name == right.Type.Name)
+                if (left.Type?.Name == right.Type?.Name)
                 {
                     bool copy = left.Spaces.Count > 0 && right.Spaces.Count == 0;
                     if (copy) right.Spaces.AddRange(left.Spaces);
@@ -820,6 +820,7 @@ namespace cast.core.visitor
                         {
                             _logger.Log(context.Start, $"Unable to assign {initializerType} to {type}");
                             type = CastType.ErrorType;
+                            Console.WriteLine(context.GetText());
                         }
                     }
                 }

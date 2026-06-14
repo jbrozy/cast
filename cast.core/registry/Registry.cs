@@ -47,6 +47,7 @@ namespace cast.core.registry
                 RegisterFunction("normalize", vector, vector);
             }
             
+            RegisterFunction("cross", "vec3", "vec3", "vec3");
             RegisterFunction("cross", "vec3<T>", "vec3<T>", "vec3<T>");
             RegisterFunction("reflect", "vec3<T>", "vec3<T>", "vec3<T>");
             RegisterFunction("refract", "vec3<T>", "vec3<T>", "vec3<T>", "float");
@@ -81,11 +82,25 @@ namespace cast.core.registry
             {
                 string vt = $"{v}<T>";
                 RegisterFunction("min", vt, vt, "float");
+                RegisterFunction("min", v, v, "float");
+                
                 RegisterFunction("max", vt, vt, "float");
+                RegisterFunction("max", v, v, "float");
+                
                 RegisterFunction("mod", vt, vt, "float");
+                RegisterFunction("mod", v, v, "float");
+                
                 RegisterFunction("mix", vt, vt, vt, "float");
+                RegisterFunction("mix", v, v, v, "float");
+                
+                RegisterFunction("pow", vt, vt, vt);
+                RegisterFunction("pow", v, v, v);
+                
                 RegisterFunction("clamp", vt, vt, "float", "float");
+                RegisterFunction("clamp", v, v, "float", "float");
+                
                 RegisterFunction("smoothstep", vt, "float", "float", vt);
+                RegisterFunction("smoothstep", v, "float", "float", v);
             }
             
             foreach (string t in floatTypes)
@@ -189,6 +204,7 @@ namespace cast.core.registry
             RegisterFunction("*", "vec2", "mat2", "vec2");
             RegisterFunction("*", "vec3", "mat3", "vec3");
 
+            RegisterFunction("/", "vec2", "float", "vec2");
             RegisterFunction("/", "vec2", "vec2", "float");
             RegisterFunction("/", "vec3", "vec3", "float");
             RegisterFunction("/", "vec4", "vec4", "float");
