@@ -928,6 +928,7 @@ namespace cast.core.visitor
             {
                 builder.Append($"{Visit(context.type_qualifier())} ");
             }
+
             
             string type = Visit(context.type_specifier().type_specifier_nonarray());
             TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
@@ -976,12 +977,13 @@ namespace cast.core.visitor
 
         public string VisitLayout_qualifier_id(CastParser.Layout_qualifier_idContext context)
         {
-            throw new System.NotImplementedException();
+            return "DEBUG";
         }
 
         public string VisitLayout_qualifier(CastParser.Layout_qualifierContext context)
         {
-            throw new System.NotImplementedException();
+            string layoutId = Visit(context.layout_qualifier_id_list());
+            return layoutId;
         }
 
         public string VisitStruct_declaration(CastParser.Struct_declarationContext context)

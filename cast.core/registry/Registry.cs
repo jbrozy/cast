@@ -50,6 +50,7 @@ namespace cast.core.registry
             RegisterFunction("cross", "vec3", "vec3", "vec3");
             RegisterFunction("cross", "vec3<T>", "vec3<T>", "vec3<T>");
             RegisterFunction("reflect", "vec3<T>", "vec3<T>", "vec3<T>");
+            RegisterFunction("reflect", "vec4<T>", "vec4<T>", "vec4<T>");
             RegisterFunction("refract", "vec3<T>", "vec3<T>", "vec3<T>", "float");
             
             string[] floatTypes = { "float", "vec2<T>", "vec3<T>", "vec4<T>" };
@@ -129,6 +130,9 @@ namespace cast.core.registry
             RegisterFunction("inverse", "mat2<U, T>", "mat2<T, U>");
             RegisterFunction("inverse", "mat3<U, T>", "mat3<T, U>");
             RegisterFunction("inverse", "mat4<U, T>", "mat4<T, U>");
+            
+            RegisterFunction("dFdx", "vec3<T>", "vec3<T>");
+            RegisterFunction("dFdy", "vec3<T>", "vec3<T>");
             
             RegisterFunction("transpose", "mat2<U, T>", "mat2<T, U>");
             RegisterFunction("transpose", "mat3<U, T>", "mat3<T, U>");
@@ -332,22 +336,29 @@ namespace cast.core.registry
             RegisterFunction("vec3", "vec3", "float", "vec2");
             RegisterFunction("vec3", "vec3", "vec4");
             RegisterFunction("vec4", "vec4", "float");
-            
+
             RegisterFunction("vec3", "vec3", "float");
-            
+            // constructors vec4
             RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
-
             RegisterFunction("vec4", "vec4", "float", "float", "float", "float");
-
             RegisterFunction("vec4", "vec4", "vec3", "float");
             RegisterFunction("vec4", "vec4", "float", "vec3");
-
             RegisterFunction("vec4", "vec4", "vec2", "vec2");
             RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
-
             RegisterFunction("vec4", "vec4", "vec2", "float", "float");
             RegisterFunction("vec4", "vec4", "float", "vec2", "float");
             RegisterFunction("vec4", "vec4", "float", "float", "vec2");
+
+            // constructors poin4
+            RegisterFunction("point4", "point4<T>", "point3<T>", "float");
+            RegisterFunction("point4", "point4", "float", "float", "float", "float");
+            RegisterFunction("point4", "point4", "point3", "float");
+            RegisterFunction("point4", "point4", "float", "point3");
+            RegisterFunction("point4", "point4", "point2", "point2");
+            RegisterFunction("point4", "point4<T>", "point3<T>", "float");
+            RegisterFunction("point4", "point4", "point2", "float", "float");
+            RegisterFunction("point4", "point4", "float", "point2", "float");
+            RegisterFunction("point4", "point4", "float", "float", "point2");
 
             RegisterFunction("mat3", "mat3", "mat4");
             RegisterFunction("mat3", "mat3<T, U>", "mat4<T, U>");

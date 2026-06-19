@@ -57,12 +57,12 @@ namespace cast.core.parser
             _scope.Define(new TypeSymbol("sampler3D", 0, false));
             _scope.Define(new TypeSymbol("samplerCube", 0, false));
             
-            RegisterConstant("gl_Position", "vec4", "Clip");
+            RegisterConstant("gl_Position", "point4", "Clip");
             RegisterConstant("gl_PointSize",  "float");
             RegisterConstant("gl_VertexID",   "int");
             RegisterConstant("gl_InstanceID", "int");
             
-            RegisterConstant("gl_FragCoord",  "vec4",  "Screen");
+            RegisterConstant("gl_FragCoord",  "point4",  "Screen");
             RegisterConstant("gl_FrontFacing","bool");
             RegisterConstant("gl_PointCoord", "vec2", "Local");
             RegisterConstant("gl_FragDepth",  "float");
