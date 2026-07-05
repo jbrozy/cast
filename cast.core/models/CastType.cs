@@ -42,7 +42,7 @@ namespace cast.core.models
 
                 for (int i = 0; i < this.Spaces.Count; i++)
                 {
-                    if (this.Spaces[i] != other.Spaces[i]) return false;
+                    if (this.Spaces[i].Name != other.Spaces[i].Name) return false;
                 }
                 return true;
             }

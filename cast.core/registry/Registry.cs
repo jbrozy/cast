@@ -13,6 +13,11 @@ namespace cast.core.registry
         private static HashSet<InternalFunction> _internalFunctions = new HashSet<InternalFunction>();
         private static Dictionary<string, List<(string[] Params, string returnType)>> functions = new Dictionary<string, List<(string[], string)>>();
 
+        static Registry()
+        {
+            Setup();
+        }
+
         public static bool HasCandidates(string functionName)
         {
             return functions.ContainsKey(functionName);
@@ -31,29 +36,127 @@ namespace cast.core.registry
         
         public static void Setup()
         {
+            // 1. Definition der Typ-Arrays
             string[] vectors = { "vec2", "vec3", "vec4" };
+            string[] points = { "point2", "point3", "point4" };
+            string[] floatTypes = { "float", "vec2<T>", "vec3<T>", "vec4<T>", "vec2", "vec3", "vec4" };
+
             foreach(string vector in vectors)
             {
-                RegisterFunction("length", "float", $"{vector}<T>");
-                RegisterFunction("distance", "float", $"{vector}<T>",  $"{vector}<T>");
-                RegisterFunction("dot", "float", $"{vector}<T>",  $"{vector}<T>");
-                RegisterFunction("normalize", $"{vector}<T>", $"{vector}<T>");
-            }
-
-            string[] plainVectors = { "vec2", "vec3", "vec4" };
-            foreach(string vector in plainVectors)
-            {
+                string vt = $"{vector}<T>";
+    
+                RegisterFunction("length", "float", vt);
+                RegisterFunction("length", "float", vector);
+    
+                RegisterFunction("dot", "float", vt, vt);
                 RegisterFunction("dot", "float", vector, vector);
+    
+                RegisterFunction("normalize", vt, vt);
                 RegisterFunction("normalize", vector, vector);
             }
-            
+
+            foreach(string point in points)
+            {
+                string pt = $"{point}<T>";
+                RegisterFunction("distance", "float", pt, pt);
+                RegisterFunction("distance", "float", point, point);
+            }
+            foreach(string vector in vectors)
+            {
+                RegisterFunction("distance", "float", vector, vector);
+            }
+
             RegisterFunction("cross", "vec3", "vec3", "vec3");
             RegisterFunction("cross", "vec3<T>", "vec3<T>", "vec3<T>");
+
             RegisterFunction("reflect", "vec3<T>", "vec3<T>", "vec3<T>");
-            RegisterFunction("reflect", "vec4<T>", "vec4<T>", "vec4<T>");
+            RegisterFunction("reflect", "vec3", "vec3", "vec3");
             RegisterFunction("refract", "vec3<T>", "vec3<T>", "vec3<T>", "float");
-            
-            string[] floatTypes = { "float", "vec2<T>", "vec3<T>", "vec4<T>" };
+            RegisterFunction("refract", "vec3", "vec3", "vec3", "float");
+
+            RegisterFunction("+", "float", "float", "float");
+            RegisterFunction("-", "float", "float", "float");
+            RegisterFunction("+", "int", "int", "int");
+            RegisterFunction("-", "int", "int", "int");
+
+            for(int i = 2; i <= 4; i++)
+            {
+                string v = $"vec{i}";
+                string vt = $"vec{i}<T>";
+                string p = $"point{i}";
+                string pt = $"point{i}<T>";
+
+                // Vector + Vector = Vector
+                RegisterFunction("+", vt, vt, vt);
+                RegisterFunction("+", v, v, v);
+
+                // Vector - Vector = Vector
+                RegisterFunction("-", vt, vt, vt);
+                RegisterFunction("-", v, v, v);
+
+                // Point - Point = Vector (Distanzvektor)
+                RegisterFunction("-", vt, pt, pt);
+                RegisterFunction("-", v, p, p);
+
+                // Point + Vector = Point (Translation)
+                RegisterFunction("+", pt, pt, vt);
+                RegisterFunction("+", pt, vt, pt); // Kommutativ
+                RegisterFunction("+", p, p, v);
+                RegisterFunction("+", p, v, p);
+
+                // Point - Vector = Point
+                RegisterFunction("-", pt, pt, vt);
+                RegisterFunction("-", p, p, v);
+            }
+
+            RegisterFunction("*", "float", "float", "float");
+            RegisterFunction("/", "float", "float", "float");
+            RegisterFunction("*", "int", "int", "int");
+            RegisterFunction("/", "int", "int", "int");
+            RegisterFunction("%", "int", "int", "int");
+            RegisterFunction("%", "uint", "uint", "uint");
+
+            for(int i = 2; i <= 4; i++)
+            {
+                string v = $"vec{i}";
+                string vt = $"vec{i}<T>";
+
+                RegisterFunction("*", vt, vt, "float");
+                RegisterFunction("*", vt, "float", vt);
+                RegisterFunction("*", v, v, "float");
+                RegisterFunction("*", v, "float", v);
+
+                RegisterFunction("/", vt, vt, "float");
+                RegisterFunction("/", v, v, "float");
+
+                RegisterFunction("/", vt, "float", vt);
+                RegisterFunction("/", v, "float", v);
+
+                RegisterFunction("*", vt, vt, vt);
+                RegisterFunction("*", v, v, v);
+                RegisterFunction("/", vt, vt, vt);
+                RegisterFunction("/", v, v, v);
+            }
+
+            RegisterFunction("*", "point2<U>", "mat2<T, U>", "point2<T>");
+            RegisterFunction("*", "point3<U>", "mat3<T, U>", "point3<T>");
+            RegisterFunction("*", "point4<U>", "mat4<T, U>", "point4<T>");
+
+            RegisterFunction("*", "vec2<U>", "mat2<T, U>", "vec2<T>");
+            RegisterFunction("*", "vec3<U>", "mat3<T, U>", "vec3<T>");
+            RegisterFunction("*", "vec4<U>", "mat4<T, U>", "vec4<T>");
+
+            RegisterFunction("*", "point2", "mat2", "point2");
+            RegisterFunction("*", "point3", "mat3", "point3");
+            RegisterFunction("*", "point4", "mat4", "point4");
+            RegisterFunction("*", "vec2", "mat2", "vec2");
+            RegisterFunction("*", "vec3", "mat3", "vec3");
+            RegisterFunction("*", "vec4", "mat4", "vec4");
+
+            RegisterFunction("*", "mat2<T, V>", "mat2<U, V>", "mat2<T, U>");
+            RegisterFunction("*", "mat3<T, V>", "mat3<U, V>", "mat3<T, U>");
+            RegisterFunction("*", "mat4<T, V>", "mat4<U, V>", "mat4<T, U>");
+
             foreach (string t in floatTypes)
             {
                 RegisterFunction("abs", t, t);
@@ -63,50 +166,17 @@ namespace cast.core.registry
                 RegisterFunction("round", t, t);
                 RegisterFunction("fract", t, t);
 
-                // min / max / mod (Between two identical types)
+                // min / max / mod / step
                 RegisterFunction("min", t, t, t);
                 RegisterFunction("max", t, t, t);
                 RegisterFunction("mod", t, t, t);
                 RegisterFunction("step", t, t, t);
 
-                // clamp: clamp(x, minVal, maxVal)
                 RegisterFunction("clamp", t, t, t, t);
-        
-                // mix: mix(x, y, a) -> Linear interpolation
+                RegisterFunction("smoothstep", t, t, t, t);
                 RegisterFunction("mix", t, t, t, t);
-        
-                // smoothstep: smoothstep(edge0, edge1, x)
-                RegisterFunction("smoothstep", t, t, t, t); 
-            }
-            
-            foreach (string v in vectors)
-            {
-                string vt = $"{v}<T>";
-                RegisterFunction("min", vt, vt, "float");
-                RegisterFunction("min", v, v, "float");
-                
-                RegisterFunction("max", vt, vt, "float");
-                RegisterFunction("max", v, v, "float");
-                
-                RegisterFunction("mod", vt, vt, "float");
-                RegisterFunction("mod", v, v, "float");
-                
-                RegisterFunction("mix", vt, vt, vt, "float");
-                RegisterFunction("mix", v, v, v, "float");
-                
-                RegisterFunction("pow", vt, vt, vt);
-                RegisterFunction("pow", v, v, v);
-                
-                RegisterFunction("clamp", vt, vt, "float", "float");
-                RegisterFunction("clamp", v, v, "float", "float");
-                
-                RegisterFunction("smoothstep", vt, "float", "float", vt);
-                RegisterFunction("smoothstep", v, "float", "float", v);
-            }
-            
-            foreach (string t in floatTypes)
-            {
-                // Exponential
+
+                // Exponential & Trigo
                 RegisterFunction("pow", t, t, t);
                 RegisterFunction("exp", t, t);
                 RegisterFunction("log", t, t);
@@ -114,258 +184,91 @@ namespace cast.core.registry
                 RegisterFunction("log2", t, t);
                 RegisterFunction("sqrt", t, t);
                 RegisterFunction("inversesqrt", t, t);
-
-                // Trigonometry
-                RegisterFunction("radians", t, t);
-                RegisterFunction("degrees", t, t);
                 RegisterFunction("sin", t, t);
                 RegisterFunction("cos", t, t);
                 RegisterFunction("tan", t, t);
                 RegisterFunction("asin", t, t);
                 RegisterFunction("acos", t, t);
-                RegisterFunction("atan", t, t);     // atan(y_over_x)
-                RegisterFunction("atan", t, t, t);  // atan(y, x)
+                RegisterFunction("atan", t, t);
+                RegisterFunction("atan", t, t, t);
             }
-            
+
+            for(int i = 2; i <= 4; i++)
+            {
+                string p = $"point{i}";
+                string pt = $"point{i}<T>";
+
+                RegisterFunction("mix", pt, pt, pt, "float");
+                RegisterFunction("mix", p, p, p, "float");
+            }
+
+            foreach (string v in vectors)
+            {
+                string vt = $"{v}<T>";
+                RegisterFunction("min", vt, vt, "float");
+                RegisterFunction("max", vt, vt, "float");
+                RegisterFunction("mod", vt, vt, "float");
+                RegisterFunction("clamp", vt, vt, "float", "float");
+                RegisterFunction("smoothstep", vt, "float", "float", vt);
+            }
+
             RegisterFunction("inverse", "mat2<U, T>", "mat2<T, U>");
             RegisterFunction("inverse", "mat3<U, T>", "mat3<T, U>");
             RegisterFunction("inverse", "mat4<U, T>", "mat4<T, U>");
-            
-            RegisterFunction("dFdx", "vec3<T>", "vec3<T>");
-            RegisterFunction("dFdy", "vec3<T>", "vec3<T>");
-            
+
             RegisterFunction("transpose", "mat2<U, T>", "mat2<T, U>");
             RegisterFunction("transpose", "mat3<U, T>", "mat3<T, U>");
             RegisterFunction("transpose", "mat4<U, T>", "mat4<T, U>");
-            
+
             RegisterFunction("determinant", "float", "mat2<T, U>");
             RegisterFunction("determinant", "float", "mat3<T, U>");
             RegisterFunction("determinant", "float", "mat4<T, U>");
+
+            string[] bvecs = { "bvec2", "bvec3", "bvec4" };
+            foreach(string bvec in bvecs) {
+                RegisterFunction("any", "bool", bvec);
+                RegisterFunction("all", "bool", bvec);
+            }
             
-            RegisterFunction("lessThan", "bvec2", "vec2<T>", "vec2<T>");
-            RegisterFunction("lessThan", "bvec3", "vec3<T>", "vec3<T>");
-            RegisterFunction("lessThan", "bvec4", "vec4<T>", "vec4<T>");
-            
-            RegisterFunction("lessThanEqual", "bvec2", "vec2<T>", "vec2<T>");
-            RegisterFunction("lessThanEqual", "bvec3", "vec3<T>", "vec3<T>");
-            RegisterFunction("lessThanEqual", "bvec4", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("greaterThan", "bvec2", "vec2<T>", "vec2<T>");
-            RegisterFunction("greaterThan", "bvec3", "vec3<T>", "vec3<T>");
-            RegisterFunction("greaterThan", "bvec4", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("greaterThanEqual", "bvec2", "vec2<T>", "vec2<T>");
-            RegisterFunction("greaterThanEqual", "bvec3", "vec3<T>", "vec3<T>");
-            RegisterFunction("greaterThanEqual", "bvec4", "vec4<T>", "vec4<T>");
-            
-            RegisterFunction("any", "bool", "bvec2");
-            RegisterFunction("any", "bool", "bvec3");
-            RegisterFunction("any", "bool", "bvec4");
-
-            RegisterFunction("all", "bool", "bvec2");
-            RegisterFunction("all", "bool", "bvec3");
-            RegisterFunction("all", "bool", "bvec4");
-            
-            RegisterFunction("*", "float", "float", "float");
-            RegisterFunction("*", "int", "int", "int");
-            RegisterFunction("*", "uint", "uint", "uint");
-
-            RegisterFunction("*", "vec2<T>", "vec2<T>", "float");
-            RegisterFunction("*", "vec3", "vec3", "float");
-            RegisterFunction("*", "vec3", "vec3", "vec3");
-            RegisterFunction("*", "vec3<T>", "vec3<T>", "float");
-            RegisterFunction("*", "vec4<T>", "vec4<T>", "float");
-            RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4");
-            RegisterFunction("*", "vec2", "vec2", "float");
-            RegisterFunction("*", "vec4", "vec4", "float");
-            RegisterFunction("*", "vec2", "vec2", "vec2");
-            RegisterFunction("*", "vec4", "vec4", "vec4");
-            
-            RegisterFunction("*", "vec2<T>", "float", "vec2<T>");
-            RegisterFunction("*", "vec3<T>", "float", "vec3<T>");
-            RegisterFunction("*", "vec4<T>", "float", "vec4<T>");
-            RegisterFunction("*", "vec2", "float", "vec2");
-            RegisterFunction("*", "vec3", "float", "vec3");
-            RegisterFunction("*", "vec4", "float", "vec4");
-
-            RegisterFunction("*", "vec2<T>", "vec2<T>", "vec2<T>");
-            RegisterFunction("*", "vec3<T>", "vec3<T>", "vec3<T>");
-            RegisterFunction("*", "vec4<T>", "vec4<T>", "vec4<T>");
-            
-            RegisterFunction("*", "point2", "point2", "point2");
-            RegisterFunction("*", "point3", "point3", "point3");
-            RegisterFunction("*", "point4", "point4", "point4");
-            
-            RegisterFunction("*", "point2<T>", "point2<T>", "point2<T>");
-            RegisterFunction("*", "point3<T>", "point3<T>", "point3<T>");
-            RegisterFunction("*", "point4<T>", "point4<T>", "point4<T>");
-
-            RegisterFunction("*", "point2<U>", "mat2<T, U>", "point2<T>");
-            RegisterFunction("*", "point3<U>", "mat3<T, U>", "point3<T>");
-            RegisterFunction("*", "point4<U>", "mat4<T, U>", "point4<T>");
-            
-            RegisterFunction("*", "vec4", "mat4", "vec4");
-            RegisterFunction("*", "vec2", "mat2", "vec2");
-            RegisterFunction("*", "vec3", "mat3", "vec3");
-
-            RegisterFunction("/", "vec2", "float", "vec2");
-            RegisterFunction("/", "vec2", "vec2", "float");
-            RegisterFunction("/", "vec3", "vec3", "float");
-            RegisterFunction("/", "vec4", "vec4", "float");
-            RegisterFunction("/", "vec2", "vec2", "vec2");
-            RegisterFunction("/", "vec3", "vec3", "vec3");
-            RegisterFunction("/", "vec4", "vec4", "vec4");
-
-            RegisterFunction("-", "vec2", "vec2", "vec2");
-            RegisterFunction("-", "vec3", "vec3", "vec3");
-            RegisterFunction("-", "vec4", "vec4", "vec4");
-            RegisterFunction("-", "vec2", "vec2", "float");
-            RegisterFunction("-", "vec3", "vec3", "float");
-            RegisterFunction("-", "vec4", "vec4", "float");
-
-            RegisterFunction("*", "mat4<T, V>", "mat4<U, V>", "mat4<T, U>");
-            
-            RegisterFunction("+", "float", "float", "float");
-            RegisterFunction("+", "int", "int", "int");
-
-            RegisterFunction("+", "vec2<T>", "vec2<T>", "vec2<T>");
-            RegisterFunction("+", "vec3<T>", "vec3<T>", "vec3<T>");
-            RegisterFunction("+", "vec4<T>", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("+", "vec2<T>", "vec2<T>", "float");
-            RegisterFunction("+", "vec3<T>", "vec3<T>", "float");
-            RegisterFunction("+", "vec3", "vec3", "vec3");
-            RegisterFunction("+", "vec2", "vec2", "vec2");
-            RegisterFunction("+", "vec4", "vec4", "vec4");
-            RegisterFunction("+", "vec3<T>", "vec3<T>", "vec3");
-            RegisterFunction("+", "vec4<T>", "vec4<T>", "float");
-            RegisterFunction("+", "vec2<T>", "float", "vec2<T>");
-            RegisterFunction("+", "vec3<T>", "float", "vec3<T>");
-            RegisterFunction("+", "vec4<T>", "float", "vec4<T>");
-
-            RegisterFunction("-", "float", "float", "float");
-            RegisterFunction("-", "int", "int", "int");
-            RegisterFunction("-", "vec3", "float", "vec3");
-            RegisterFunction("-", "vec3<T>", "float", "vec3<T>");
-
-            RegisterFunction("-", "vec2<T>", "vec2<T>", "vec2<T>");
-            RegisterFunction("-", "vec3<T>", "vec3<T>", "vec3<T>");
-            RegisterFunction("-", "vec4<T>", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("/", "float", "float", "float");
-            RegisterFunction("/", "int", "int", "int");
-
-            RegisterFunction("/", "vec2<T>", "vec2<T>", "float");
-            RegisterFunction("/", "vec3<T>", "vec3<T>", "float");
-            RegisterFunction("/", "vec4<T>", "vec4<T>", "float");
-
-            RegisterFunction("/", "vec2<T>", "vec2<T>", "vec2<T>");
-            RegisterFunction("/", "vec3<T>", "vec3<T>", "vec3<T>");
-            RegisterFunction("/", "vec4<T>", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("%", "int", "int", "int");
-            RegisterFunction("%", "uint", "uint", "uint");
-
-            RegisterFunction("==", "bool", "float", "float");
-            RegisterFunction("==", "bool", "int", "int");
-            RegisterFunction("==", "bool", "uint", "uint");
-            RegisterFunction("==", "bool", "bool", "bool");
-            RegisterFunction("==", "bool", "vec2<T>", "vec2<T>");
-            RegisterFunction("==", "bool", "vec3<T>", "vec3<T>");
-            RegisterFunction("==", "bool", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("!=", "bool", "float", "float");
-            RegisterFunction("!=", "bool", "int", "int");
-            RegisterFunction("!=", "bool", "uint", "uint");
-            RegisterFunction("!=", "bool", "bool", "bool");
-            RegisterFunction("!=", "bool", "vec2<T>", "vec2<T>");
-            RegisterFunction("!=", "bool", "vec3<T>", "vec3<T>");
-            RegisterFunction("!=", "bool", "vec4<T>", "vec4<T>");
-
-            RegisterFunction("<", "bool", "float", "float");
-            RegisterFunction(">", "bool", "float", "float");
-            RegisterFunction("<=", "bool", "float", "float");
-            RegisterFunction(">=", "bool", "float", "float");
-            RegisterFunction("<", "bool", "int", "int");
-            RegisterFunction(">", "bool", "int", "int");
-            RegisterFunction("<=", "bool", "int", "int");
-            RegisterFunction(">=", "bool", "int", "int");
-            RegisterFunction("<", "bool", "uint", "uint");
-            RegisterFunction(">", "bool", "uint", "uint");
-            RegisterFunction("<=", "bool", "uint", "uint");
-            RegisterFunction(">=", "bool", "uint", "uint");
-
-            RegisterFunction("&&", "bool", "bool", "bool");
-            RegisterFunction("||", "bool", "bool", "bool");
-            
-            RegisterFunction("<<", "int", "int", "int");
-            RegisterFunction(">>", "int", "int", "int");
-
-            RegisterFunction("!", "bool", "bool");
-            RegisterFunction("-", "int", "int");
-            RegisterFunction("-", "float", "float");
-            RegisterFunction("-", "vec2", "vec2");
-            RegisterFunction("-", "vec3", "vec3");
-            RegisterFunction("-", "vec4", "vec4");
-            RegisterFunction("-", "mat2", "mat2");
-            RegisterFunction("-", "mat3", "mat3");
-            RegisterFunction("-", "mat4", "mat4");
-            RegisterFunction("+", "int", "int");
-            RegisterFunction("+", "float", "float");
-            RegisterFunction("+", "vec2", "vec2");
-            RegisterFunction("+", "vec3", "vec3");
-            RegisterFunction("+", "vec4", "vec4");
-            RegisterFunction("+", "mat2", "mat2");
-            RegisterFunction("+", "mat3", "mat3");
-            RegisterFunction("+", "mat4", "mat4");
-            
-            RegisterFunction("texture", "T", "sampler2D<T>", "vec2");
-            RegisterFunction("texture", "vec4", "sampler2D", "vec2");
-            RegisterFunction("texture", "T", "sampler3D<T>", "vec3");
-            RegisterFunction("texture", "vec4", "sampler3D", "vec3");
-            RegisterFunction("texture", "T", "samplerCube<T>", "vec3");
-            RegisterFunction("texture", "vec4", "samplerCube", "vec3");
-            
-            RegisterFunction("vec2", "vec2", "float");
+            // Vektor-Konstruktoren (Homogene Erweiterung und Einzelkomponenten)
             RegisterFunction("vec2", "vec2", "float", "float");
-            RegisterFunction("vec2", "vec2", "vec3");
-            RegisterFunction("vec2", "vec2", "vec4");
-            RegisterFunction("vec3", "vec3", "float");
-            RegisterFunction("vec3", "vec3", "float", "float", "float");
+            RegisterFunction("vec3", "vec3<T>", "vec2<T>", "float");
             RegisterFunction("vec3", "vec3", "vec2", "float");
-            RegisterFunction("vec3", "vec3", "float", "vec2");
-            RegisterFunction("vec3", "vec3", "vec4");
-            RegisterFunction("vec4", "vec4", "float");
-
             RegisterFunction("vec3", "vec3", "float");
-            // constructors vec4
+            RegisterFunction("vec3", "vec3<T>", "float");
+            
+            RegisterFunction("vec3", "vec3", "float", "float", "float");
+            RegisterFunction("vec3", "vec3<T>", "float", "float", "float");
+            
             RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
-            RegisterFunction("vec4", "vec4", "float", "float", "float", "float");
             RegisterFunction("vec4", "vec4", "vec3", "float");
-            RegisterFunction("vec4", "vec4", "float", "vec3");
+            
             RegisterFunction("vec4", "vec4", "vec2", "vec2");
-            RegisterFunction("vec4", "vec4<T>", "vec3<T>", "float");
-            RegisterFunction("vec4", "vec4", "vec2", "float", "float");
-            RegisterFunction("vec4", "vec4", "float", "vec2", "float");
-            RegisterFunction("vec4", "vec4", "float", "float", "vec2");
+            RegisterFunction("vec4", "vec4<T>", "vec2", "vec2");
+            
+            RegisterFunction("vec4", "vec4", "float", "float", "float", "float");
+            RegisterFunction("vec4", "vec4<T>", "float", "float", "float", "float");
 
-            // constructors poin4
+            // Punkt-Konstruktoren (Homogene Erweiterung und Einzelkomponenten)
+            RegisterFunction("point2", "point2", "float", "float");
+            RegisterFunction("point3", "point3<T>", "point2<T>", "float");
+            RegisterFunction("point3", "point3", "point2", "float");
+            RegisterFunction("point3", "point3", "float");
+            RegisterFunction("point3", "point3", "float", "float", "float");
             RegisterFunction("point4", "point4<T>", "point3<T>", "float");
-            RegisterFunction("point4", "point4", "float", "float", "float", "float");
             RegisterFunction("point4", "point4", "point3", "float");
-            RegisterFunction("point4", "point4", "float", "point3");
             RegisterFunction("point4", "point4", "point2", "point2");
-            RegisterFunction("point4", "point4<T>", "point3<T>", "float");
-            RegisterFunction("point4", "point4", "point2", "float", "float");
-            RegisterFunction("point4", "point4", "float", "point2", "float");
-            RegisterFunction("point4", "point4", "float", "float", "point2");
+            RegisterFunction("point4", "point4", "float", "float", "float", "float");
 
-            RegisterFunction("mat3", "mat3", "mat4");
+            // Matrix-Konstruktoren (Down-Casting und Spalten-Vektoren)
             RegisterFunction("mat3", "mat3<T, U>", "mat4<T, U>");
+            RegisterFunction("mat3", "mat3", "mat4");
             RegisterFunction("mat3", "mat3<T>", "vec3<T>");
             RegisterFunction("mat3", "mat3", "vec3");
-            RegisterFunction("mat3", "mat3", "float");
             RegisterFunction("mat3", "mat3", "vec3", "vec3", "vec3");
+            
+            RegisterFunction("==", "bool", "float", "float");
+            RegisterFunction("!=", "bool", "float", "float");
         }
 
         private static (string type, string[] genericParams) ParseType(string type)
@@ -575,8 +478,10 @@ namespace cast.core.registry
             (string lhsType, string[] lhsParams) = ParseType(left);
             (string rhsType, string[] rhsParams) = ParseType(right);
 
+            bool hasSpaces = lhsParams.Length > 0 || rhsParams.Length > 0;
             var candidates = functions[op];
             var s = new Dictionary<string, string>();
+            CastType? fallback = null;
 
             foreach ((string[] fnParams, string returnType) in candidates)
             {
@@ -595,6 +500,8 @@ namespace cast.core.registry
                 }
 
                 if (lhsType != fnLhs || rhsType != fnRhs) continue;
+
+                bool isGeneric = fnLhsParams.Length > 0 || fnRhsParams.Length > 0 || returnTypeParams.Length > 0;
 
                 for (int i = 0; i < lhsParams.Length && i < fnLhsParams.Length; i++)
                     s[fnLhsParams[i]] = lhsParams[i];
@@ -630,8 +537,20 @@ namespace cast.core.registry
 
                 var type = scope[returnTypeType] as TypeSymbol;
                 if (type == null) continue;
-                return new CastType(type, typeSpaces);
+
+                if (isGeneric)
+                    return new CastType(type, typeSpaces);
+
+                fallback ??= new CastType(type, typeSpaces);
             }
+
+            if (hasSpaces && fallback != null)
+            {
+                logger.Log(token, $"No matching overload for operator '{op}' with types '{parameters[0]}' and '{parameters[1]}'.");
+                return CastType.ErrorType;
+            }
+
+            if (fallback != null) return fallback;
 
             logger.Log(token, $"No matching overload for operator '{op}' with types '{parameters[0]}' and '{parameters[1]}'.");
             return CastType.ErrorType;

@@ -563,6 +563,14 @@ namespace cast.core.visitor
                 {
                     functionName = context.postfix_expression().GetText();
                 }
+
+                if (_scope[functionName] is TypeSymbol typeSymbol)
+                {
+                    if (!string.IsNullOrEmpty(typeSymbol.ResultType))
+                    {
+                        functionName = typeSymbol.ResultType;
+                    }
+                }
                 
                 List<string> parameters = new List<string>();
                 foreach (var parameterContext in context.function_call_parameters().assignment_expression())
