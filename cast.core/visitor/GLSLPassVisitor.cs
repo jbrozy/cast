@@ -940,7 +940,7 @@ namespace cast.core.visitor
             
             string type = Visit(context.type_specifier().type_specifier_nonarray());
             TypeSymbol typeSymbol = _scope[type] as TypeSymbol;
-            if (!string.IsNullOrEmpty(typeSymbol.ResultType))
+            if (!string.IsNullOrEmpty(typeSymbol?.ResultType))
             {
                 type = typeSymbol.ResultType;
             }

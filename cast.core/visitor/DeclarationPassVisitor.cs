@@ -564,13 +564,16 @@ namespace cast.core.visitor
 
             List<SpaceSymbol> spaces = new List<SpaceSymbol>();
             var spaceSpec = context.fully_specified_type().type_specifier().space_specifier();
-            if (spaceSpec != null)
+            if (!typeSymbol.Name.StartsWith("sampler"))
             {
-                foreach (ITerminalNode spaceId in spaceSpec.space_definition_parameters().IDENTIFIER())
+                if (spaceSpec != null)
                 {
-                    var space = _scope[spaceId.GetText()] as SpaceSymbol;
-                    if (space != null)
-                        spaces.Add(space);
+                    foreach (ITerminalNode spaceId in spaceSpec.space_definition_parameters().IDENTIFIER())
+                    {
+                        var space = _scope[spaceId.GetText()] as SpaceSymbol;
+                        if (space != null)
+                            spaces.Add(space);
+                    }
                 }
             }
 

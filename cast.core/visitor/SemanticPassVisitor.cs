@@ -402,9 +402,11 @@ namespace cast.core.visitor
             }
             string identifier = context.variable_identifier().GetText();
 
-            if (left.Type.Name.StartsWith("vec"))
+            bool swizzleType = left.Type.Name.StartsWith("vec") || left.Type.Name.StartsWith("point") ;
+            if (swizzleType)
             {
-                int vectorSize = int.Parse(left.Type.Name.Substring(3));
+                int swizzleLength = left.Type.Name.Length - 1;
+                int vectorSize = int.Parse(left.Type.Name.Substring(swizzleLength));
                 if (identifier.Length > vectorSize)
                 {
                     _logger.Log(context.Start, $"Unable to swizzle with '{identifier} on type {left}'");
@@ -422,7 +424,14 @@ namespace cast.core.visitor
                     }
                     else
                     {
-                        newType = _scope[$"vec{swizzledSize}"] as TypeSymbol;
+                        if (left.Type.Name.StartsWith("vec"))
+                        {
+                            newType = _scope[$"vec{swizzledSize}"] as TypeSymbol;
+                        }
+                        else
+                        {
+                            newType = _scope[$"point{swizzledSize}"] as TypeSymbol;
+                        }
                     }
                     return new CastType(newType, spaces);
                 }
@@ -551,6 +560,22 @@ namespace cast.core.visitor
                     parameters.Add(Visit(parameterContext));
                 }
 
+                if (functionName == "texture" && parameters.Count == 2)
+                {
+                    SamplerType samplerType = parameters[0] as SamplerType;
+                    CastType payloadType = samplerType?.Payload;
+                    if (payloadType != null)
+                    {
+                        if (payloadType.Type.Name != "vec4" && payloadType.Type.Name != "point4")
+                        {
+                            _logger.Log(context.Start, "Sampler payload must be either a point or a vector.");
+                            return CastType.ErrorType;
+                        }
+                    
+                        return samplerType.Payload;
+                    }
+                }
+                
                 CastType returnType;
                 if (_scope[functionName] is FunctionSymbol function)
                 {
