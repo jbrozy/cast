@@ -73,11 +73,17 @@ namespace cast.core.registry
             RegisterFunction("reflect", "vec3", "vec3", "vec3");
             RegisterFunction("refract", "vec3<T>", "vec3<T>", "vec3<T>", "float");
             RegisterFunction("refract", "vec3", "vec3", "vec3", "float");
+            
+            RegisterFunction("reflect", "vec4<T>", "vec4<T>", "vec4<T>");
+            RegisterFunction("reflect", "vec4", "vec4", "vec4");
 
             RegisterFunction("+", "float", "float", "float");
             RegisterFunction("-", "float", "float", "float");
             RegisterFunction("+", "int", "int", "int");
             RegisterFunction("-", "int", "int", "int");
+            
+            RegisterFunction("texture", "T", "sampler2D<T>", "vec2");
+            RegisterFunction("texture", "vec4", "sampler2D", "vec2");
 
             for(int i = 2; i <= 4; i++)
             {
@@ -259,6 +265,8 @@ namespace cast.core.registry
             RegisterFunction("point4", "point4", "point3", "float");
             RegisterFunction("point4", "point4", "point2", "point2");
             RegisterFunction("point4", "point4", "float", "float", "float", "float");
+            
+            RegisterFunction("point4", "point4", "point2", "float", "float");
 
             // Matrix-Konstruktoren (Down-Casting und Spalten-Vektoren)
             RegisterFunction("mat3", "mat3<T, U>", "mat4<T, U>");
