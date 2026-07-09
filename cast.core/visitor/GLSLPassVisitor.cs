@@ -157,21 +157,56 @@ namespace cast.core.visitor
         public string VisitSelection_statement(CastParser.Selection_statementContext context)
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append($"if ({Visit(context.expression())})");
+
+            var rest = context.selection_rest_statement();
+            var statements = rest.statement();
+
+            if (statements.Length == 0)
+                return string.Empty;
+
+            builder.Append(GetIndentedText($"if ({Visit(context.expression())}) "));
+            builder.Append(EmitBranch(statements[0]));
             _indent++;
-            builder.Append(" {\n");
-            builder.Append(Visit(context.selection_rest_statement()));
+
+            if (statements.Length > 1)
+            {
+                builder.Append(" else ");
+
+                // else-if nicht in extra Klammern wrappen
+                if (IsSelectionStatement(statements[1]))
+                {
+                    builder.Append(GetIndentedText(Visit(statements[1]).TrimStart()));
+                }
+                else
+                {
+                    builder.Append(EmitBranch(statements[1]));
+                }
+            }
+
+            _indent--;
+            return builder.ToString();
+        }
+        
+        private string EmitBranch(CastParser.StatementContext statement)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("{\n");
+            _indent++;
+
+            builder.Append(Visit(statement));
+
             _indent--;
             builder.Append(GetIndentedText("}"));
-            if (_configuration.PreserveLineBreaks)
-            {
-                var stmts = context.selection_rest_statement().statement();
-                if (stmts.Length > 0 && stmts[0].compound_statement() != null)
-                    _lastEmittedLine = stmts[0].compound_statement().RIGHT_BRACE().Symbol.Line;
-            }
+
             return builder.ToString();
         }
 
+        private bool IsSelectionStatement(CastParser.StatementContext statement)
+        {
+            return statement.simple_statement()?.selection_statement() != null;
+        }
+        
         public string VisitCondition(CastParser.ConditionContext context)
         {
             if (context.expression() != null)
@@ -338,6 +373,7 @@ namespace cast.core.visitor
             if (context.statement_list() != null)
             {
                 _indent++;
+                builder.Append(GetIndentedText("{\n"));
                 foreach (var statementContext in context.statement_list().statement())
                 {
                     PreserveLineBreaks(builder, statementContext.Start.Line);
@@ -346,6 +382,7 @@ namespace cast.core.visitor
                     builder.Append(GetIndentedText($"{Visit(statementContext)}\n"));
                     _lastEmittedLine = statementContext.Stop.Line;
                 } 
+                builder.Append(GetIndentedText("\n}"));
                 _indent--;
             }
 

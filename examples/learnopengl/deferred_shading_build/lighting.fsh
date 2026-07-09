@@ -37,7 +37,8 @@ void main() {
 
   vec3 lighting = diffuseColor * 0.1;
 
-      vec3 lightDir = normalize(light0Position.xyz - fragPos.xyz);
+      {
+    vec3 lightDir = normalize(light0Position.xyz - fragPos.xyz);
 
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -51,9 +52,11 @@ void main() {
     vec3 specular = spec * specularStrength * light0Color;
 
     lighting = lighting + (diffuse + specular) * attenuation;
+    
+}
 
-
-      vec3 lightDir = normalize(light1Position.xyz - fragPos.xyz);
+      {
+    vec3 lightDir = normalize(light1Position.xyz - fragPos.xyz);
 
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -67,7 +70,8 @@ void main() {
     vec3 specular = spec * specularStrength * light1Color;
 
     lighting = lighting + (diffuse + specular) * attenuation;
-
+    
+}
 
   FragColor = vec4(lighting, 1.0);
 }
