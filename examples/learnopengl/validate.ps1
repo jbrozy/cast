@@ -1,62 +1,111 @@
-# validate-shaders.ps1
+param(
+    [string]$Validator = "glslangValidator.exe",
+    [string]$Root = "."
+)
 
-$Validator = "glslangValidator.exe"
-# oder:
-# $Validator = "glslValidator.exe"
+$results = @()
+$hasFailures = $false
 
-$ErrorCount = 0
-$OkCount = 0
+$buildDirs = Get-ChildItem -Path $Root -Directory -Recurse -Filter "*_build" |
+    Sort-Object FullName
 
-# Nur direkte Ordner wie ./advanced_lighting_build, ./shadow_mapping_build usw.
-$BuildDirs = Get-ChildItem -Path ".\*_build" -Directory
+foreach ($dir in $buildDirs) {
+    $name = $dir.Name -replace "_build$", ""
 
-if (-not $BuildDirs) {
-    Write-Host "Keine direkten *_build-Ordner gefunden."
-    exit 0
-}
+    $shaderFiles = @()
+    $shaderFiles += Get-ChildItem -Path $dir.FullName -File -Filter "*.vsh" -ErrorAction SilentlyContinue
+    $shaderFiles += Get-ChildItem -Path $dir.FullName -File -Filter "*.fsh" -ErrorAction SilentlyContinue
 
-$ShaderFiles = @()
+    $shaderFiles = $shaderFiles | Sort-Object Name
 
-foreach ($Dir in $BuildDirs) {
-    $ShaderFiles += Get-ChildItem -Path $Dir.FullName -File -Filter "*.vsh"
-    $ShaderFiles += Get-ChildItem -Path $Dir.FullName -File -Filter "*.fsh"
-}
+    $fileResults = @()
+    $folderOk = $true
 
-if (-not $ShaderFiles) {
-    Write-Host "Keine .vsh oder .fsh Dateien in direkten *_build-Ordnern gefunden."
-    exit 0
-}
+    if ($shaderFiles.Count -eq 0) {
+        $folderOk = $false
+        $hasFailures = $true
 
-foreach ($File in $ShaderFiles) {
-    switch ($File.Extension.ToLower()) {
-        ".vsh" { $Stage = "vert" }
-        ".fsh" { $Stage = "frag" }
-        default { continue }
+        $results += [pscustomobject]@{
+            Name = $name
+            Ok = $false
+            Files = @()
+            Message = "NO SHADERS"
+        }
+
+        continue
     }
 
-    Write-Host ""
-    Write-Host "Pruefe: $($File.FullName)"
-    Write-Host "Stage : $Stage"
+    foreach ($file in $shaderFiles) {
+        $stage = switch ($file.Extension.ToLower()) {
+            ".vsh" { "vert" }
+            ".fsh" { "frag" }
+            default { $null }
+        }
 
-    & $Validator -S $Stage $File.FullName
+        if ($null -eq $stage) {
+            continue
+        }
 
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "OK: $($File.FullName)" -ForegroundColor Green
-        $OkCount++
-    } else {
-        Write-Host "FEHLER: $($File.FullName)" -ForegroundColor Red
-        $ErrorCount++
+        $output = & $Validator -S $stage $file.FullName 2>&1
+        $exitCode = $LASTEXITCODE
+
+        if ($exitCode -eq 0) {
+            $fileResults += [pscustomobject]@{
+                File = $file.Name
+                Ok = $true
+                Message = "OK"
+                Output = $output
+            }
+        } else {
+            $folderOk = $false
+            $hasFailures = $true
+
+            $fileResults += [pscustomobject]@{
+                File = $file.Name
+                Ok = $false
+                Message = "FAILED"
+                Output = $output
+            }
+        }
+    }
+
+    $results += [pscustomobject]@{
+        Name = $name
+        Ok = $folderOk
+        Files = @($fileResults)
+        Message = if ($folderOk) { "OK" } else { "FAILED" }
     }
 }
 
 Write-Host ""
-Write-Host "=============================="
-Write-Host "GLSL Validation abgeschlossen"
-Write-Host "OK     : $OkCount"
-Write-Host "Fehler : $ErrorCount"
-Write-Host "=============================="
+Write-Host "Summary"
+Write-Host "======="
 
-if ($ErrorCount -gt 0) {
+foreach ($result in $results) {
+    if ($result.Ok) {
+        Write-Host "$($result.Name): OK" -ForegroundColor Green
+    } else {
+        Write-Host "$($result.Name): $($result.Message)" -ForegroundColor Red
+    }
+
+    foreach ($fileResult in $result.Files) {
+        if ($fileResult.Ok) {
+            Write-Host "  $($fileResult.File): OK" -ForegroundColor Green
+        } else {
+            Write-Host "  $($fileResult.File): FAILED" -ForegroundColor Red
+
+            if ($fileResult.Output) {
+                foreach ($line in $fileResult.Output) {
+                    Write-Host "    $line" -ForegroundColor Red
+                }
+            }
+        }
+    }
+
+    Write-Host ""
+}
+
+if ($hasFailures) {
     exit 1
 }
 
