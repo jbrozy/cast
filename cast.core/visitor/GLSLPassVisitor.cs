@@ -373,6 +373,7 @@ namespace cast.core.visitor
             if (context.statement_list() != null)
             {
                 _indent++;
+                builder.Append(GetIndentedText("{\n"));
                 foreach (var statementContext in context.statement_list().statement())
                 {
                     PreserveLineBreaks(builder, statementContext.Start.Line);
@@ -381,6 +382,7 @@ namespace cast.core.visitor
                     builder.Append(GetIndentedText($"{Visit(statementContext)}\n"));
                     _lastEmittedLine = statementContext.Stop.Line;
                 } 
+                builder.Append(GetIndentedText("\n}"));
                 _indent--;
             }
 

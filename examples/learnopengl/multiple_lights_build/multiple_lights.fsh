@@ -55,7 +55,8 @@ void main() {
 
   /* Directional Light */
 
-      vec3 lightDir = normalize(-dirLightDirection);
+      {
+    vec3 lightDir = normalize(-dirLightDirection);
 
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -67,12 +68,14 @@ void main() {
     vec3 specular = dirLightSpecular * spec * specularColor;
 
     result = result + ambient + diffuse + specular;
-
+    
+}
 
 
   /* Point Light */
 
-      vec3 lightDir = normalize(pointLightPosition.xyz - FragPos.xyz);
+      {
+    vec3 lightDir = normalize(pointLightPosition.xyz - FragPos.xyz);
 
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -89,12 +92,14 @@ void main() {
     result = result + ambient * attenuation;
     result = result + diffuse * attenuation;
     result = result + specular * attenuation;
-
+    
+}
 
 
   /* Spot Light */
 
-      vec3 lightDir = normalize(spotLightPosition.xyz - FragPos.xyz);
+      {
+    vec3 lightDir = normalize(spotLightPosition.xyz - FragPos.xyz);
 
     float diff = max(dot(normal, lightDir), 0.0);
 
@@ -115,7 +120,8 @@ void main() {
     result = result + ambient * attenuation * intensity;
     result = result + diffuse * attenuation * intensity;
     result = result + specular * attenuation * intensity;
-
+    
+}
 
   FragColor = vec4(result, 1.0);
 }
